@@ -128,6 +128,16 @@ type Query {
   @returns Boolean indicating existence of the data point
   """
   dpExists(dpeName: String!): Boolean!
+
+  """
+  Returns historic values of data point elements within a specified time period
+  
+  @param startTime - Start of the time interval
+  @param endTime - End of the time interval
+  @param dpeNames - Names of the data point elements to query
+  @returns Historic values with timestamps
+  """
+  dpGetPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
 }
 
 """

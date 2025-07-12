@@ -202,6 +202,16 @@ const resolvers = {
         logger.error('dpExists error:', error);
         throw new Error(`Failed to check if data point exists: ${error.message}`);
       }
+    },
+    
+    async dpGetPeriod(_, { startTime, endTime, dpeNames }) {
+      try {
+        const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
+        return result;
+      } catch (error) {
+        logger.error('dpGetPeriod error:', error);
+        throw new Error(`Failed to get historic data point values: ${error.message}`);
+      }
     }
   },
   
