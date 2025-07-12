@@ -22,6 +22,7 @@ const bodyParser = require('body-parser');
 const PORT = process.env.GRAPHQL_PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const TOKEN_EXPIRY_MS = 3600000; // 1 hour
+const DISABLE_AUTH = process.env.DISABLE_AUTH != '';
 
 // In-memory token store (replace with Redis or database in production)
 const tokenStore = new Map();
@@ -308,14 +309,15 @@ const resolvers = {
           const asyncIterator = context.pubsub.asyncIterator(channel);
           
           // Set up the connection
-          const callback = (values) => {
+          const callback = (dpeNames, values, type, error) => {
             // Emit the update through the pubsub
+            console.log(`Received update for ${dpeNames.join(', ')}:`, values);
             context.pubsub.publish(channel, {
               dpConnect: {
                 dpeNames,
                 values,
-                type: 'UPDATE',
-                error: null
+                type: type,
+                error: error || null
               }
             });
           };
@@ -386,6 +388,11 @@ const schema = makeExecutableSchema({
 
 // Authentication middleware
 const authMiddleware = (req) => {
+  // Skip authentication if DISABLE_AUTH is true
+  if (DISABLE_AUTH) {
+    return { userId: 'anonymous', tokenId: 'no-auth' };
+  }
+  
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -398,6 +405,11 @@ const authMiddleware = (req) => {
 
 // WebSocket authentication
 const wsAuthMiddleware = (ctx) => {
+  // Skip authentication if DISABLE_AUTH is true
+  if (DISABLE_AUTH) {
+    return { user: { userId: 'anonymous', tokenId: 'no-auth' } };
+  }
+  
   const token = ctx.connectionParams?.Authorization;
   
   if (!token) {
@@ -576,6 +588,11 @@ async function startServer() {
       '/graphql',
       expressMiddleware(server, {
         context: async ({ req }) => {
+          // Skip authentication entirely if DISABLE_AUTH is true
+          if (DISABLE_AUTH) {
+            return { user: { userId: 'anonymous', tokenId: 'no-auth' } };
+          }
+          
           // Skip auth for introspection and login
           const isIntrospection = req.body?.operationName === 'IntrospectionQuery';
           const isLogin = req.body?.query?.includes('login');
@@ -605,6 +622,9 @@ async function startServer() {
       httpServer.listen(PORT, () => {
         logger.info(`🚀 GraphQL server ready at http://localhost:${PORT}/graphql`);
         logger.info(`🔌 WebSocket subscriptions ready at ws://localhost:${PORT}/graphql`);
+        if (DISABLE_AUTH) {
+          logger.warn('⚠️  Authentication is DISABLED. Set DISABLE_AUTH=false to enable authentication.');
+        }
         resolve();
       });
     });

@@ -1,0 +1,425 @@
+# WinCC OA Detailed GraphQL Schema
+
+"""
+Scalar type representing JSON data - used for flexible data handling
+"""
+scalar JSON
+
+"""
+Scalar type representing multi-language strings in WinCC OA
+"""
+scalar LangString
+
+"""
+Scalar type representing time values in WinCC OA
+"""
+scalar Time
+
+# Enums
+enum ElementType {
+  BOOL
+  UINT8  
+  INT32
+  INT64
+  FLOAT
+  DOUBLE
+  BIT
+  BIT32
+  BIT64
+  STRING
+  TIME
+  DPID
+  LANGSTRING
+  BLOB
+  MIXED
+  DYN_BOOL
+  DYN_UINT8
+  DYN_INT32
+  DYN_INT64
+  DYN_FLOAT
+  DYN_DOUBLE
+  DYN_BIT
+  DYN_BIT32
+  DYN_BIT64
+  DYN_STRING
+  DYN_TIME
+  DYN_DPID
+  DYN_LANGSTRING
+  DYN_BLOB
+}
+
+"""
+Query methods for retrieving data point and system information
+"""
+type Query {
+  """
+  Retrieves the current values of one or more data point elements
+  
+  @param dpeNames - Names of the data point elements to retrieve
+  @returns Values of the specified data point elements
+  """
+  dpGet(dpeNames: [String!]!): JSON!
+
+  """
+  Returns all the data point names or data point element names that match a pattern
+  
+  @param dpPattern - Search pattern for data point names (optional)
+  @param dpType - Specific data point type to filter (optional)
+  @param ignoreCase - Whether the search should be case-insensitive (default: false)
+  @returns List of matching data point names
+  """
+  dpNames(dpPattern: String, dpType: String, ignoreCase: Boolean): [String!]!
+
+  """
+  Returns all or selected data point types from the current project
+  
+  @param pattern - Pattern to filter data point types (optional)
+  @param systemId - System ID to query (optional, default: own system)
+  @param includeEmpty - Whether to include types without existing data points (default: true)
+  @returns List of data point type names
+  """
+  dpTypes(pattern: String, systemId: Int, includeEmpty: Boolean): [String!]!
+
+  """
+  Returns the value of data point elements from the driver if older than specified age
+  
+  @param age - Maximum age of the value in milliseconds
+  @param dpeNames - Data point elements to query
+  @returns Current values of the specified data point elements
+  """
+  dpGetMaxAge(age: Int!, dpeNames: [String!]!): JSON!
+
+  """
+  Returns the data type of a specific data point element
+  
+  @param dpeName - Name of the data point element
+  @returns Element type of the data point element
+  """
+  dpElementType(dpeName: String!): ElementType!
+
+  """
+  Returns the data type of a data point attribute
+  
+  @param dpAttributeName - Name of the data point attribute
+  @returns CTRL type of the attribute
+  """
+  dpAttributeType(dpAttributeName: String!): String!
+
+  """
+  Returns the data point type for a given data point name
+  
+  @param dp - Name of the data point
+  @returns Name of the data point type
+  """
+  dpTypeName(dp: String!): String!
+
+  """
+  Returns the type reference of a selected data point element
+  
+  @param dpe - Name of the data point element
+  @returns Type reference name or empty string
+  """
+  dpTypeRefName(dpe: String!): String!
+
+  """
+  Checks whether a data point exists
+  
+  @param dpeName - Name of the data point element
+  @returns Boolean indicating existence of the data point
+  """
+  dpExists(dpeName: String!): Boolean!
+}
+
+"""
+Mutations for creating, modifying, and deleting data points
+"""
+type Mutation {
+  """
+  Creates a new data point
+  
+  @param dpeName - Name of the data point to create
+  @param dpType - Type of the data point
+  @param systemId - Optional system ID for distributed systems
+  @param dpId - Optional specific data point ID
+  @returns Boolean indicating successful creation
+  """
+  dpCreate(dpeName: String!, dpType: String!, systemId: Int, dpId: Int): Boolean!
+
+  """
+  Deletes an existing data point
+  
+  @param dpName - Name of the data point to delete
+  @returns Boolean indicating successful deletion
+  """
+  dpDelete(dpName: String!): Boolean!
+
+  """
+  Copies a data point including its configuration
+  
+  @param source - Name of the source data point
+  @param destination - Name of the new copied data point
+  @param driver - Optional driver number (default 1)
+  @returns Boolean indicating successful copy
+  """
+  dpCopy(source: String!, destination: String!, driver: Int): Boolean!
+
+  """
+  Sets the value of one or more data point elements
+  
+  @param dpeNames - Names of the data point elements to set
+  @param values - Values to set for the data point elements
+  @returns Boolean indicating successful setting of values
+  """
+  dpSet(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets values with waiting for confirmation
+  
+  @param dpeNames - Names of the data point elements to set
+  @param values - Values to set for the data point elements
+  @returns Boolean indicating successful setting of values
+  """
+  dpSetWait(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets values with a specific timestamp
+  
+  @param time - Source time for the value change
+  @param dpeNames - Names of the data point elements to set
+  @param values - Values to set for the data point elements
+  @returns Boolean indicating successful setting of values
+  """
+  dpSetTimed(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets values with a specific timestamp and waits for confirmation
+  
+  @param time - Source time for the value change
+  @param dpeNames - Names of the data point elements to set
+  @param values - Values to set for the data point elements
+  @returns Boolean indicating successful setting of values
+  """
+  dpSetTimedWait(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+}
+
+"""
+Subscription type for real-time data point updates
+"""
+type Subscription {
+  """
+  Establishes a connection to receive updates for specified data point elements
+  
+  @param dpeNames - Names of the data point elements to connect to
+  @param answer - Whether to receive initial values immediately
+  @returns Stream of data point updates
+  """
+  dpConnect(dpeNames: [String!]!, answer: Boolean): DpConnectUpdate!
+
+  """
+  Connects to receive updates for a single query
+  
+  @param query - SQL-like query to define data points to monitor
+  @param answer - Whether to receive initial values immediately
+  @param blockingTime - Time to collect query results
+  @returns Stream of query updates
+  """
+  dpQueryConnectSingle(query: String!, answer: Boolean, blockingTime: Int): DpQueryConnectUpdate!
+
+  """
+  Connects to receive updates for all matching query results
+  
+  @param query - SQL-like query to define data points to monitor
+  @param answer - Whether to receive initial values immediately
+  @param blockingTime - Time to collect query results
+  @returns Stream of all query updates
+  """
+  dpQueryConnectAll(query: String!, answer: Boolean, blockingTime: Int): DpQueryConnectUpdate!
+}
+
+"""
+Methods for managing data point types
+"""
+type DataPointTypeMutation {
+  """
+  Retrieves the structure of a data point type
+  
+  @param dpt - Name of the data point type
+  @param includeSubTypes - Whether to include subtypes
+  @returns Structure of the data point type
+  """
+  dpTypeGet(dpt: String!, includeSubTypes: Boolean): DpTypeNode!
+
+  """
+  Creates a new data point type tree
+  
+  @param startNode - The first node of the data point type tree
+  @returns Boolean indicating successful creation
+  """
+  dpTypeCreate(startNode: DpTypeNodeInput!): Boolean!
+
+  """
+  Changes an existing data point type tree
+  
+  @param startNode - The top node of the data point type tree to replace
+  @returns Boolean indicating successful change
+  """
+  dpTypeChange(startNode: DpTypeNodeInput!): Boolean!
+
+  """
+  Deletes an existing data point type
+  
+  @param dpt - Name of the data point type to delete
+  @returns Boolean indicating successful deletion
+  """
+  dpTypeDelete(dpt: String!): Boolean!
+
+  """
+  Retrieves references to other DPTs in a DPT
+  
+  @param dpt - Name of the data point type to check
+  @returns Object with reference names and their corresponding paths
+  """
+  dpGetDpTypeRefs(dpt: String!): DpTypeReferences!
+
+  """
+  Returns all DPTs and DPs that contain a specific DPT as a reference
+  
+  @param reference - Name of the DPT reference to check
+  @returns Object with DPT names and corresponding data point element paths
+  """
+  dpGetRefsToDpType(reference: String!): DpTypeReferences!
+}
+
+"""
+Alert-related methods for data point elements
+"""
+type AlertMutation {
+  """
+  Retrieves the last alert attributes of a data point
+  
+  @param alertsTime - Alert time(s) to retrieve
+  @param dpeNames - Data point element names with alert config
+  @param alertCount - Optional serial number of alert
+  @returns Retrieved alert attribute values
+  """
+  alertGet(alertsTime: [AlertTimeInput!]!, dpeNames: [String!]!, alertCount: Int): JSON!
+
+  """
+  Sets data point alert attributes
+  
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSet(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets data point alert attributes with waiting for confirmation
+  
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSetWait(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets data point alert attributes with a specific timestamp
+  
+  @param time - Source time for the attribute change
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSetTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets data point alert attributes with a specific timestamp and waiting for confirmation
+  
+  @param time - Source time for the attribute change
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSetTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """
+  Retrieves alert values for a specific time period
+  
+  @param startTime - Start of the time interval
+  @param endTime - End of the time interval
+  @param names - Alert handling attribute names
+  @returns Object with alert times and corresponding values
+  """
+  alertGetPeriod(startTime: Time!, endTime: Time!, names: [String!]!): AlertPeriodResult!
+}
+
+# Supporting Complex Types
+
+"""
+Represents a data point type node in the type hierarchy
+"""
+type DpTypeNode {
+  name: String!
+  type: ElementType!
+  refName: String
+  children: [DpTypeNode!]
+  newName: String
+}
+
+input DpTypeNodeInput {
+  name: String!
+  type: ElementType!
+  refName: String
+  children: [DpTypeNodeInput!]
+  newName: String
+}
+
+"""
+Results of data point type reference queries
+"""
+type DpTypeReferences {
+  dptNames: [String!]!
+  dpePaths: [String!]!
+}
+
+"""
+Represents an alert time with additional details
+"""
+type AlertTime {
+  time: Time!
+  count: Int!
+  dpe: String!
+}
+
+input AlertTimeInput {
+  time: Time!
+  count: Int!
+  dpe: String!
+}
+
+"""
+Result of alert period query
+"""
+type AlertPeriodResult {
+  alertTimes: [AlertTime!]!
+  values: [JSON!]!
+}
+
+"""
+Update type for data point connections
+"""
+type DpConnectUpdate {
+  dpeNames: [String!]!
+  values: [JSON!]!
+  type: String! # Enum for connection update type
+  error: JSON
+}
+
+"""
+Update type for data point query connections
+"""
+type DpQueryConnectUpdate {
+  values: [[JSON!]!]!
+  type: String! # Enum for connection update type
+  error: JSON
+}
