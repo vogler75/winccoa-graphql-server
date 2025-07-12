@@ -132,8 +132,8 @@ type Query {
   """
   Returns historic values of data point elements within a specified time period
   
-  @param startTime - Start of the time interval
-  @param endTime - End of the time interval
+  @param startTime - Start of the time interval in ISO 8601 format (e.g., "2024-01-01T00:00:00Z")
+  @param endTime - End of the time interval in ISO 8601 format (e.g., "2024-01-01T23:59:59Z")
   @param dpeNames - Names of the data point elements to query
   @returns Historic values with timestamps
   """
