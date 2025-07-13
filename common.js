@@ -188,6 +188,57 @@ function createCommonResolvers(winccoa, logger) {
           logger.error('dpGetPeriod error:', error);
           throw new Error(`Failed to get historic data point values: ${error.message}`);
         }
+      },
+
+      // Manager and System Information Functions
+      isReduActive() {
+        try {
+          const result = winccoa.isReduActive();
+          return result;
+        } catch (error) {
+          logger.error('isReduActive error:', error);
+          throw new Error(`Failed to check redundancy active status: ${error.message}`);
+        }
+      },
+
+      isRedundant() {
+        try {
+          const result = winccoa.isRedundant();
+          return result;
+        } catch (error) {
+          logger.error('isRedundant error:', error);
+          throw new Error(`Failed to check redundancy configuration: ${error.message}`);
+        }
+      },
+
+      getSystemId(_, { systemName }) {
+        try {
+          const result = winccoa.getSystemId(systemName);
+          return result;
+        } catch (error) {
+          logger.error('getSystemId error:', error);
+          throw new Error(`Failed to get system ID: ${error.message}`);
+        }
+      },
+
+      getSystemName(_, { systemId }) {
+        try {
+          const result = winccoa.getSystemName(systemId);
+          return result;
+        } catch (error) {
+          logger.error('getSystemName error:', error);
+          throw new Error(`Failed to get system name: ${error.message}`);
+        }
+      },
+
+      getVersionInfo() {
+        try {
+          const result = winccoa.getVersionInfo();
+          return result;
+        } catch (error) {
+          logger.error('getVersionInfo error:', error);
+          throw new Error(`Failed to get version information: ${error.message}`);
+        }
       }
     },
     

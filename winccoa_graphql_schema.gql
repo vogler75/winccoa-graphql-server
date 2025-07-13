@@ -201,6 +201,43 @@ type Query {
   @returns Object with alert times and corresponding values
   """
   alertGetPeriod(startTime: Time!, endTime: Time!, names: [String!]!): AlertPeriodResult!
+
+  """
+  Checks if the event manager is currently the active redundancy partner
+  
+  @returns Boolean indicating if redundancy is active
+  """
+  isReduActive: Boolean!
+
+  """
+  Checks whether the project has been configured as redundant
+  
+  @returns Boolean indicating if project is configured for redundancy
+  """
+  isRedundant: Boolean!
+
+  """
+  Returns the system ID for a specified system or the current system
+  
+  @param systemName - Optional name of the system
+  @returns System ID number
+  """
+  getSystemId(systemName: String): Int!
+
+  """
+  Returns the system name for a specified system ID or the current system
+  
+  @param systemId - Optional system ID
+  @returns System name
+  """
+  getSystemName(systemId: Int): String!
+
+  """
+  Returns information about current API and WinCC OA versions
+  
+  @returns Version information object
+  """
+  getVersionInfo: WinccoaVersionDetails!
 }
 
 """
@@ -403,6 +440,36 @@ type DataPointTypeMutation {
 
 
 # Supporting Complex Types
+
+"""
+Version information for WinCC OA API and system
+"""
+type WinccoaVersionDetails {
+  api: WinccoaApiVersion!
+  winccoa: WinccoaSystemVersion!
+}
+
+"""
+API version information
+"""
+type WinccoaApiVersion {
+  version: Int!
+}
+
+"""
+WinCC OA system version information
+"""
+type WinccoaSystemVersion {
+  display: String!
+  major: Int!
+  minor: Int!
+  numeric: Int!
+  numeric_full: Int!
+  patch: Int!
+  platform: String!
+  revision: Int!
+  version: String!
+}
 
 """
 Represents a data point type node in the type hierarchy
