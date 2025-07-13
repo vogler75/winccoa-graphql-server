@@ -33,6 +33,7 @@ The server can be configured using environment variables:
 
 - `GRAPHQL_PORT`: Server port (default: 4000)
 - `JWT_SECRET`: Secret key for JWT tokens (MUST be changed in production)
+- `DISABLE_AUTH`: Set to any non-empty value to completely disable authentication (⚠️ **DANGEROUS** - only for development/testing)
 
 ## Running the Server
 
@@ -43,7 +44,7 @@ node index.js
 
 ### Production Mode with WinCC OA Manager
 ```bash
-node "/opt/WinCC_OA/3.20/javascript/winccoa-manager/lib/bootstrap.js" -PROJ "TestMass" -pmonIndex 8 graphql/index.js
+node "/opt/WinCC_OA/3.20/javascript/winccoa-manager/lib/bootstrap.js" -PROJ "Test" -pmonIndex 8 graphql/index.js
 ```
 
 Or use the npm script:
@@ -137,6 +138,9 @@ subscription {
 3. **Use HTTPS**: Enable HTTPS for production deployments
 4. **Implement Rate Limiting**: Add rate limiting to prevent abuse
 5. **Access Control**: Implement proper access control and user permissions
+
+**Environment Variable Security:**
+- `DISABLE_AUTH`: When set to any non-empty value, this completely bypasses all authentication checks. This is extremely dangerous and should NEVER be used in production. Only use this for local development or testing where no security is needed.
 
 **Until real authentication is implemented, this server should ONLY be used in secure, isolated development environments.**
 

@@ -403,7 +403,7 @@ const authMiddleware = (req) => {
     return { userId: 'anonymous', tokenId: 'no-auth' };
   }
   
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.Authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
