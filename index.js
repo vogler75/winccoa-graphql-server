@@ -22,7 +22,9 @@ const bodyParser = require('body-parser');
 const PORT = process.env.GRAPHQL_PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const TOKEN_EXPIRY_MS = 3600000; // 1 hour
-const DISABLE_AUTH = process.env.DISABLE_AUTH != '';
+const DISABLE_AUTH = process.env.DISABLE_AUTH == 'true' || process.env.DISABLE_AUTH == '1' || process.env.DISABLE_AUTH == 'yes';
+
+console.log(`Starting GraphQL server on port ${PORT} with DISABLE_AUTH=${DISABLE_AUTH}`);
 
 // In-memory token store (replace with Redis or database in production)
 const tokenStore = new Map();
