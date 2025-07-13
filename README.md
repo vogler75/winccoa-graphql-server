@@ -2,6 +2,16 @@
 
 This is a GraphQL server implementation for WinCC OA Manager with authentication and WebSocket subscription support.
 
+## ⚠️ CRITICAL SECURITY WARNING ⚠️
+
+**DANGER: THE CURRENT AUTHENTICATION IS FAKE AND PROVIDES NO SECURITY!**
+
+The authentication system in this implementation is a placeholder only. Any username/password combination will be accepted. This is intended for development and testing purposes only.
+
+**DO NOT USE THIS IN PRODUCTION WITHOUT IMPLEMENTING REAL AUTHENTICATION!**
+
+Real authentication implementation is planned for a future release. Until then, this server should only be used in secure, isolated environments.
+
 ## Features
 
 - **GraphQL API** for WinCC OA data point operations
@@ -73,7 +83,7 @@ For WebSocket connections, pass the token in the connection parameters:
 ```javascript
 {
   connectionParams: {
-    authorization: 'Bearer <your-token>'
+    "Authorization": "Bearer <your-token>"
   }
 }
 ```
@@ -117,10 +127,18 @@ subscription {
 
 ## Security Notes
 
-1. **Change JWT_SECRET**: The default JWT secret MUST be changed for production use
-2. **Implement User Management**: The current implementation uses dummy authentication
+⚠️ **CRITICAL: FAKE AUTHENTICATION WARNING** ⚠️
+
+**The current authentication system is a placeholder that accepts ANY username/password combination. This provides NO SECURITY whatsoever!**
+
+**Production deployment requirements:**
+1. **Implement Real Authentication**: Replace the dummy authentication with a proper user management system
+2. **Change JWT_SECRET**: The default JWT secret MUST be changed for production use
 3. **Use HTTPS**: Enable HTTPS for production deployments
 4. **Implement Rate Limiting**: Add rate limiting to prevent abuse
+5. **Access Control**: Implement proper access control and user permissions
+
+**Until real authentication is implemented, this server should ONLY be used in secure, isolated development environments.**
 
 ## Development Notes
 
