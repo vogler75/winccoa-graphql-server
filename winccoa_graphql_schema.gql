@@ -181,6 +181,26 @@ type Query {
   @returns Historic values with timestamps
   """
   dpGetPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
+
+  """
+  Retrieves the last alert attributes of a data point
+  
+  @param alertsTime - Alert time(s) to retrieve
+  @param dpeNames - Data point element names with alert config
+  @param alertCount - Optional serial number of alert
+  @returns Retrieved alert attribute values
+  """
+  alertGet(alertsTime: [AlertTimeInput!]!, dpeNames: [String!]!, alertCount: Int): JSON!
+
+  """
+  Retrieves alert values for a specific time period
+  
+  @param startTime - Start of the time interval
+  @param endTime - End of the time interval
+  @param names - Alert handling attribute names
+  @returns Object with alert times and corresponding values
+  """
+  alertGetPeriod(startTime: Time!, endTime: Time!, names: [String!]!): AlertPeriodResult!
 }
 
 """
@@ -253,6 +273,44 @@ type Mutation {
   @returns Boolean indicating successful setting of values
   """
   dpSetTimedWait(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets data point alert attributes
+  
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSet(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets data point alert attributes with waiting for confirmation
+  
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSetWait(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets data point alert attributes with a specific timestamp
+  
+  @param time - Source time for the attribute change
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSetTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """
+  Sets data point alert attributes with a specific timestamp and waiting for confirmation
+  
+  @param time - Source time for the attribute change
+  @param alerts - Alert(s) to set
+  @param values - Attribute value(s) to set
+  @returns Boolean indicating successful setting
+  """
+  alertSetTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
 }
 
 """
@@ -343,68 +401,6 @@ type DataPointTypeMutation {
   dpGetRefsToDpType(reference: String!): DpTypeReferences!
 }
 
-"""
-Alert-related methods for data point elements
-"""
-type AlertMutation {
-  """
-  Retrieves the last alert attributes of a data point
-  
-  @param alertsTime - Alert time(s) to retrieve
-  @param dpeNames - Data point element names with alert config
-  @param alertCount - Optional serial number of alert
-  @returns Retrieved alert attribute values
-  """
-  alertGet(alertsTime: [AlertTimeInput!]!, dpeNames: [String!]!, alertCount: Int): JSON!
-
-  """
-  Sets data point alert attributes
-  
-  @param alerts - Alert(s) to set
-  @param values - Attribute value(s) to set
-  @returns Boolean indicating successful setting
-  """
-  alertSet(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
-
-  """
-  Sets data point alert attributes with waiting for confirmation
-  
-  @param alerts - Alert(s) to set
-  @param values - Attribute value(s) to set
-  @returns Boolean indicating successful setting
-  """
-  alertSetWait(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
-
-  """
-  Sets data point alert attributes with a specific timestamp
-  
-  @param time - Source time for the attribute change
-  @param alerts - Alert(s) to set
-  @param values - Attribute value(s) to set
-  @returns Boolean indicating successful setting
-  """
-  alertSetTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
-
-  """
-  Sets data point alert attributes with a specific timestamp and waiting for confirmation
-  
-  @param time - Source time for the attribute change
-  @param alerts - Alert(s) to set
-  @param values - Attribute value(s) to set
-  @returns Boolean indicating successful setting
-  """
-  alertSetTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
-
-  """
-  Retrieves alert values for a specific time period
-  
-  @param startTime - Start of the time interval
-  @param endTime - End of the time interval
-  @param names - Alert handling attribute names
-  @returns Object with alert times and corresponding values
-  """
-  alertGetPeriod(startTime: Time!, endTime: Time!, names: [String!]!): AlertPeriodResult!
-}
 
 # Supporting Complex Types
 
