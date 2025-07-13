@@ -40,6 +40,83 @@ const logger = {
 // Load GraphQL schema
 const typeDefs = readFileSync(join(__dirname, 'winccoa_graphql_schema.gql'), 'utf-8');
 
+// Element type mapping from WinCC OA numeric values to GraphQL enum
+const ElementTypeMap = {
+  0: 'BOOL',
+  1: 'UINT8',
+  2: 'INT32',
+  3: 'INT64',
+  4: 'FLOAT',
+  5: 'DOUBLE',
+  6: 'BIT',
+  7: 'BIT32',
+  8: 'BIT64',
+  9: 'STRING',
+  10: 'TIME',
+  11: 'DPID',
+  12: 'LANGSTRING',
+  13: 'BLOB',
+  14: 'MIXED',
+  15: 'DYN_BOOL',
+  16: 'DYN_UINT8',
+  17: 'DYN_INT32',
+  18: 'DYN_INT64',
+  19: 'DYN_FLOAT',
+  20: 'DYN_DOUBLE',
+  21: 'DYN_BIT',
+  22: 'DYN_BIT32',
+  23: 'DYN_BIT64',
+  24: 'DYN_STRING',
+  25: 'DYN_TIME',
+  26: 'DYN_DPID',
+  27: 'DYN_LANGSTRING',
+  28: 'DYN_BLOB'
+};
+
+// WinCC OA Control type mapping with correct IDs from WinccoaCtrlType documentation
+const CtrlTypeMap = {
+  196608: 'TIME_VAR',
+  262144: 'BOOL_VAR',
+  327680: 'INT_VAR',
+  393216: 'UINT_VAR',
+  458752: 'FLOAT_VAR',
+  524288: 'STRING_VAR',
+  589824: 'BIT32_VAR',
+  655360: 'CHAR_VAR',
+  851968: 'DYN_TIME_VAR',
+  917504: 'DYN_BOOL_VAR',
+  983040: 'DYN_INT_VAR',
+  1048576: 'DYN_UINT_VAR',
+  1114112: 'DYN_FLOAT_VAR',
+  1179648: 'DYN_STRING_VAR',
+  1245184: 'DYN_BIT32_VAR',
+  1310720: 'DYN_CHAR_VAR',
+  1703936: 'DYN_DYN_TIME_VAR',
+  1769472: 'DYN_DYN_BOOL_VAR',
+  1835008: 'DYN_DYN_INT_VAR',
+  1900544: 'DYN_DYN_UINT_VAR',
+  1966080: 'DYN_DYN_FLOAT_VAR',
+  2031616: 'DYN_DYN_STRING_VAR',
+  2097152: 'DYN_DYN_BIT32_VAR',
+  2162688: 'DYN_DYN_CHAR_VAR',
+  2424832: 'ATIME_VAR',
+  2490368: 'DYN_ATIME_VAR',
+  2555904: 'DYN_DYN_ATIME_VAR',
+  2621440: 'LANGSTRING_VAR',
+  2686976: 'DYN_LANGSTRING_VAR',
+  2752512: 'DYN_DYN_LANGSTRING_VAR',
+  3014656: 'BLOB_VAR',
+  4587520: 'LONG_VAR',
+  4653056: 'DYN_LONG_VAR',
+  4718592: 'DYN_DYN_LONG_VAR',
+  4784128: 'ULONG_VAR',
+  4849664: 'DYN_ULONG_VAR',
+  4915200: 'DYN_DYN_ULONG_VAR',
+  4980736: 'BIT64_VAR',
+  5046272: 'DYN_BIT64_VAR',
+  5111808: 'DYN_DYN_BIT64_VAR'
+};
+
 // Add authentication types to schema
 const authTypeDefs = `
   type AuthPayload {
@@ -159,7 +236,12 @@ const resolvers = {
     async dpElementType(_, { dpeName }) {
       try {
         const result = await winccoa.dpElementType(dpeName);
-        return result;
+        const enumValue = ElementTypeMap[result];
+        if (enumValue === undefined) {
+          logger.warn(`Unknown element type value: ${result} for ${dpeName}`);
+          throw new Error(`Unknown element type value: ${result}`);
+        }
+        return enumValue;
       } catch (error) {
         logger.error('dpElementType error:', error);
         throw new Error(`Failed to get element type: ${error.message}`);
@@ -169,7 +251,12 @@ const resolvers = {
     async dpAttributeType(_, { dpAttributeName }) {
       try {
         const result = await winccoa.dpAttributeType(dpAttributeName);
-        return result;
+        const ctrlType = CtrlTypeMap[result];
+        if (ctrlType === undefined) {
+          logger.warn(`Unknown control type value: ${result} for ${dpAttributeName}`);
+          throw new Error(`Unknown control type value: ${result}`);
+        }
+        return ctrlType;
       } catch (error) {
         logger.error('dpAttributeType error:', error);
         throw new Error(`Failed to get attribute type: ${error.message}`);

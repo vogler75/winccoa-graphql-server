@@ -48,6 +48,49 @@ enum ElementType {
   DYN_BLOB
 }
 
+enum CtrlType {
+  TIME_VAR
+  BOOL_VAR
+  INT_VAR
+  UINT_VAR
+  FLOAT_VAR
+  STRING_VAR
+  BIT32_VAR
+  CHAR_VAR
+  DYN_TIME_VAR
+  DYN_BOOL_VAR
+  DYN_INT_VAR
+  DYN_UINT_VAR
+  DYN_FLOAT_VAR
+  DYN_STRING_VAR
+  DYN_BIT32_VAR
+  DYN_CHAR_VAR
+  DYN_DYN_TIME_VAR
+  DYN_DYN_BOOL_VAR
+  DYN_DYN_INT_VAR
+  DYN_DYN_UINT_VAR
+  DYN_DYN_FLOAT_VAR
+  DYN_DYN_STRING_VAR
+  DYN_DYN_BIT32_VAR
+  DYN_DYN_CHAR_VAR
+  ATIME_VAR
+  DYN_ATIME_VAR
+  DYN_DYN_ATIME_VAR
+  LANGSTRING_VAR
+  DYN_LANGSTRING_VAR
+  DYN_DYN_LANGSTRING_VAR
+  BLOB_VAR
+  LONG_VAR
+  DYN_LONG_VAR
+  DYN_DYN_LONG_VAR
+  ULONG_VAR
+  DYN_ULONG_VAR
+  DYN_DYN_ULONG_VAR
+  BIT64_VAR
+  DYN_BIT64_VAR
+  DYN_DYN_BIT64_VAR
+}
+
 """
 Query methods for retrieving data point and system information
 """
@@ -103,7 +146,7 @@ type Query {
   @param dpAttributeName - Name of the data point attribute
   @returns CTRL type of the attribute
   """
-  dpAttributeType(dpAttributeName: String!): String!
+  dpAttributeType(dpAttributeName: String!): CtrlType!
 
   """
   Returns the data point type for a given data point name
