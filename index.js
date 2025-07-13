@@ -6,6 +6,7 @@ const winccoa = new WinccoaManager();
 const { createCommonResolvers } = require('./common');
 const { createAlertResolvers } = require('./alerting');
 const { createSubscriptionResolvers } = require('./subscriptions');
+const { createCnsResolvers } = require('./cns');
 
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
@@ -123,6 +124,7 @@ function authenticateUser(username, password) {
 const commonResolvers = createCommonResolvers(winccoa, logger);
 const alertResolvers = createAlertResolvers(winccoa, logger);
 const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
+const cnsResolvers = createCnsResolvers(winccoa, logger);
 
 // Merge resolvers
 function mergeResolvers(...resolverObjects) {
@@ -148,6 +150,7 @@ const resolvers = mergeResolvers(
   commonResolvers,
   alertResolvers,
   subscriptionResolvers,
+  cnsResolvers,
   {
     Mutation: {
       async login(_, { username, password }) {
