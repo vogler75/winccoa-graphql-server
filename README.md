@@ -41,6 +41,8 @@ The server can be configured using environment variables:
 node "/opt/WinCC_OA/3.20/javascript/winccoa-manager/lib/bootstrap.js" -PROJ <project-name> -pmonIndex <nr> winccoa-graphql-server/index.js
 ```
 
+Or simple add it to your project in the console.
+
 ## API Endpoints
 
 - **GraphQL Endpoint**: `http://localhost:4000/graphql`
@@ -134,12 +136,6 @@ subscription {
 **Until real authentication is implemented, this server should ONLY be used in secure, isolated development environments.**
 
 ## Development Notes
-
-### Adding New Resolvers
-
-1. Add the type definition to `winccoa_graphql_schema.gql`
-2. Implement the resolver in the `resolvers` object in `index.js`
-3. Use the `winccoa` object to interact with WinCC OA
 
 ### Error Handling
 
