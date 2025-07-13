@@ -37,19 +37,8 @@ The server can be configured using environment variables:
 
 ## Running the Server
 
-### Development Mode
 ```bash
-node index.js
-```
-
-### Production Mode with WinCC OA Manager
-```bash
-node "/opt/WinCC_OA/3.20/javascript/winccoa-manager/lib/bootstrap.js" -PROJ "Test" -pmonIndex 8 graphql/index.js
-```
-
-Or use the npm script:
-```bash
-npm start
+node "/opt/WinCC_OA/3.20/javascript/winccoa-manager/lib/bootstrap.js" -PROJ <project-name> -pmonIndex <nr> winccoa-graphql-server/index.js
 ```
 
 ## API Endpoints
