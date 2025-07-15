@@ -42,10 +42,10 @@ const tokenStore = new Map();
 
 // Logger setup
 const logger = {
-  info: (...args) => console.log('[INFO]', new Date().toISOString(), ...args),
-  error: (...args) => console.error('[ERROR]', new Date().toISOString(), ...args),
-  warn: (...args) => console.warn('[WARN]', new Date().toISOString(), ...args),
-  debug: (...args) => console.log('[DEBUG]', new Date().toISOString(), ...args)
+  info: (...args) => console.log(...args, '[INFO]'),
+  error: (...args) => console.error(...args, '[ERROR]'),
+  warn: (...args) => console.warn(...args, '[WARN]'),
+  debug: (...args) => console.log(...args, '[DEBUG]')
 };
 
 // Load GraphQL schema
