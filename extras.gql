@@ -1,0 +1,25 @@
+# Extra functions that don't belong to specific resolver modules
+
+extend type Mutation {
+  """
+  Sets OPC UA address configuration for a data point
+  
+  @param datapointName - Name of the data point (e.g., "TestMe.")
+  @param driverNumber - Driver number for the OPC UA driver (default: 2)
+  @param addressDirection - Direction of the address (input/output) (default: 2)
+  @param addressDataType - Data type of the address (default: 750 (float)
+  @param serverName - Name of the OPC UA server
+  @param subscriptionName - Name of the subscription
+  @param nodeId - OPC UA node ID
+  @returns Boolean indicating successful configuration
+  """
+  setOpcUaAddress(
+    datapointName: String!,
+    driverNumber: Int!,
+    addressDirection: Int!,
+    addressDataType: Int!,
+    serverName: String!,
+    subscriptionName: String!,
+    nodeId: String!
+  ): Boolean!
+}

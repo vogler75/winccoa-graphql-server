@@ -48,8 +48,14 @@ const logger = {
   debug: (...args) => console.log(...args, '[DEBUG]')
 };
 
-// Load GraphQL schema
-const typeDefs = readFileSync(join(__dirname, 'winccoa_graphql_schema.gql'), 'utf-8');
+// Load GraphQL schema files
+const commonSchema = readFileSync(join(__dirname, 'common.gql'), 'utf-8');
+const alertingSchema = readFileSync(join(__dirname, 'alerting.gql'), 'utf-8');
+const cnsSchema = readFileSync(join(__dirname, 'cns.gql'), 'utf-8');
+const extrasSchema = readFileSync(join(__dirname, 'extras.gql'), 'utf-8');
+
+// Combine all schema files
+const typeDefs = [commonSchema, alertingSchema, cnsSchema, extrasSchema];
 
 
 // Add authentication types to schema
@@ -182,7 +188,7 @@ const resolvers = mergeResolvers(
 
 // Create executable schema
 const schema = makeExecutableSchema({
-  typeDefs: [typeDefs, authTypeDefs],
+  typeDefs: [...typeDefs, authTypeDefs],
   resolvers
 });
 

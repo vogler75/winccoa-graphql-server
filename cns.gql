@@ -1,0 +1,258 @@
+# CNS (Central Navigation Service) schema
+
+extend type Query {
+  """
+  Returns paths of all views for given system
+  
+  @param systemName - System name
+  @returns Array of view paths
+  """
+  cnsGetViews(systemName: String!): [String!]!
+
+  """
+  Returns ID paths of all trees in a view
+  
+  @param view - View name
+  @returns Array of tree paths
+  """
+  cnsGetTrees(view: String!): [String!]!
+
+  """
+  Returns paths of all children nodes for given path
+  
+  @param cnsPath - ID path of the node
+  @returns Array of child node paths
+  """
+  cnsGetChildren(cnsPath: String!): [String!]!
+
+  """
+  Returns parent node path for given path
+  
+  @param cnsPath - ID path of the node
+  @returns Parent node path
+  """
+  cnsGetParent(cnsPath: String!): String!
+
+  """
+  Returns root node path of tree containing given node
+  
+  @param cnsNodePath - ID path of the node
+  @returns Root node ID path
+  """
+  cnsGetRoot(cnsNodePath: String!): String!
+
+  """
+  Returns display names for node with given path
+  
+  @param cnsPath - CNS path for the node
+  @returns Multi-language display names
+  """
+  cnsGetDisplayNames(cnsPath: String!): JSON!
+
+  """
+  Returns display path for node with given path
+  
+  @param cnsPath - CNS path for the node
+  @returns Multi-language display path
+  """
+  cnsGetDisplayPath(cnsPath: String!): JSON!
+
+  """
+  Returns data point element name linked with given path
+  
+  @param cnsPath - CNS path of data point element
+  @returns Data point element name or empty string
+  """
+  cnsGetId(cnsPath: String!): String!
+
+  """
+  Returns data point element names linked to nodes matching pattern
+  
+  @param pattern - Search pattern with wildcards
+  @param viewPath - Path to view to search (optional)
+  @param searchMode - Search mode flags (optional)
+  @param langIdx - Language index (optional)
+  @param type - Node type filter (optional)
+  @returns Array of data point element names
+  """
+  cnsGetIdSet(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
+
+  """
+  Returns CNS paths matching given pattern and criteria
+  
+  @param pattern - Search pattern with wildcards
+  @param viewPath - Path to view to search (optional)
+  @param searchMode - Search mode flags (optional)
+  @param langIdx - Language index (optional)
+  @param type - Node type filter (optional)
+  @returns Array of matching CNS paths
+  """
+  cnsGetNodesByName(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
+
+  """
+  Returns CNS paths for nodes linked to given data point
+  
+  @param dpName - Data point (element) name
+  @param type - Node type filter (optional)
+  @param viewPath - View path to search (optional)
+  @returns Array of matching CNS paths
+  """
+  cnsGetNodesByData(dpName: String!, type: Int, viewPath: String): [String!]!
+
+  """
+  Returns property value for given key from node
+  
+  @param cnsPath - CNS path of the node
+  @param key - Property key
+  @returns Property value
+  """
+  cnsGetProperty(cnsPath: String!, key: String!): JSON
+
+  """
+  Returns list of property keys for node
+  
+  @param cnsPath - CNS path of the node
+  @returns Array of property keys
+  """
+  cnsGetPropertyKeys(cnsPath: String!): [String!]!
+
+  """
+  Checks if node with given path exists
+  
+  @param path - CNS ID path
+  @returns Boolean indicating existence
+  """
+  cnsNodeExists(path: String!): Boolean!
+
+  """
+  Checks if tree with given path exists
+  
+  @param path - CNS ID path
+  @returns Boolean indicating existence
+  """
+  cnsTreeExists(path: String!): Boolean!
+
+  """
+  Checks if view with given path exists
+  
+  @param path - CNS ID path
+  @returns Boolean indicating existence
+  """
+  cnsViewExists(path: String!): Boolean!
+
+  """
+  Checks if path is a node
+  
+  @param path - CNS ID path
+  @returns Boolean indicating if path is node
+  """
+  cnsIsNode(path: String!): Boolean!
+
+  """
+  Checks if path is a tree
+  
+  @param path - CNS ID path
+  @returns Boolean indicating if path is tree
+  """
+  cnsIsTree(path: String!): Boolean!
+
+  """
+  Checks if path is a view
+  
+  @param path - CNS ID path
+  @returns Boolean indicating if path is view
+  """
+  cnsIsView(path: String!): Boolean!
+
+  """
+  Checks if ID is valid CNS ID
+  
+  @param id - ID to check
+  @returns Boolean indicating validity
+  """
+  cnsCheckId(id: String!): Boolean!
+
+  """
+  Checks if name is valid CNS display name
+  
+  @param name - Display name to check
+  @returns Number (0=valid, -1=incomplete, -2=invalid chars)
+  """
+  cnsCheckName(name: JSON!): Int!
+
+  """
+  Checks if separator is valid CNS separator
+  
+  @param separator - Separator to check
+  @returns Boolean indicating validity
+  """
+  cnsCheckSeparator(separator: String!): Boolean!
+}
+
+extend type Mutation {
+  """
+  Creates a new view with display name and optional separator
+  
+  @param view - ID path of the new view
+  @param displayName - Multi-language display name
+  @param separator - Optional separator (default: '.')
+  @returns Boolean indicating successful creation
+  """
+  cnsCreateView(view: String!, displayName: JSON!, separator: JSON): Boolean!
+
+  """
+  Create a tree or sub-tree
+  
+  @param cnsParentPath - Path of parent element (view, tree, or node)
+  @param tree - Tree structure to add
+  @returns Boolean indicating successful creation
+  """
+  cnsAddTree(cnsParentPath: String!, tree: CnsTreeNodeInput!): Boolean!
+
+  """
+  Adds a new node to a tree or sub-tree
+  
+  @param cnsParentPath - ID path of parent node (must be node, not view)
+  @param name - ID of new node
+  @param displayName - Multi-language display name
+  @param dp - Optional data point element (default: '')
+  @returns Boolean indicating successful creation
+  """
+  cnsAddNode(cnsParentPath: String!, name: String!, displayName: JSON!, dp: String): Boolean!
+
+  """
+  Replaces a tree or sub-tree with new tree
+  
+  @param cnsPath - ID path of tree/node to replace
+  @param tree - New tree structure
+  @returns Boolean indicating successful change
+  """
+  cnsChangeTree(cnsPath: String!, tree: CnsTreeNodeInput!): Boolean!
+
+  """
+  Delete a tree, sub-tree, or node
+  
+  @param cnsPath - ID path of element to delete
+  @returns Boolean indicating successful deletion
+  """
+  cnsDeleteTree(cnsPath: String!): Boolean!
+
+  """
+  Delete a view with all its trees
+  
+  @param view - ID path of the view
+  @returns Boolean indicating successful deletion
+  """
+  cnsDeleteView(view: String!): Boolean!
+
+  """
+  Sets/adds property for node as key/value pair
+  
+  @param cnsPath - ID path of the node
+  @param key - Property name
+  @param value - Property value
+  @param valueType - Type of value
+  @returns Boolean indicating successful setting
+  """
+  cnsSetProperty(cnsPath: String!, key: String!, value: JSON!, valueType: CtrlType!): Boolean!
+}
