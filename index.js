@@ -1,4 +1,4 @@
-// require WinCC OA interface
+// Require WinCC OA interface
 const { WinccoaManager } = require('winccoa-manager');
 const winccoa = new WinccoaManager();
 
