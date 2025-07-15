@@ -362,7 +362,7 @@ type Query {
   @param path - CNS ID path
   @returns Boolean indicating existence
   """
-  cns_nodeExists(path: String!): Boolean!
+  cnsNodeExists(path: String!): Boolean!
 
   """
   Checks if tree with given path exists
@@ -370,7 +370,7 @@ type Query {
   @param path - CNS ID path
   @returns Boolean indicating existence
   """
-  cns_treeExists(path: String!): Boolean!
+  cnsTreeExists(path: String!): Boolean!
 
   """
   Checks if view with given path exists
@@ -378,7 +378,7 @@ type Query {
   @param path - CNS ID path
   @returns Boolean indicating existence
   """
-  cns_viewExists(path: String!): Boolean!
+  cnsViewExists(path: String!): Boolean!
 
   """
   Checks if path is a node
@@ -386,7 +386,7 @@ type Query {
   @param path - CNS ID path
   @returns Boolean indicating if path is node
   """
-  cns_isNode(path: String!): Boolean!
+  cnsIsNode(path: String!): Boolean!
 
   """
   Checks if path is a tree
@@ -394,7 +394,7 @@ type Query {
   @param path - CNS ID path
   @returns Boolean indicating if path is tree
   """
-  cns_isTree(path: String!): Boolean!
+  cnsIsTree(path: String!): Boolean!
 
   """
   Checks if path is a view
@@ -402,7 +402,7 @@ type Query {
   @param path - CNS ID path
   @returns Boolean indicating if path is view
   """
-  cns_isView(path: String!): Boolean!
+  cnsIsView(path: String!): Boolean!
 
   """
   Checks if ID is valid CNS ID
@@ -410,7 +410,7 @@ type Query {
   @param id - ID to check
   @returns Boolean indicating validity
   """
-  cns_checkId(id: String!): Boolean!
+  cnsCheckId(id: String!): Boolean!
 
   """
   Checks if name is valid CNS display name
@@ -418,7 +418,7 @@ type Query {
   @param name - Display name to check
   @returns Number (0=valid, -1=incomplete, -2=invalid chars)
   """
-  cns_checkName(name: JSON!): Int!
+  cnsCheckName(name: JSON!): Int!
 
   """
   Checks if separator is valid CNS separator
@@ -426,7 +426,7 @@ type Query {
   @param separator - Separator to check
   @returns Boolean indicating validity
   """
-  cns_checkSeparator(separator: String!): Boolean!
+  cnsCheckSeparator(separator: String!): Boolean!
 }
 
 """
@@ -605,6 +605,28 @@ type Mutation {
   @returns Boolean indicating successful setting
   """
   cnsSetProperty(cnsPath: String!, key: String!, value: JSON!, valueType: CtrlType!): Boolean!
+
+  """
+  Sets OPC UA address configuration for a data point
+  
+  @param datapointName - Name of the data point (e.g., "TestMe.")
+  @param driverNumber - Driver number for the OPC UA driver (default: 2)
+  @param addressDirection - Direction of the address (input/output) (default: 2)
+  @param addressDataType - Data type of the address (default: 750 (float)
+  @param serverName - Name of the OPC UA server
+  @param subscriptionName - Name of the subscription
+  @param nodeId - OPC UA node ID
+  @returns Boolean indicating successful configuration
+  """
+  setOpcUaAddress(
+    datapointName: String!,
+    driverNumber: Int!,
+    addressDirection: Int!,
+    addressDataType: Int!,
+    serverName: String!,
+    subscriptionName: String!,
+    nodeId: String!
+  ): Boolean!
 }
 
 """

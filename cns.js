@@ -162,92 +162,92 @@ function createCnsResolvers(winccoa, logger) {
       },
 
       // Utility Functions
-      async cns_nodeExists(_, { path }) {
+      async cnsNodeExists(_, { path }) {
         try {
           const result = await winccoa.cns_nodeExists(path);
           return result;
         } catch (error) {
-          logger.error('cns_nodeExists error:', error);
+          logger.error('cnsNodeExists error:', error);
           throw new Error(`Failed to check if CNS node exists: ${error.message}`);
         }
       },
 
-      async cns_treeExists(_, { path }) {
+      async cnsTreeExists(_, { path }) {
         try {
           const result = await winccoa.cns_treeExists(path);
           return result;
         } catch (error) {
-          logger.error('cns_treeExists error:', error);
+          logger.error('cnsTreeExists error:', error);
           throw new Error(`Failed to check if CNS tree exists: ${error.message}`);
         }
       },
 
-      async cns_viewExists(_, { path }) {
+      async cnsViewExists(_, { path }) {
         try {
           const result = await winccoa.cns_viewExists(path);
           return result;
         } catch (error) {
-          logger.error('cns_viewExists error:', error);
+          logger.error('cnsViewExists error:', error);
           throw new Error(`Failed to check if CNS view exists: ${error.message}`);
         }
       },
 
-      async cns_isNode(_, { path }) {
+      async cnsIsNode(_, { path }) {
         try {
           const result = await winccoa.cns_isNode(path);
           return result;
         } catch (error) {
-          logger.error('cns_isNode error:', error);
+          logger.error('cnsIsNode error:', error);
           throw new Error(`Failed to check if path is CNS node: ${error.message}`);
         }
       },
 
-      async cns_isTree(_, { path }) {
+      async cnsIsTree(_, { path }) {
         try {
           const result = await winccoa.cns_isTree(path);
           return result;
         } catch (error) {
-          logger.error('cns_isTree error:', error);
+          logger.error('cnsIsTree error:', error);
           throw new Error(`Failed to check if path is CNS tree: ${error.message}`);
         }
       },
 
-      async cns_isView(_, { path }) {
+      async cnsIsView(_, { path }) {
         try {
           const result = await winccoa.cns_isView(path);
           return result;
         } catch (error) {
-          logger.error('cns_isView error:', error);
+          logger.error('cnsIsView error:', error);
           throw new Error(`Failed to check if path is CNS view: ${error.message}`);
         }
       },
 
-      async cns_checkId(_, { id }) {
+      async cnsCheckId(_, { id }) {
         try {
           const result = await winccoa.cns_checkId(id);
           return result;
         } catch (error) {
-          logger.error('cns_checkId error:', error);
+          logger.error('cnsCheckId error:', error);
           throw new Error(`Failed to check CNS ID: ${error.message}`);
         }
       },
 
-      async cns_checkName(_, { name }) {
+      async cnsCheckName(_, { name }) {
         try {
           const result = await winccoa.cns_checkName(name);
           return result;
         } catch (error) {
-          logger.error('cns_checkName error:', error);
+          logger.error('cnsCheckName error:', error);
           throw new Error(`Failed to check CNS name: ${error.message}`);
         }
       },
 
-      async cns_checkSeparator(_, { separator }) {
+      async cnsCheckSeparator(_, { separator }) {
         try {
           const result = await winccoa.cns_checkSeparator(separator);
           return result;
         } catch (error) {
-          logger.error('cns_checkSeparator error:', error);
+          logger.error('cnsCheckSeparator error:', error);
           throw new Error(`Failed to check CNS separator: ${error.message}`);
         }
       }

@@ -7,6 +7,7 @@ const { createCommonResolvers } = require('./common');
 const { createAlertResolvers } = require('./alerting');
 const { createSubscriptionResolvers } = require('./subscriptions');
 const { createCnsResolvers } = require('./cns');
+const { createExtrasResolvers } = require('./extras');
 
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
@@ -24,11 +25,15 @@ const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const noAuthArg = args.includes('--no-auth');
+
 // Configuration
 const PORT = process.env.GRAPHQL_PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const TOKEN_EXPIRY_MS = 3600000; // 1 hour
-const DISABLE_AUTH = process.env.DISABLE_AUTH == 'true' || process.env.DISABLE_AUTH == '1' || process.env.DISABLE_AUTH == 'yes';
+const DISABLE_AUTH = noAuthArg || process.env.DISABLE_AUTH == 'true' || process.env.DISABLE_AUTH == '1' || process.env.DISABLE_AUTH == 'yes';
 
 console.log(`Starting GraphQL server on port ${PORT} with DISABLE_AUTH=${DISABLE_AUTH}`);
 
@@ -125,6 +130,7 @@ const commonResolvers = createCommonResolvers(winccoa, logger);
 const alertResolvers = createAlertResolvers(winccoa, logger);
 const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
 const cnsResolvers = createCnsResolvers(winccoa, logger);
+const extrasResolvers = createExtrasResolvers(winccoa, logger);
 
 // Merge resolvers
 function mergeResolvers(...resolverObjects) {
@@ -151,6 +157,7 @@ const resolvers = mergeResolvers(
   alertResolvers,
   subscriptionResolvers,
   cnsResolvers,
+  extrasResolvers,
   {
     Mutation: {
       async login(_, { username, password }) {
