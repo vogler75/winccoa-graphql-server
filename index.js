@@ -1,3 +1,20 @@
+// Load environment variables from .env file in the script's directory
+const scriptDir = __dirname;
+const envPath = require('path').join(scriptDir, '.env');
+
+console.log(`Looking for .env file at: ${envPath}`);
+
+const dotenvResult = require('dotenv').config({ path: envPath });
+
+// Log dotenv loading result
+if (dotenvResult.error) {
+  console.log('⚠️  .env file not found or could not be loaded:', dotenvResult.error.message);
+  console.log('   Using environment variables and defaults');
+} else {
+  console.log('✅ .env file loaded successfully');
+  console.log('   Loaded variables:', Object.keys(dotenvResult.parsed || {}).join(', '));
+}
+
 // Require WinCC OA interface
 const { WinccoaManager } = require('winccoa-manager');
 const winccoa = new WinccoaManager();
@@ -32,10 +49,37 @@ const noAuthArg = args.includes('--no-auth');
 // Configuration
 const PORT = process.env.GRAPHQL_PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const TOKEN_EXPIRY_MS = 3600000; // 1 hour
-const DISABLE_AUTH = noAuthArg || process.env.DISABLE_AUTH == 'true' || process.env.DISABLE_AUTH == '1' || process.env.DISABLE_AUTH == 'yes';
+const TOKEN_EXPIRY_MS = parseInt(process.env.TOKEN_EXPIRY_MS || '3600000'); // Default 1 hour
+const DISABLE_AUTH = noAuthArg || process.env.DISABLE_AUTH === 'true';
 
+// Authentication credentials from environment
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const DIRECT_ACCESS_TOKEN = process.env.DIRECT_ACCESS_TOKEN;
+const READONLY_USERNAME = process.env.READONLY_USERNAME;
+const READONLY_PASSWORD = process.env.READONLY_PASSWORD;
+const READONLY_TOKEN = process.env.READONLY_TOKEN;
+
+// Log authentication configuration
 console.log(`Starting GraphQL server on port ${PORT} with DISABLE_AUTH=${DISABLE_AUTH}`);
+console.log('🔐 Authentication Configuration:');
+console.log(`   Admin Username: ${ADMIN_USERNAME ? '✅ Set' : '❌ Not set'}`);
+console.log(`   Admin Password: ${ADMIN_PASSWORD ? '✅ Set' : '❌ Not set'}`);
+console.log(`   Direct Access Token: ${DIRECT_ACCESS_TOKEN ? '✅ Set' : '❌ Not set'}`);
+console.log(`   Readonly Username: ${READONLY_USERNAME ? '✅ Set' : '❌ Not set'}`);
+console.log(`   Readonly Password: ${READONLY_PASSWORD ? '✅ Set' : '❌ Not set'}`);
+console.log(`   Readonly Token: ${READONLY_TOKEN ? '✅ Set' : '❌ Not set'}`);
+console.log(`   JWT Secret: ${JWT_SECRET !== 'your-secret-key-change-in-production' ? '✅ Custom' : '⚠️  Default (change in production)'}`);
+console.log(`   Token Expiry: ${TOKEN_EXPIRY_MS}ms (${Math.round(TOKEN_EXPIRY_MS / 60000)} minutes)`);
+
+// Warn about authentication mode
+if (DISABLE_AUTH) {
+  console.log('⚠️  WARNING: Authentication is DISABLED! This is unsafe for production.');
+} else if (!ADMIN_USERNAME && !READONLY_USERNAME && !DIRECT_ACCESS_TOKEN && !READONLY_TOKEN) {
+  console.log('⚠️  WARNING: No authentication credentials configured!');
+} else {
+  console.log('✅ Authentication is properly configured.');
+}
 
 // In-memory token store (replace with Redis or database in production)
 const tokenStore = new Map();
@@ -71,7 +115,7 @@ const authTypeDefs = `
 `;
 
 // Utility functions for authentication
-function generateToken(userId) {
+function generateToken(userId, role = 'admin') {
   const tokenId = uuidv4();
   const expiresAt = Date.now() + TOKEN_EXPIRY_MS;
   
@@ -79,15 +123,17 @@ function generateToken(userId) {
     { 
       userId, 
       tokenId,
-      expiresAt
+      expiresAt,
+      role
     },
     JWT_SECRET,
-    { expiresIn: '1h' }
+    { expiresIn: Math.floor(TOKEN_EXPIRY_MS / 1000) + 's' }
   );
   
   // Store token metadata
   tokenStore.set(tokenId, {
     userId,
+    role,
     expiresAt,
     lastActivity: Date.now()
   });
@@ -96,16 +142,35 @@ function generateToken(userId) {
 }
 
 function validateToken(token) {
+  logger.debug(`Validating token: ${token ? token.substring(0, 20) + '...' : 'null'}`);
+  
+  // First check if it's a direct access token
+  if (DIRECT_ACCESS_TOKEN && token === DIRECT_ACCESS_TOKEN) {
+    logger.debug('Direct access token matched');
+    return { userId: 'direct-access', tokenId: 'direct', role: 'admin' };
+  }
+  
+  // Check if it's a read-only direct access token
+  if (READONLY_TOKEN && token === READONLY_TOKEN) {
+    logger.debug('Read-only direct token matched');
+    return { userId: 'readonly-direct', tokenId: 'readonly', role: 'readonly' };
+  }
+  
+  // Otherwise, validate as JWT
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    logger.debug(`JWT decoded successfully for user: ${decoded.userId}`);
+    
     const tokenData = tokenStore.get(decoded.tokenId);
     
     if (!tokenData) {
+      logger.debug('Token not found in store');
       return null;
     }
     
     // Check if token is expired
     if (Date.now() > tokenData.expiresAt) {
+      logger.debug('Token expired, removing from store');
       tokenStore.delete(decoded.tokenId);
       return null;
     }
@@ -115,19 +180,43 @@ function validateToken(token) {
     tokenData.expiresAt = Date.now() + TOKEN_EXPIRY_MS;
     tokenStore.set(decoded.tokenId, tokenData);
     
-    return { userId: tokenData.userId, tokenId: decoded.tokenId };
+    logger.debug(`JWT token validated for user: ${tokenData.userId}, role: ${tokenData.role}`);
+    return { userId: tokenData.userId, tokenId: decoded.tokenId, role: tokenData.role || 'admin' };
   } catch (error) {
+    logger.debug(`JWT validation failed: ${error.message}`);
     return null;
   }
 }
 
-// Dummy user authentication (replace with actual user management)
+// User authentication with environment-based credentials
 function authenticateUser(username, password) {
-  // TODO: Implement actual user authentication
-  // For now, accept any non-empty username/password
-  if (username && password) {
-    return { id: username, username };
+  logger.debug(`Authentication attempt for username: ${username}`);
+  
+  // Check admin credentials
+  if (ADMIN_USERNAME && ADMIN_PASSWORD) {
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      logger.info(`Admin user authenticated: ${username}`);
+      return { id: username, username, role: 'admin' };
+    }
   }
+  
+  // Check read-only credentials
+  if (READONLY_USERNAME && READONLY_PASSWORD) {
+    if (username === READONLY_USERNAME && password === READONLY_PASSWORD) {
+      logger.info(`Read-only user authenticated: ${username}`);
+      return { id: username, username, role: 'readonly' };
+    }
+  }
+  
+  // If no environment credentials are set, only accept specific development credentials
+  if (!ADMIN_USERNAME && !READONLY_USERNAME) {
+    if (username === 'dev' && password === 'dev') {
+      logger.warn('Using development credentials - configure proper credentials in .env for production');
+      return { id: username, username, role: 'admin' };
+    }
+  }
+  
+  logger.debug(`Authentication failed for username: ${username}`);
   return null;
 }
 
@@ -173,9 +262,9 @@ const resolvers = mergeResolvers(
           throw new Error('Invalid username or password');
         }
         
-        const { token, expiresAt } = generateToken(user.id);
+        const { token, expiresAt } = generateToken(user.id, user.role);
         
-        logger.info(`User ${username} logged in successfully`);
+        logger.info(`User ${username} logged in successfully with role: ${user.role}`);
         
         return {
           token,
@@ -196,24 +285,35 @@ const schema = makeExecutableSchema({
 const authMiddleware = (req) => {
   // Skip authentication if DISABLE_AUTH is true
   if (DISABLE_AUTH) {
-    return { userId: 'anonymous', tokenId: 'no-auth' };
+    logger.debug('Authentication disabled, allowing anonymous access');
+    return { userId: 'anonymous', tokenId: 'no-auth', role: 'admin' };
   }
   
   const authHeader = req.headers.authorization || req.headers.Authorization;
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader) {
+    logger.debug('No Authorization header found');
+    return null;
+  }
+  
+  if (!authHeader.startsWith('Bearer ')) {
+    logger.debug('Authorization header does not start with "Bearer "');
     return null;
   }
   
   const token = authHeader.substring(7);
-  return validateToken(token);
+  logger.debug(`Extracted token from Authorization header: ${token.substring(0, 20)}...`);
+  
+  const result = validateToken(token);
+  logger.debug(`Token validation result: ${result ? 'valid' : 'invalid'}`);
+  return result;
 };
 
 // WebSocket authentication
 const wsAuthMiddleware = (ctx) => {
   // Skip authentication if DISABLE_AUTH is true
   if (DISABLE_AUTH) {
-    return { user: { userId: 'anonymous', tokenId: 'no-auth' } };
+    return { user: { userId: 'anonymous', tokenId: 'no-auth', role: 'admin' } };
   }
   
   const token = ctx.connectionParams?.Authorization;
@@ -373,14 +473,21 @@ async function startServer() {
             // Skip auth check if disabled
             if (DISABLE_AUTH) return;
             
-            const { request, contextValue, operation } = requestContext;
+            const { request, contextValue, operation, operationName } = requestContext;
             
             // Check if this is an introspection query
             if (request.operationName === 'IntrospectionQuery') return;
             
             // Parse the operation to check if it contains the login mutation
             let isLoginMutation = false;
+            let hasMutation = false;
+            
             if (operation) {
+              // Check operation type
+              if (operation.operation === 'mutation') {
+                hasMutation = true;
+              }
+              
               // Walk through the operation selections
               const selections = operation.selectionSet?.selections || [];
               for (const selection of selections) {
@@ -397,6 +504,11 @@ async function startServer() {
             // For all other operations, require authentication
             if (!contextValue.user) {
               throw new Error('Unauthorized');
+            }
+            
+            // Check read-only restrictions
+            if (contextValue.user.role === 'readonly' && hasMutation) {
+              throw new Error('Forbidden: Read-only users cannot perform mutations');
             }
           }
         };
