@@ -199,7 +199,7 @@ const authMiddleware = (req) => {
     return { userId: 'anonymous', tokenId: 'no-auth' };
   }
   
-  const authHeader = req.headers.Authorization;
+  const authHeader = req.headers.authorization || req.headers.Authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
@@ -365,11 +365,50 @@ async function startServer() {
       wsServer
     );
     
+    // Authentication plugin that checks auth AFTER parsing
+    const authPlugin = {
+      async requestDidStart() {
+        return {
+          async didResolveOperation(requestContext) {
+            // Skip auth check if disabled
+            if (DISABLE_AUTH) return;
+            
+            const { request, contextValue, operation } = requestContext;
+            
+            // Check if this is an introspection query
+            if (request.operationName === 'IntrospectionQuery') return;
+            
+            // Parse the operation to check if it contains the login mutation
+            let isLoginMutation = false;
+            if (operation) {
+              // Walk through the operation selections
+              const selections = operation.selectionSet?.selections || [];
+              for (const selection of selections) {
+                if (selection.kind === 'Field' && selection.name.value === 'login') {
+                  isLoginMutation = true;
+                  break;
+                }
+              }
+            }
+            
+            // Skip auth for login mutation
+            if (isLoginMutation) return;
+            
+            // For all other operations, require authentication
+            if (!contextValue.user) {
+              throw new Error('Unauthorized');
+            }
+          }
+        };
+      }
+    };
+    
     // Create Apollo Server
     const server = new ApolloServer({
       schema,
       plugins: [
         ApolloServerPluginDrainHttpServer({ httpServer }),
+        authPlugin,
         {
           async serverWillStart() {
             return {
@@ -394,26 +433,11 @@ async function startServer() {
       '/graphql',
       expressMiddleware(server, {
         context: async ({ req }) => {
-          // Skip authentication entirely if DISABLE_AUTH is true
-          if (DISABLE_AUTH) {
-            return { user: { userId: 'anonymous', tokenId: 'no-auth' } };
-          }
+          // Always try to authenticate if a token is provided
+          const user = authMiddleware(req);
           
-          // Skip auth for introspection and login
-          const isIntrospection = req.body?.operationName === 'IntrospectionQuery';
-          const isLogin = req.body?.query?.includes('login');
-          
-          if (!isIntrospection && !isLogin) {
-            const user = authMiddleware(req);
-            
-            if (!user) {
-              throw new Error('Unauthorized');
-            }
-            
-            return { user };
-          }
-          
-          return {};
+          // Return context with user if authenticated, or empty if not
+          return user ? { user } : {};
         }
       })
     );
