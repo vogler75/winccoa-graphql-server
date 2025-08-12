@@ -51,6 +51,7 @@ const PORT = process.env.GRAPHQL_PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const TOKEN_EXPIRY_MS = parseInt(process.env.TOKEN_EXPIRY_MS || '3600000'); // Default 1 hour
 const DISABLE_AUTH = noAuthArg || process.env.DISABLE_AUTH === 'true';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 // Authentication credentials from environment
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
@@ -62,6 +63,7 @@ const READONLY_TOKEN = process.env.READONLY_TOKEN;
 
 // Log authentication configuration
 console.log(`Starting GraphQL server on port ${PORT} with DISABLE_AUTH=${DISABLE_AUTH}`);
+console.log(`🌐 CORS Configuration: ${CORS_ORIGIN}`);
 console.log('🔐 Authentication Configuration:');
 console.log(`   Admin Username: ${ADMIN_USERNAME ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Admin Password: ${ADMIN_PASSWORD ? '✅ Set' : '❌ Not set'}`);
@@ -536,8 +538,18 @@ async function startServer() {
     // Start Apollo Server
     await server.start();
     
+    // Parse CORS origin configuration
+    let corsOptions;
+    if (CORS_ORIGIN === '*') {
+      corsOptions = { origin: '*' };
+    } else {
+      // Split by comma and trim whitespace for multiple origins
+      const origins = CORS_ORIGIN.split(',').map(origin => origin.trim());
+      corsOptions = { origin: origins };
+    }
+    
     // Apply middleware
-    app.use(cors());
+    app.use(cors(corsOptions));
     app.use(bodyParser.json());
     
     // Apply GraphQL middleware
