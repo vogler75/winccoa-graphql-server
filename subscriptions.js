@@ -21,7 +21,7 @@ function createSubscriptionResolvers(winccoa, logger) {
             // Set up the connection
             const callback = (dpeNames, values, type, error) => {
               // Emit the update through the pubsub
-              console.log(`Received update for ${dpeNames.join(', ')}:`, values);
+              logger.debug(`Received update for ${dpeNames.join(', ')}:`, values);
               context.pubsub.publish(channel, {
                 dpConnect: {
                   dpeNames,

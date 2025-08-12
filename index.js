@@ -86,12 +86,32 @@ if (DISABLE_AUTH) {
 // In-memory token store (replace with Redis or database in production)
 const tokenStore = new Map();
 
-// Logger setup
+// Logger setup with LOG_LEVEL support
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const logLevels = { error: 0, warn: 1, info: 2, debug: 3 };
+const currentLogLevel = logLevels[LOG_LEVEL.toLowerCase()] || logLevels.info;
+
 const logger = {
-  info: (...args) => console.log(...args, '[INFO]'),
-  error: (...args) => console.error(...args, '[ERROR]'),
-  warn: (...args) => console.warn(...args, '[WARN]'),
-  debug: (...args) => console.log(...args, '[DEBUG]')
+  info: (...args) => {
+    if (currentLogLevel >= logLevels.info) {
+      console.log(...args, '[INFO]');
+    }
+  },
+  error: (...args) => {
+    if (currentLogLevel >= logLevels.error) {
+      console.error(...args, '[ERROR]');
+    }
+  },
+  warn: (...args) => {
+    if (currentLogLevel >= logLevels.warn) {
+      console.warn(...args, '[WARN]');
+    }
+  },
+  debug: (...args) => {
+    if (currentLogLevel >= logLevels.debug) {
+      console.log(...args, '[DEBUG]');
+    }
+  }
 };
 
 // Load GraphQL schema files
