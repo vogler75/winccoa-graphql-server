@@ -267,6 +267,55 @@ function createCommonResolvers(winccoa, logger) {
            logger.error('tagGet error:', error);
            throw new Error(`Failed to get typed tags: ${error.message}`);
          }
+       },
+
+       async tagGetHistory(_, { startTime, endTime, dpeNames }) {
+         try {
+           const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
+
+           // Transform the result into TagHistory format
+           // dpGetPeriod returns data in a specific format that needs to be parsed
+           const historyResults = [];
+
+           for (const dpeName of dpeNames) {
+             const tagValues = [];
+
+             // The result format from dpGetPeriod needs to be analyzed
+             // For now, we'll create a placeholder structure
+             // This will need to be adjusted based on the actual return format of dpGetPeriod
+
+             if (result && result[dpeName]) {
+               const dpeData = result[dpeName];
+
+               // Assuming dpGetPeriod returns an object with timestamps as keys
+               // This is a common pattern but may need adjustment
+               for (const timestamp of Object.keys(dpeData)) {
+                 const valueData = dpeData[timestamp];
+
+                 // Extract value and status from the data structure
+                 // This may need to be adjusted based on actual dpGetPeriod format
+                 const value = valueData.value || valueData;
+                 const status = valueData.status || null;
+
+                 tagValues.push({
+                   timestamp: new Date(parseInt(timestamp)),
+                   value: value,
+                   status: status
+                 });
+               }
+             }
+
+             historyResults.push({
+               name: dpeName,
+               values: tagValues
+             });
+           }
+
+           return historyResults;
+         } catch (error) {
+           logger.error('tagGetHistory error:', error);
+           throw new Error(`Failed to get tag history: ${error.message}`);
+         }
        }
      },
     
@@ -339,10 +388,49 @@ function createCommonResolvers(winccoa, logger) {
           logger.error('dpSetTimedWait error:', error);
           throw new Error(`Failed to set timed data point values with wait: ${error.message}`);
         }
-      }
-    }
-  };
-}
+       }
+     },
+
+     Tag: {
+       async history(tag, { startTime, endTime }) {
+         try {
+           // Get historical data for this specific tag
+           const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), [tag.name]);
+
+           const tagValues = [];
+
+           if (result && result[tag.name]) {
+             const dpeData = result[tag.name];
+
+             // Process the historical data format from dpGetPeriod
+             // This assumes dpGetPeriod returns an object with timestamps as keys
+             for (const timestamp of Object.keys(dpeData)) {
+               const valueData = dpeData[timestamp];
+
+               // Extract value and status from the data structure
+               const value = valueData.value || valueData;
+               const status = valueData.status || null;
+
+               tagValues.push({
+                 timestamp: new Date(parseInt(timestamp)),
+                 value: value,
+                 status: status
+               });
+             }
+           }
+
+           return {
+             name: tag.name,
+             values: tagValues
+           };
+         } catch (error) {
+           logger.error('Tag.history error:', error);
+           throw new Error(`Failed to get history for tag ${tag.name}: ${error.message}`);
+         }
+       }
+     }
+   };
+ }
 
 module.exports = {
   ElementTypeMap,

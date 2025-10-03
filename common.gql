@@ -223,6 +223,16 @@ type Query {
   @returns Typed tags with complete information
   """
   tagGet(dpeNames: [String!]!): [Tag!]!
+
+  """
+  Retrieves historical data for multiple tags within a specified time period
+
+  @param startTime - Start of the time interval in ISO 8601 format
+  @param endTime - End of the time interval in ISO 8601 format
+  @param dpeNames - Names of the data point elements to query
+  @returns Historical data with timestamps for each tag
+  """
+  tagGetHistory(startTime: Time!, endTime: Time!, dpeNames: [String!]!): [TagHistory!]!
 }
 
 type Mutation {
@@ -529,6 +539,10 @@ type Tag {
   Status information of the tag
   """
   status: JSON!
+  """
+  Historical values for this tag within a specified time range
+  """
+  history(startTime: Time!, endTime: Time!): TagHistory!
 }
 
 """
@@ -547,4 +561,36 @@ type TagUpdate {
   Error information if any
   """
   error: JSON
+}
+
+"""
+Represents a single historical value for a tag at a specific timestamp
+"""
+type TagValue {
+  """
+  Timestamp of this historical value
+  """
+  timestamp: Time!
+  """
+  Value at this timestamp
+  """
+  value: JSON!
+  """
+  Status information at this timestamp
+  """
+  status: JSON!
+}
+
+"""
+Represents historical data for a tag over a time period
+"""
+type TagHistory {
+  """
+  Name of the tag
+  """
+  name: String!
+  """
+  Historical values with timestamps
+  """
+  values: [TagValue!]!
 }
