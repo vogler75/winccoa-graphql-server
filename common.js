@@ -271,11 +271,11 @@ function createCommonResolvers(winccoa, logger) {
 
        async tagGetHistory(_, { startTime, endTime, dpeNames }) {
          try {
-           logger.debug(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
+           logger.info(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
 
            const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
 
-           logger.debug('tagGetHistory dpGetPeriod result:', JSON.stringify(result, null, 2));
+           logger.info('tagGetHistory dpGetPeriod result:', JSON.stringify(result, null, 2));
 
            // Transform the result into TagHistory format
            const historyResults = [];
@@ -287,7 +287,7 @@ function createCommonResolvers(winccoa, logger) {
              if (result) {
                if (Array.isArray(result)) {
                  // Result is an array of entries
-                 logger.debug(`Result is an array with ${result.length} entries`);
+                 logger.info(`Result is an array with ${result.length} entries`);
 
                  for (const entry of result) {
                    // Check if this entry belongs to our dpeName
@@ -304,7 +304,7 @@ function createCommonResolvers(winccoa, logger) {
                } else if (typeof result === 'object' && result[dpeName]) {
                  // Format: { dpeName: data }
                  const dpeData = result[dpeName];
-                 logger.debug(`Found data for ${dpeName}:`, dpeData);
+                 logger.info(`Found data for ${dpeName}:`, dpeData);
 
                  if (Array.isArray(dpeData)) {
                    for (const entry of dpeData) {
@@ -333,7 +333,7 @@ function createCommonResolvers(winccoa, logger) {
                logger.warn(`No result returned from dpGetPeriod for bulk query`);
              }
 
-             logger.debug(`Found ${tagValues.length} historical values for ${dpeName}`);
+             logger.info(`Found ${tagValues.length} historical values for ${dpeName}`);
 
              historyResults.push({
                name: dpeName,
@@ -424,12 +424,12 @@ function createCommonResolvers(winccoa, logger) {
      Tag: {
        async history(tag, { startTime, endTime }) {
          try {
-           logger.debug(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
+           logger.info(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
 
            // Get historical data for this specific tag
            const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), [tag.name]);
 
-           logger.debug(`dpGetPeriod result for ${tag.name}:`, JSON.stringify(result, null, 2));
+           logger.info(`dpGetPeriod result for ${tag.name}:`, JSON.stringify(result, null, 2));
 
            const tagValues = [];
 
@@ -437,7 +437,7 @@ function createCommonResolvers(winccoa, logger) {
            if (result) {
              // Check if result is an array (common format for historical data)
              if (Array.isArray(result)) {
-               logger.debug(`Result is an array with ${result.length} entries`);
+               logger.info(`Result is an array with ${result.length} entries`);
 
                for (const entry of result) {
                  // Try different possible formats
@@ -466,7 +466,7 @@ function createCommonResolvers(winccoa, logger) {
              } else if (typeof result === 'object' && result[tag.name]) {
                // Format: { dpeName: data }
                const dpeData = result[tag.name];
-               logger.debug(`Found data for ${tag.name}:`, dpeData);
+               logger.info(`Found data for ${tag.name}:`, dpeData);
 
                if (Array.isArray(dpeData)) {
                  for (const entry of dpeData) {
@@ -495,7 +495,7 @@ function createCommonResolvers(winccoa, logger) {
              logger.warn(`No result returned from dpGetPeriod for ${tag.name}`);
            }
 
-           logger.debug(`Returning ${tagValues.length} historical values for ${tag.name}`);
+           logger.info(`Returning ${tagValues.length} historical values for ${tag.name}`);
 
            return {
              name: tag.name,
