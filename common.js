@@ -316,44 +316,21 @@ function createCommonResolvers(winccoa, logger) {
                  const entry = result[dpeIndex];
                  logger.info(`Processing entry for ${dpeName}:`, entry);
 
-                 // Check if entry has times and values arrays
-                 if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
-                   logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
-
-                    // Check if entry has additional fields like status
-                    logger.info(`Entry keys for ${tag.name}:`, Object.keys(entry));
+                  // Check if entry has times and values arrays
+                  if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
+                    logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
 
                     // Pair up times and values
                     const minLength = Math.min(entry.times.length, entry.values.length);
                     for (let i = 0; i < minLength; i++) {
-                      let status = null;
-
-                      // Check if there's a status array in the entry
-                      if (entry.status && Array.isArray(entry.status) && entry.status[i] !== undefined) {
-                        status = entry.status[i];
-                      } else {
-                        // Try to get status from offline attributes as suggested
-                        try {
-                          const offlineStatusAttr = `${tag.name}:_offline.._status`;
-                          const statusResult = await winccoa.dpGet([offlineStatusAttr]);
-                          if (statusResult && statusResult.length > 0) {
-                            status = statusResult[0];
-                          }
-                          logger.debug(`Got status from offline attribute for ${tag.name}:`, status);
-                        } catch (statusError) {
-                          logger.debug(`Could not get offline status for ${tag.name}:`, statusError.message);
-                        }
-                      }
-
                       tagValues.push({
                         timestamp: new Date(entry.times[i]),
-                        value: entry.values[i],
-                        status: status
+                        value: entry.values[i]
                       });
                     }
-                   logger.info(`Added ${minLength} historical values for ${dpeName}`);
-                 } else {
-                   logger.warn(`Entry for ${dpeName} doesn't have expected times/values format:`, entry);
+                    logger.info(`Added ${minLength} historical values for ${dpeName}`);
+                  } else {
+                    logger.warn(`Entry for ${dpeName} doesn't have expected times/values format:`, entry);
                   }
                 } else {
                   logger.warn(`No entry found for ${dpeName} at index ${dpeIndex}`);
@@ -362,7 +339,7 @@ function createCommonResolvers(winccoa, logger) {
                 logger.warn(`Result is not an array, unexpected format for bulk query`);
               }
 
-             logger.info(`Found ${tagValues.length} historical values for ${dpeName}`);
+              logger.info(`Found ${tagValues.length} historical values for ${dpeName}`);
 
              historyResults.push({
                name: dpeName,
