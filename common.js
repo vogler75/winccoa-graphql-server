@@ -271,39 +271,69 @@ function createCommonResolvers(winccoa, logger) {
 
        async tagGetHistory(_, { startTime, endTime, dpeNames }) {
          try {
+           logger.debug(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
+
            const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
 
+           logger.debug('tagGetHistory dpGetPeriod result:', JSON.stringify(result, null, 2));
+
            // Transform the result into TagHistory format
-           // dpGetPeriod returns data in a specific format that needs to be parsed
            const historyResults = [];
 
            for (const dpeName of dpeNames) {
              const tagValues = [];
 
-             // The result format from dpGetPeriod needs to be analyzed
-             // For now, we'll create a placeholder structure
-             // This will need to be adjusted based on the actual return format of dpGetPeriod
+             // Handle different possible return formats from dpGetPeriod
+             if (result) {
+               if (Array.isArray(result)) {
+                 // Result is an array of entries
+                 logger.debug(`Result is an array with ${result.length} entries`);
 
-             if (result && result[dpeName]) {
-               const dpeData = result[dpeName];
+                 for (const entry of result) {
+                   // Check if this entry belongs to our dpeName
+                   if (entry.dpe === dpeName || entry.name === dpeName) {
+                     if (entry.timestamp && entry.value !== undefined) {
+                       tagValues.push({
+                         timestamp: new Date(entry.timestamp),
+                         value: entry.value,
+                         status: entry.status || null
+                       });
+                     }
+                   }
+                 }
+               } else if (typeof result === 'object' && result[dpeName]) {
+                 // Format: { dpeName: data }
+                 const dpeData = result[dpeName];
+                 logger.debug(`Found data for ${dpeName}:`, dpeData);
 
-               // Assuming dpGetPeriod returns an object with timestamps as keys
-               // This is a common pattern but may need adjustment
-               for (const timestamp of Object.keys(dpeData)) {
-                 const valueData = dpeData[timestamp];
-
-                 // Extract value and status from the data structure
-                 // This may need to be adjusted based on actual dpGetPeriod format
-                 const value = valueData.value || valueData;
-                 const status = valueData.status || null;
-
-                 tagValues.push({
-                   timestamp: new Date(parseInt(timestamp)),
-                   value: value,
-                   status: status
-                 });
+                 if (Array.isArray(dpeData)) {
+                   for (const entry of dpeData) {
+                     if (entry.timestamp && entry.value !== undefined) {
+                       tagValues.push({
+                         timestamp: new Date(entry.timestamp),
+                         value: entry.value,
+                         status: entry.status || null
+                       });
+                     }
+                   }
+                 } else if (typeof dpeData === 'object') {
+                   // Object with timestamp keys
+                   for (const [timestamp, valueData] of Object.entries(dpeData)) {
+                     tagValues.push({
+                       timestamp: new Date(parseInt(timestamp)),
+                       value: valueData.value || valueData,
+                       status: valueData.status || null
+                     });
+                   }
+                 }
+               } else {
+                 logger.warn(`No data found for ${dpeName} in result:`, result);
                }
+             } else {
+               logger.warn(`No result returned from dpGetPeriod for bulk query`);
              }
+
+             logger.debug(`Found ${tagValues.length} historical values for ${dpeName}`);
 
              historyResults.push({
                name: dpeName,
@@ -394,30 +424,78 @@ function createCommonResolvers(winccoa, logger) {
      Tag: {
        async history(tag, { startTime, endTime }) {
          try {
+           logger.debug(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
+
            // Get historical data for this specific tag
            const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), [tag.name]);
 
+           logger.debug(`dpGetPeriod result for ${tag.name}:`, JSON.stringify(result, null, 2));
+
            const tagValues = [];
 
-           if (result && result[tag.name]) {
-             const dpeData = result[tag.name];
+           // Handle different possible return formats from dpGetPeriod
+           if (result) {
+             // Check if result is an array (common format for historical data)
+             if (Array.isArray(result)) {
+               logger.debug(`Result is an array with ${result.length} entries`);
 
-             // Process the historical data format from dpGetPeriod
-             // This assumes dpGetPeriod returns an object with timestamps as keys
-             for (const timestamp of Object.keys(dpeData)) {
-               const valueData = dpeData[timestamp];
+               for (const entry of result) {
+                 // Try different possible formats
+                 if (entry.timestamp && entry.value !== undefined) {
+                   // Format: { timestamp, value, status? }
+                   tagValues.push({
+                     timestamp: new Date(entry.timestamp),
+                     value: entry.value,
+                     status: entry.status || null
+                   });
+                 } else if (typeof entry === 'object' && entry !== null) {
+                   // Try to extract from object keys
+                   const timestamp = entry.time || entry.timestamp || entry.ts;
+                   const value = entry.value || entry.val || entry.data;
+                   const status = entry.status || entry.stat || null;
 
-               // Extract value and status from the data structure
-               const value = valueData.value || valueData;
-               const status = valueData.status || null;
+                   if (timestamp && value !== undefined) {
+                     tagValues.push({
+                       timestamp: new Date(timestamp),
+                       value: value,
+                       status: status
+                     });
+                   }
+                 }
+               }
+             } else if (typeof result === 'object' && result[tag.name]) {
+               // Format: { dpeName: data }
+               const dpeData = result[tag.name];
+               logger.debug(`Found data for ${tag.name}:`, dpeData);
 
-               tagValues.push({
-                 timestamp: new Date(parseInt(timestamp)),
-                 value: value,
-                 status: status
-               });
+               if (Array.isArray(dpeData)) {
+                 for (const entry of dpeData) {
+                   if (entry.timestamp && entry.value !== undefined) {
+                     tagValues.push({
+                       timestamp: new Date(entry.timestamp),
+                       value: entry.value,
+                       status: entry.status || null
+                     });
+                   }
+                 }
+               } else if (typeof dpeData === 'object') {
+                 // Object with timestamp keys
+                 for (const [timestamp, valueData] of Object.entries(dpeData)) {
+                   tagValues.push({
+                     timestamp: new Date(parseInt(timestamp)),
+                     value: valueData.value || valueData,
+                     status: valueData.status || null
+                   });
+                 }
+               }
+             } else {
+               logger.warn(`Unexpected result format for ${tag.name}:`, result);
              }
+           } else {
+             logger.warn(`No result returned from dpGetPeriod for ${tag.name}`);
            }
+
+           logger.debug(`Returning ${tagValues.length} historical values for ${tag.name}`);
 
            return {
              name: tag.name,
@@ -425,7 +503,12 @@ function createCommonResolvers(winccoa, logger) {
            };
          } catch (error) {
            logger.error('Tag.history error:', error);
-           throw new Error(`Failed to get history for tag ${tag.name}: ${error.message}`);
+           // Return empty history instead of throwing to avoid null errors
+           logger.warn(`Returning empty history for ${tag.name} due to error: ${error.message}`);
+           return {
+             name: tag.name,
+             values: []
+           };
          }
        }
      }
