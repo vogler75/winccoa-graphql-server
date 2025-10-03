@@ -306,54 +306,39 @@ function createCommonResolvers(winccoa, logger) {
              const tagValues = [];
 
              // Handle different possible return formats from dpGetPeriod
-             if (result) {
-               if (Array.isArray(result)) {
-                 // Result is an array of entries
-                 logger.info(`Result is an array with ${result.length} entries`);
+             if (Array.isArray(result)) {
+               // Result is an array of entries - this is the format we saw
+               logger.info(`Result is an array with ${result.length} entries`);
 
-                 for (const entry of result) {
-                   // Check if this entry belongs to our dpeName
-                   if (entry.dpe === dpeName || entry.name === dpeName) {
-                     if (entry.timestamp && entry.value !== undefined) {
-                       tagValues.push({
-                         timestamp: new Date(entry.timestamp),
-                         value: entry.value,
-                         status: entry.status || null
-                       });
-                     }
-                   }
-                 }
-               } else if (typeof result === 'object' && result[dpeName]) {
-                 // Format: { dpeName: data }
-                 const dpeData = result[dpeName];
-                 logger.info(`Found data for ${dpeName}:`, dpeData);
+               // For bulk queries, each array element corresponds to one dpeName
+               const dpeIndex = dpeNames.indexOf(dpeName);
+               if (dpeIndex >= 0 && result[dpeIndex]) {
+                 const entry = result[dpeIndex];
+                 logger.info(`Processing entry for ${dpeName}:`, entry);
 
-                 if (Array.isArray(dpeData)) {
-                   for (const entry of dpeData) {
-                     if (entry.timestamp && entry.value !== undefined) {
-                       tagValues.push({
-                         timestamp: new Date(entry.timestamp),
-                         value: entry.value,
-                         status: entry.status || null
-                       });
-                     }
-                   }
-                 } else if (typeof dpeData === 'object') {
-                   // Object with timestamp keys
-                   for (const [timestamp, valueData] of Object.entries(dpeData)) {
+                 // Check if entry has times and values arrays
+                 if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
+                   logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
+
+                   // Pair up times and values
+                   const minLength = Math.min(entry.times.length, entry.values.length);
+                   for (let i = 0; i < minLength; i++) {
                      tagValues.push({
-                       timestamp: new Date(parseInt(timestamp)),
-                       value: valueData.value || valueData,
-                       status: valueData.status || null
+                       timestamp: new Date(entry.times[i]),
+                       value: entry.values[i],
+                       status: entry.status || null // status might be in entry.status or we might need to get it separately
                      });
                    }
-                 }
-               } else {
-                 logger.warn(`No data found for ${dpeName} in result:`, result);
-               }
-             } else {
-               logger.warn(`No result returned from dpGetPeriod for bulk query`);
-             }
+                   logger.info(`Added ${minLength} historical values for ${dpeName}`);
+                 } else {
+                   logger.warn(`Entry for ${dpeName} doesn't have expected times/values format:`, entry);
+                  }
+                } else {
+                  logger.warn(`No entry found for ${dpeName} at index ${dpeIndex}`);
+                }
+              } else {
+                logger.warn(`Result is not an array, unexpected format for bulk query`);
+              }
 
              logger.info(`Found ${tagValues.length} historical values for ${dpeName}`);
 
@@ -476,37 +461,37 @@ function createCommonResolvers(winccoa, logger) {
 
            const tagValues = [];
 
-           // Handle different possible return formats from dpGetPeriod
-           if (result) {
-             // Check if result is an array (common format for historical data)
-             if (Array.isArray(result)) {
-               logger.info(`Result is an array with ${result.length} entries`);
+            // Handle different possible return formats from dpGetPeriod
+            if (result) {
+              // Check if result is an array (common format for historical data)
+              if (Array.isArray(result)) {
+                logger.info(`Result is an array with ${result.length} entries`);
 
-               for (const entry of result) {
-                 // Try different possible formats
-                 if (entry.timestamp && entry.value !== undefined) {
-                   // Format: { timestamp, value, status? }
-                   tagValues.push({
-                     timestamp: new Date(entry.timestamp),
-                     value: entry.value,
-                     status: entry.status || null
-                   });
-                 } else if (typeof entry === 'object' && entry !== null) {
-                   // Try to extract from object keys
-                   const timestamp = entry.time || entry.timestamp || entry.ts;
-                   const value = entry.value || entry.val || entry.data;
-                   const status = entry.status || entry.stat || null;
+                if (result.length > 0) {
+                  const entry = result[0]; // First (and likely only) entry for single tag
+                  logger.info(`Processing entry for ${tag.name}:`, entry);
 
-                   if (timestamp && value !== undefined) {
-                     tagValues.push({
-                       timestamp: new Date(timestamp),
-                       value: value,
-                       status: status
-                     });
-                   }
-                 }
-               }
-             } else if (typeof result === 'object' && result[tag.name]) {
+                  // Check if entry has times and values arrays
+                  if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
+                    logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
+
+                    // Pair up times and values
+                    const minLength = Math.min(entry.times.length, entry.values.length);
+                    for (let i = 0; i < minLength; i++) {
+                      tagValues.push({
+                        timestamp: new Date(entry.times[i]),
+                        value: entry.values[i],
+                        status: entry.status || null // status might be in entry.status or we might need to get it separately
+                      });
+                    }
+                    logger.info(`Added ${minLength} historical values for ${tag.name}`);
+                  } else {
+                    logger.warn(`Entry for ${tag.name} doesn't have expected times/values format:`, entry);
+                  }
+                } else {
+                  logger.warn(`Result array is empty for ${tag.name}`);
+                }
+              } else if (typeof result === 'object' && result[tag.name]) {
                // Format: { dpeName: data }
                const dpeData = result[tag.name];
                logger.info(`Found data for ${tag.name}:`, dpeData);
