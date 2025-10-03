@@ -331,7 +331,7 @@ function createCommonResolvers(winccoa, logger) {
                         value: entry.values[i]
                       });
                     }
-                    logger.info(`Added ${minLength} historical values for ${dpeName}`);
+                    logger.info(`Added ${minLength} historical values for ${tag.name}`);
                   } else {
                     logger.warn(`Entry for ${dpeName} doesn't have expected times/values format:`, entry);
                   }
@@ -486,29 +486,9 @@ function createCommonResolvers(winccoa, logger) {
                     // Pair up times and values
                     const minLength = Math.min(entry.times.length, entry.values.length);
                     for (let i = 0; i < minLength; i++) {
-                      let status = null;
-
-                      // Check if there's a status array in the entry
-                      if (entry.status && Array.isArray(entry.status) && entry.status[i] !== undefined) {
-                        status = entry.status[i];
-                      } else {
-                        // Try to get status from offline attributes as suggested
-                        try {
-                          const offlineStatusAttr = `${dpeName}:_offline.._status`;
-                          const statusResult = await winccoa.dpGet([offlineStatusAttr]);
-                          if (statusResult && statusResult.length > 0) {
-                            status = statusResult[0];
-                          }
-                          logger.debug(`Got status from offline attribute for ${dpeName}:`, status);
-                        } catch (statusError) {
-                          logger.debug(`Could not get offline status for ${dpeName}:`, statusError.message);
-                        }
-                      }
-
                       tagValues.push({
                         timestamp: new Date(entry.times[i]),
-                        value: entry.values[i],
-                        status: status
+                        value: entry.values[i]
                       });
                     }
                     logger.info(`Added ${minLength} historical values for ${tag.name}`);
