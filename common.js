@@ -310,13 +310,16 @@ function createCommonResolvers(winccoa, logger) {
                // Result is an array of entries - this is the format we saw
                logger.info(`Result is an array with ${result.length} entries`);
 
-               // For bulk queries, each array element corresponds to one dpeName
-               const dpeIndex = dpeNames.indexOf(dpeName);
-               if (dpeIndex >= 0 && result[dpeIndex]) {
-                 const entry = result[dpeIndex];
-                 logger.info(`Processing entry for ${dpeName}:`, entry);
+                // For bulk queries, each array element corresponds to one dpeName
+                const dpeIndex = dpeNames.indexOf(dpeName);
+                logger.info(`Looking for ${dpeName} at index ${dpeIndex}, result[${dpeIndex}] exists: ${!!result[dpeIndex]}`);
+                if (dpeIndex >= 0 && result[dpeIndex]) {
+                  const entry = result[dpeIndex];
+                  logger.info(`Processing entry for ${dpeName}:`, JSON.stringify(entry, null, 2));
 
                   // Check if entry has times and values arrays
+                  logger.info(`Checking entry.times: ${!!entry.times}, entry.values: ${!!entry.values}`);
+                  logger.info(`entry.times isArray: ${Array.isArray(entry.times)}, entry.values isArray: ${Array.isArray(entry.values)}`);
                   if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
                     logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
 
@@ -466,11 +469,14 @@ function createCommonResolvers(winccoa, logger) {
               if (Array.isArray(result)) {
                 logger.info(`Result is an array with ${result.length} entries`);
 
+                logger.info(`Result length: ${result.length}, processing first entry`);
                 if (result.length > 0) {
                   const entry = result[0]; // First (and likely only) entry for single tag
-                  logger.info(`Processing entry for ${tag.name}:`, entry);
+                  logger.info(`Processing entry for ${tag.name}:`, JSON.stringify(entry, null, 2));
 
                   // Check if entry has times and values arrays
+                  logger.info(`Checking entry.times: ${!!entry.times}, entry.values: ${!!entry.values}`);
+                  logger.info(`entry.times isArray: ${Array.isArray(entry.times)}, entry.values isArray: ${Array.isArray(entry.values)}`);
                   if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
                     logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
 
