@@ -225,14 +225,17 @@ type Query {
   tagGet(dpeNames: [String!]!): [Tag!]!
 
   """
-  Retrieves historical data for multiple tags within a specified time period
-
+  Retrieves historical data for multiple tags within a specified time period.
+  Supports pagination via limit/offset to control returned rows.
+ 
   @param startTime - Start of the time interval in ISO 8601 format
   @param endTime - End of the time interval in ISO 8601 format
   @param dpeNames - Names of the data point elements to query
+  @param limit - Maximum number of historical rows per tag (optional)
+  @param offset - Number of rows to skip from the start (optional)
   @returns Historical data with timestamps for each tag
   """
-  tagGetHistory(startTime: Time!, endTime: Time!, dpeNames: [String!]!): [TagHistory!]!
+  tagGetHistory(startTime: Time!, endTime: Time!, dpeNames: [String!]!, limit: Int, offset: Int): [TagHistory!]!
 }
 
 type Mutation {
@@ -540,9 +543,14 @@ type Tag {
   """
   status: JSON!
   """
-  Historical values for this tag within a specified time range
+  Historical values for this tag within a specified time range.
+  Supports pagination via limit/offset.
+  @param startTime - Start of interval
+  @param endTime - End of interval
+  @param limit - Maximum number of rows to return (optional)
+  @param offset - Number of rows to skip (optional)
   """
-  history(startTime: Time!, endTime: Time!): TagHistory!
+  history(startTime: Time!, endTime: Time!, limit: Int, offset: Int): TagHistory!
 }
 
 """

@@ -272,7 +272,7 @@ function createCommonResolvers(winccoa, logger) {
          }
        },
 
-       async tagGetHistory(_, { startTime, endTime, dpeNames }) {
+       async tagGetHistory(_, { startTime, endTime, dpeNames, limit, offset }) {
          console.log(`[DEBUG] tagGetHistory called for ${dpeNames.join(', ')}`);
          try {
            console.log(`[DEBUG] startTime: ${startTime}, endTime: ${endTime}, dpeNames: ${JSON.stringify(dpeNames)}`);
@@ -299,7 +299,13 @@ function createCommonResolvers(winccoa, logger) {
            }
            logger.info('tagGetHistory dpGetPeriod result:', JSON.stringify(result, null, 2));
 
-           // Transform the result into TagHistory format
+            // Transform the result into TagHistory format
+            const applyPagination = (arr) => {
+              const start = offset && offset > 0 ? offset : 0
+              let sliced = arr.slice(start)
+              if (limit && limit > 0) sliced = sliced.slice(0, limit)
+              return sliced
+            }
            const historyResults = [];
 
            for (const dpeName of dpeNames) {
@@ -344,10 +350,10 @@ function createCommonResolvers(winccoa, logger) {
 
               logger.info(`Found ${tagValues.length} historical values for ${dpeName}`);
 
-             historyResults.push({
-               name: dpeName,
-               values: tagValues
-             });
+              historyResults.push({
+                name: dpeName,
+                values: applyPagination(tagValues)
+              });
            }
 
            return historyResults;
@@ -431,7 +437,7 @@ function createCommonResolvers(winccoa, logger) {
      },
 
      Tag: {
-       async history(tag, { startTime, endTime }) {
+        async history(tag, { startTime, endTime, limit, offset }) {
          console.log(`[DEBUG] Tag.history called for ${tag.name}`);
          try {
            console.log(`[DEBUG] startTime: ${startTime}, endTime: ${endTime}`);
@@ -532,10 +538,13 @@ function createCommonResolvers(winccoa, logger) {
 
            logger.info(`Returning ${tagValues.length} historical values for ${tag.name}`);
 
-           return {
-             name: tag.name,
-             values: tagValues
-           };
+            const start = offset && offset > 0 ? offset : 0
+            let sliced = tagValues.slice(start)
+            if (limit && limit > 0) sliced = sliced.slice(0, limit)
+            return {
+              name: tag.name,
+              values: sliced
+            };
          } catch (error) {
            logger.error('Tag.history error:', error);
            // Return empty history instead of throwing to avoid null errors
