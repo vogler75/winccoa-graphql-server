@@ -211,10 +211,18 @@ type Query {
 
   """
   Returns information about current API and WinCC OA versions
-  
+
   @returns Version information object
   """
   getVersionInfo: WinccoaVersionDetails!
+
+  """
+  Retrieves typed datapoint elements with value, timestamp, and status
+
+  @param dpeNames - Names of the data point elements to retrieve (e.g., "ExampleDP_1.", "Pump1.status")
+  @returns Typed datapoint elements with complete information
+  """
+  dpGetTyped(dpeNames: [String!]!): [DatapointElement!]!
 }
 
 type Mutation {
@@ -311,13 +319,22 @@ type Subscription {
 
   """
   Connects to receive updates for all matching query results
-  
+
   @param query - SQL-like query to define data points to monitor
   @param answer - Whether to receive initial values immediately
   @param blockingTime - Time to collect query results
   @returns Stream of all query updates
   """
   dpQueryConnectAll(query: String!, answer: Boolean, blockingTime: Int): DpQueryConnectUpdate!
+
+  """
+  Establishes a typed connection to receive updates for specified data point elements
+
+  @param dpeNames - Names of the data point elements to connect to (e.g., "ExampleDP_1.", "Pump1.status")
+  @param answer - Whether to receive initial values immediately
+  @returns Stream of typed datapoint element updates
+  """
+  dpConnectTyped(dpeNames: [String!]!, answer: Boolean): DatapointElementUpdate!
 }
 
 """
@@ -489,5 +506,45 @@ Update type for data point query connections
 type DpQueryConnectUpdate {
   values: [[JSON!]!]!
   type: String! # Enum for connection update type
+  error: JSON
+}
+
+"""
+Represents a complete datapoint element with value, timestamp, and status
+"""
+type DatapointElement {
+  """
+  Name of the datapoint element
+  """
+  name: String!
+  """
+  Current value of the datapoint element
+  """
+  value: JSON!
+  """
+  Timestamp of the last value change
+  """
+  timestamp: Time!
+  """
+  Status information of the datapoint element
+  """
+  status: JSON!
+}
+
+"""
+Update type for typed datapoint element connections
+"""
+type DatapointElementUpdate {
+  """
+  List of updated datapoint elements
+  """
+  elements: [DatapointElement!]!
+  """
+  Type of the update
+  """
+  type: String!
+  """
+  Error information if any
+  """
   error: JSON
 }

@@ -231,16 +231,44 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
-      getVersionInfo() {
-        try {
-          const result = winccoa.getVersionInfo();
-          return result;
-        } catch (error) {
-          logger.error('getVersionInfo error:', error);
-          throw new Error(`Failed to get version information: ${error.message}`);
-        }
-      }
-    },
+       getVersionInfo() {
+         try {
+           const result = winccoa.getVersionInfo();
+           return result;
+         } catch (error) {
+           logger.error('getVersionInfo error:', error);
+           throw new Error(`Failed to get version information: ${error.message}`);
+         }
+       },
+
+       async dpGetTyped(_, { dpeNames }) {
+         try {
+           const results = [];
+
+           for (const dpeName of dpeNames) {
+             // Construct the attribute names for value, timestamp, and status
+             const valueAttr = `${dpeName}:_online.._value`;
+             const timeAttr = `${dpeName}:_online.._stime`;
+             const statusAttr = `${dpeName}:_online.._status`;
+
+             // Get all three attributes in a single dpGet call
+             const [value, timestamp, status] = await winccoa.dpGet([valueAttr, timeAttr, statusAttr]);
+
+             results.push({
+               name: dpeName,
+               value: value,
+               timestamp: timestamp,
+               status: status
+             });
+           }
+
+           return results;
+         } catch (error) {
+           logger.error('dpGetTyped error:', error);
+           throw new Error(`Failed to get typed data point elements: ${error.message}`);
+         }
+       }
+     },
     
     Mutation: {
       async dpCreate(_, { dpeName, dpType, systemId, dpId }) {
