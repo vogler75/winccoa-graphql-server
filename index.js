@@ -244,6 +244,7 @@ function authenticateUser(username, password) {
 
 // Create resolver modules
 const commonResolvers = createCommonResolvers(winccoa, logger);
+console.log('[DEBUG] commonResolvers keys:', Object.keys(commonResolvers));
 const alertResolvers = createAlertResolvers(winccoa, logger);
 const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
 const cnsResolvers = createCnsResolvers(winccoa, logger);
@@ -251,20 +252,24 @@ const extrasResolvers = createExtrasResolvers(winccoa, logger);
 
 // Merge resolvers
 function mergeResolvers(...resolverObjects) {
-  const merged = { Query: {}, Mutation: {}, Subscription: {} };
-  
+  console.log('[DEBUG] mergeResolvers called with', resolverObjects.length, 'resolver objects');
+  const merged = {};
+
   for (const resolverObj of resolverObjects) {
-    if (resolverObj.Query) {
-      Object.assign(merged.Query, resolverObj.Query);
-    }
-    if (resolverObj.Mutation) {
-      Object.assign(merged.Mutation, resolverObj.Mutation);
-    }
-    if (resolverObj.Subscription) {
-      Object.assign(merged.Subscription, resolverObj.Subscription);
+    console.log('[DEBUG] Processing resolver object with keys:', Object.keys(resolverObj));
+    for (const [key, value] of Object.entries(resolverObj)) {
+      if (!merged[key]) {
+        merged[key] = {};
+      }
+      if (typeof value === 'object' && value !== null) {
+        Object.assign(merged[key], value);
+      } else {
+        merged[key] = value;
+      }
     }
   }
-  
+
+  console.log('[DEBUG] Final merged resolver keys:', Object.keys(merged));
   return merged;
 }
 
