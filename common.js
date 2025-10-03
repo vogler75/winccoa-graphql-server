@@ -241,7 +241,7 @@ function createCommonResolvers(winccoa, logger) {
          }
        },
 
-       async dpGetTyped(_, { dpeNames }) {
+       async tagGet(_, { dpeNames }) {
          try {
            const results = [];
 
@@ -264,8 +264,8 @@ function createCommonResolvers(winccoa, logger) {
 
            return results;
          } catch (error) {
-           logger.error('dpGetTyped error:', error);
-           throw new Error(`Failed to get typed data point elements: ${error.message}`);
+           logger.error('tagGet error:', error);
+           throw new Error(`Failed to get typed tags: ${error.message}`);
          }
        }
      },

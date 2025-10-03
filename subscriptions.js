@@ -88,12 +88,12 @@ function createSubscriptionResolvers(winccoa, logger) {
          }
        },
 
-       dpConnectTyped: {
+       tagSubscribe: {
          subscribe: async (_, { dpeNames, answer = true }, context) => {
-           logger.info(`Subscribing to typed data points: ${dpeNames.join(', ')}`);
+           logger.info(`Subscribing to typed tags: ${dpeNames.join(', ')}`);
 
            // Create a channel for this subscription
-           const channel = `dpConnectTyped-${uuidv4()}`;
+           const channel = `tagSubscribe-${uuidv4()}`;
            let connectionId = null;
            let cleanup = null;
 
@@ -104,21 +104,21 @@ function createSubscriptionResolvers(winccoa, logger) {
              // Set up the connection
              const callback = async (dpeNames, values, type, error) => {
                try {
-                 // For typed connections, we need to get the complete information for each datapoint
-                 const elements = [];
+                 // For typed connections, we need to get the complete information for each tag
+                 const tags = [];
 
                  for (let i = 0; i < dpeNames.length; i++) {
                    const dpeName = dpeNames[i];
                    const value = values[i];
 
-                   // Get timestamp and status for this datapoint
+                   // Get timestamp and status for this tag
                    const timeAttr = `${dpeName}:_online.._stime`;
                    const statusAttr = `${dpeName}:_online.._status`;
 
                    try {
                      const [timestamp, status] = await winccoa.dpGet([timeAttr, statusAttr]);
 
-                     elements.push({
+                     tags.push({
                        name: dpeName,
                        value: value,
                        timestamp: timestamp,
@@ -126,8 +126,8 @@ function createSubscriptionResolvers(winccoa, logger) {
                      });
                    } catch (attrError) {
                      logger.warn(`Failed to get attributes for ${dpeName}:`, attrError);
-                     // Still include the element with available data
-                     elements.push({
+                     // Still include the tag with available data
+                     tags.push({
                        name: dpeName,
                        value: value,
                        timestamp: null,
@@ -137,19 +137,19 @@ function createSubscriptionResolvers(winccoa, logger) {
                  }
 
                  // Emit the update through the pubsub
-                 logger.debug(`Received typed update for ${dpeNames.join(', ')}:`, elements);
+                 logger.debug(`Received typed update for ${dpeNames.join(', ')}:`, tags);
                  context.pubsub.publish(channel, {
-                   dpConnectTyped: {
-                     elements: elements,
+                   tagSubscribe: {
+                     tags: tags,
                      type: type,
                      error: error || null
                    }
                  });
                } catch (callbackError) {
-                 logger.error('dpConnectTyped callback error:', callbackError);
+                 logger.error('tagSubscribe callback error:', callbackError);
                  context.pubsub.publish(channel, {
-                   dpConnectTyped: {
-                     elements: [],
+                   tagSubscribe: {
+                     tags: [],
                      type: 'error',
                      error: callbackError.message
                    }
@@ -159,14 +159,14 @@ function createSubscriptionResolvers(winccoa, logger) {
 
              // Create WinCC OA connection
              connectionId = await winccoa.dpConnect(callback, dpeNames, answer);
-             logger.info(`Created dpConnectTyped subscription ${connectionId}`);
+             logger.info(`Created tagSubscribe subscription ${connectionId}`);
 
              // Set up cleanup
              cleanup = () => {
                if (connectionId !== null) {
                  try {
                    winccoa.dpDisconnect(connectionId);
-                   logger.info(`Disconnected dpConnectTyped subscription ${connectionId}`);
+                   logger.info(`Disconnected tagSubscribe subscription ${connectionId}`);
                  } catch (error) {
                    logger.error(`Error disconnecting typed subscription ${connectionId}:`, error);
                  }
@@ -178,8 +178,8 @@ function createSubscriptionResolvers(winccoa, logger) {
 
              return asyncIterator;
            } catch (error) {
-             logger.error('dpConnectTyped subscription error:', error);
-             throw new Error(`Failed to create typed datapoint subscription: ${error.message}`);
+             logger.error('tagSubscribe subscription error:', error);
+             throw new Error(`Failed to create typed tag subscription: ${error.message}`);
            }
          }
        }

@@ -217,12 +217,12 @@ type Query {
   getVersionInfo: WinccoaVersionDetails!
 
   """
-  Retrieves typed datapoint elements with value, timestamp, and status
+  Retrieves typed tags with value, timestamp, and status
 
   @param dpeNames - Names of the data point elements to retrieve (e.g., "ExampleDP_1.", "Pump1.status")
-  @returns Typed datapoint elements with complete information
+  @returns Typed tags with complete information
   """
-  dpGetTyped(dpeNames: [String!]!): [DatapointElement!]!
+  tagGet(dpeNames: [String!]!): [Tag!]!
 }
 
 type Mutation {
@@ -332,9 +332,9 @@ type Subscription {
 
   @param dpeNames - Names of the data point elements to connect to (e.g., "ExampleDP_1.", "Pump1.status")
   @param answer - Whether to receive initial values immediately
-  @returns Stream of typed datapoint element updates
+  @returns Stream of typed tag updates
   """
-  dpConnectTyped(dpeNames: [String!]!, answer: Boolean): DatapointElementUpdate!
+  tagSubscribe(dpeNames: [String!]!, answer: Boolean): TagUpdate!
 }
 
 """
@@ -510,15 +510,15 @@ type DpQueryConnectUpdate {
 }
 
 """
-Represents a complete datapoint element with value, timestamp, and status
+Represents a complete tag with value, timestamp, and status
 """
-type DatapointElement {
+type Tag {
   """
-  Name of the datapoint element
+  Name of the tag
   """
   name: String!
   """
-  Current value of the datapoint element
+  Current value of the tag
   """
   value: JSON!
   """
@@ -526,19 +526,19 @@ type DatapointElement {
   """
   timestamp: Time!
   """
-  Status information of the datapoint element
+  Status information of the tag
   """
   status: JSON!
 }
 
 """
-Update type for typed datapoint element connections
+Update type for typed tag connections
 """
-type DatapointElementUpdate {
+type TagUpdate {
   """
-  List of updated datapoint elements
+  List of updated tags
   """
-  elements: [DatapointElement!]!
+  tags: [Tag!]!
   """
   Type of the update
   """
