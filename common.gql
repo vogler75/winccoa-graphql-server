@@ -576,9 +576,9 @@ type TagValue {
   """
   value: JSON!
   """
-  Status information at this timestamp
+  Status information at this timestamp (may be null for historical data)
   """
-  status: JSON!
+  status: JSON
 }
 
 """
