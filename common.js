@@ -1,4 +1,5 @@
 // Common GraphQL resolver functions for WinCC OA
+console.log('[DEBUG] common.js module loaded');
 
 // Element type mapping from WinCC OA numeric values to GraphQL enum
 const ElementTypeMap = {
@@ -270,6 +271,7 @@ function createCommonResolvers(winccoa, logger) {
        },
 
        async tagGetHistory(_, { startTime, endTime, dpeNames }) {
+         console.log(`[DEBUG] tagGetHistory called for ${dpeNames.join(', ')}`);
          try {
            logger.info(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
 
@@ -423,8 +425,11 @@ function createCommonResolvers(winccoa, logger) {
 
      Tag: {
        async history(tag, { startTime, endTime }) {
+         console.log(`[DEBUG] Tag.history called for ${tag.name}`);
          try {
+           console.log(`[DEBUG] About to call logger.info`);
            logger.info(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
+           console.log(`[DEBUG] logger.info called`);
 
            // Get historical data for this specific tag
            const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), [tag.name]);
