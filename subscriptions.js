@@ -69,22 +69,147 @@ function createSubscriptionResolvers(winccoa, logger) {
       },
       
       dpQueryConnectSingle: {
-        subscribe: async function* (_, { query, answer = true, blockingTime }, context) {
+        subscribe: async (_, { query, answer = true, blockingTime }, context) => {
           logger.info(`Subscribing to query: ${query}`);
-          
-          // Implementation would be similar to dpConnect
-          // This is a placeholder - actual implementation depends on WinCC OA API
-          throw new Error('dpQueryConnectSingle not yet implemented');
+
+          // Create a channel for this subscription
+          const channel = `dpQueryConnectSingle-${uuidv4()}`;
+          let cleanup = null;
+
+          try {
+            // Create async iterator first
+            const asyncIterator = context.pubsub.asyncIterator(channel);
+
+            // Set up the connection callback
+            // WinCC OA dpQueryConnectSingle callback receives: resultTable (2D array)
+            // where resultTable has headers in row 1, data starting at row 2
+            const callback = (resultTable) => {
+              logger.debug(`Received dpQueryConnectSingle update:`, resultTable);
+              context.pubsub.publish(channel, {
+                dpQueryConnectSingle: {
+                  values: resultTable,
+                  type: 'update',
+                  error: null
+                }
+              });
+            };
+
+            // Create WinCC OA query connection
+            // API signature: dpQueryConnectSingle(callback, answer, query, blockingTime)
+            // Returns connection ID (>= 0)
+            const connectionId = await winccoa.dpQueryConnectSingle(
+              callback,
+              answer,
+              query,
+              blockingTime
+            );
+
+            if (connectionId < 0) {
+              throw new Error(`dpQueryConnectSingle returned error code ${connectionId}`);
+            }
+
+            logger.info(`Created dpQueryConnectSingle subscription ${connectionId} for query: ${query}`);
+
+            // Set up cleanup
+            cleanup = () => {
+              try {
+                winccoa.dpQueryDisconnect(connectionId);
+                logger.info(`Disconnected dpQueryConnectSingle subscription ${connectionId}`);
+              } catch (error) {
+                logger.error(`Error disconnecting dpQueryConnectSingle ${connectionId}:`, error);
+              }
+            };
+
+            // Add cleanup to iterator
+            const originalReturn = asyncIterator.return;
+            asyncIterator.return = async () => {
+              cleanup();
+              if (originalReturn) {
+                return originalReturn.call(asyncIterator);
+              }
+              return { done: true, value: undefined };
+            };
+
+            return asyncIterator;
+
+          } catch (error) {
+            logger.error('dpQueryConnectSingle subscription error:', error);
+            if (cleanup) cleanup();
+            throw new Error(`Failed to create query connection: ${error.message}`);
+          }
         }
       },
       
        dpQueryConnectAll: {
-         subscribe: async function* (_, { query, answer = true, blockingTime }, context) {
+         subscribe: async (_, { query, answer = true, blockingTime }, context) => {
            logger.info(`Subscribing to all query results: ${query}`);
 
-           // Implementation would be similar to dpConnect
-           // This is a placeholder - actual implementation depends on WinCC OA API
-           throw new Error('dpQueryConnectAll not yet implemented');
+           // Create a channel for this subscription
+           const channel = `dpQueryConnectAll-${uuidv4()}`;
+           let cleanup = null;
+
+           try {
+             // Create async iterator first
+             const asyncIterator = context.pubsub.asyncIterator(channel);
+
+             // Set up the connection callback
+             // WinCC OA dpQueryConnectAll callback receives: resultTable (2D array)
+             // where resultTable has headers in row 1, data starting at row 2
+             // Note: dpQueryConnectAll always sends the complete result set
+             const callback = (resultTable) => {
+               logger.debug(`Received dpQueryConnectAll update:`, resultTable);
+               context.pubsub.publish(channel, {
+                 dpQueryConnectAll: {
+                   values: resultTable,
+                   type: 'update',
+                   error: null
+                 }
+               });
+             };
+
+             // Create WinCC OA query connection
+             // API signature: dpQueryConnectAll(callback, answer, query, blockingTime)
+             // Returns connection ID (>= 0)
+             const connectionId = await winccoa.dpQueryConnectAll(
+               callback,
+               answer,
+               query,
+               blockingTime
+             );
+
+             if (connectionId < 0) {
+               throw new Error(`dpQueryConnectAll returned error code ${connectionId}`);
+             }
+
+             logger.info(`Created dpQueryConnectAll subscription ${connectionId} for query: ${query}`);
+
+             // Set up cleanup
+             cleanup = () => {
+               try {
+                 winccoa.dpQueryDisconnect(connectionId);
+                 logger.info(`Disconnected dpQueryConnectAll subscription ${connectionId}`);
+               } catch (error) {
+                 logger.error(`Error disconnecting dpQueryConnectAll ${connectionId}:`, error);
+               }
+             };
+
+             // Add cleanup to iterator
+             const originalReturn = asyncIterator.return;
+             asyncIterator.return = async () => {
+               cleanup();
+               if (originalReturn) {
+                 return originalReturn.call(asyncIterator);
+               }
+               return { done: true, value: undefined };
+             };
+
+             return asyncIterator;
+
+           } catch (error) {
+             logger.error('dpQueryConnectAll subscription error:', error);
+             if (cleanup) cleanup();
+             throw new Error(`Failed to create query connection: ${error.message}`);
+           }
          }
        },
 
