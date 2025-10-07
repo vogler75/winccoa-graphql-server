@@ -32,6 +32,16 @@ type DataPoint {
   value: JSON
 
   """
+  Get the data point as a tag with value, timestamp, and status
+  """
+  tag: Tag
+
+  """
+  Get historical tag values with metadata
+  """
+  tagHistory(startTime: Time!, endTime: Time!, limit: Int, offset: Int): TagHistory
+
+  """
   Get alerts associated with this data point
   """
   alerts(limit: Int, offset: Int): [Alert!]!

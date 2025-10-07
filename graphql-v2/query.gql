@@ -23,16 +23,6 @@ type Query {
   dps(pattern: String, type: String, limit: Int, offset: Int): [DataPoint!]!
 
   """
-  Direct access to a tag with metadata (convenience shortcut)
-  """
-  tag(name: String!): Tag
-
-  """
-  Get multiple tags at once (convenience shortcut)
-  """
-  tags(names: [String!]!): [Tag!]!
-
-  """
   Access to legacy method-based API (backward compatibility)
   All existing flat query functions are available here
   """

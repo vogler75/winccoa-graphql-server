@@ -67,6 +67,65 @@ function createDataPointResolvers(winccoa, logger) {
         }
       },
 
+      async tag(dataPoint) {
+        try {
+          // Get tag with value, timestamp, and status
+          const valueAttr = `${dataPoint.fullName}:_online.._value`
+          const timeAttr = `${dataPoint.fullName}:_online.._stime`
+          const statusAttr = `${dataPoint.fullName}:_online.._status`
+
+          const results = await winccoa.dpGet([valueAttr, timeAttr, statusAttr])
+
+          return {
+            name: dataPoint.fullName,
+            value: results[0],
+            timestamp: results[1],
+            status: results[2]
+          }
+        } catch (error) {
+          logger.error('DataPoint.tag error:', error)
+          return null
+        }
+      },
+
+      async tagHistory(dataPoint, { startTime, endTime, limit, offset }) {
+        try {
+          const result = await winccoa.dpGetPeriod(
+            new Date(startTime),
+            new Date(endTime),
+            [dataPoint.fullName]
+          )
+
+          const values = []
+          if (Array.isArray(result) && result.length > 0) {
+            const entry = result[0]
+            if (entry.times && entry.values) {
+              const minLength = Math.min(entry.times.length, entry.values.length)
+              for (let i = 0; i < minLength; i++) {
+                values.push({
+                  timestamp: new Date(entry.times[i]),
+                  value: entry.values[i]
+                })
+              }
+            }
+          }
+
+          const start = offset || 0
+          const end = limit ? start + limit : values.length
+
+          return {
+            name: dataPoint.fullName,
+            values: values.slice(start, end)
+          }
+        } catch (error) {
+          logger.error('DataPoint.tagHistory error:', error)
+          return {
+            name: dataPoint.fullName,
+            values: []
+          }
+        }
+      },
+
       async alerts(dataPoint, { limit, offset }) {
         // Get recent alerts for this data point
         const now = new Date()

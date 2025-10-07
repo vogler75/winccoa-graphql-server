@@ -56,22 +56,6 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
       }
     },
 
-    // Tag queries (convenience)
-    async tag(_, { name }) {
-      try {
-        const tags = await existingResolvers.Query.tagGet(null, { dpeNames: [name] })
-        if (!tags || tags.length === 0) return null
-        return tags[0]
-      } catch (error) {
-        logger.error('tag error:', error)
-        return null
-      }
-    },
-
-    async tags(_, { names }) {
-      return existingResolvers.Query.tagGet(null, { dpeNames: names })
-    },
-
     // Methods - delegate to existing resolvers
     methods() {
       return {} // The Methods type resolvers will handle the rest
