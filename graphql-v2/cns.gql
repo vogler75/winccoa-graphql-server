@@ -88,10 +88,10 @@ type CNSNode {
   children: [CNSNode!]!
 
   """Root node of the tree"""
-  root: CNSNode!
+  root: CNSNode
 
   """Tree this node belongs to"""
-  tree: CNSTree!
+  tree: CNSTree
 
   """Linked data point (if any)"""
   dp: DataPoint

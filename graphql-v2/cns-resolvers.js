@@ -152,19 +152,24 @@ function createCnsResolvers(winccoa, logger) {
         return tree.view
       },
 
+      async displayName(tree) {
+        if (tree.displayName) return tree.displayName
+
+        try {
+          const rootPath = tree.rootPath || `${tree.viewPath}${tree.name}`
+          return await winccoa.cnsGetDisplayNames(rootPath)
+        } catch (error) {
+          logger.error('CNSTree.displayName error:', error)
+          return tree.name // Fallback to tree name
+        }
+      },
+
       async root(tree) {
         try {
           const rootPath = tree.rootPath || await winccoa.cnsGetRoot(`${tree.view.name}/${tree.name}`)
-          const displayNames = await winccoa.cnsGetDisplayNames(rootPath)
-          const displayPath = await winccoa.cnsGetDisplayPath(rootPath)
-          const dpName = await winccoa.cnsGetId(rootPath)
 
           return {
             path: rootPath,
-            name: rootPath.split('/').pop(),
-            displayName: displayNames,
-            displayPath: displayPath,
-            dpName: dpName,
             tree
           }
         } catch (error) {
@@ -260,8 +265,33 @@ function createCnsResolvers(winccoa, logger) {
         }
       },
 
-      tree(node) {
-        return node.tree
+      async tree(node) {
+        if (node.tree) return node.tree
+
+        try {
+          // Get the root node path to determine the tree
+          const rootPath = await winccoa.cnsGetRoot(node.path)
+
+          // Extract view and tree name from the root path
+          // Format: "System.ViewName:TreeRootNode"
+          const match = rootPath.match(/^(.+?):(.+)$/)
+          if (!match) {
+            logger.warn(`Unable to parse CNS root path: ${rootPath}`)
+            return null
+          }
+
+          const viewPath = match[1] + ':'
+          const treeName = match[2]
+
+          return {
+            name: treeName,
+            rootPath: rootPath,
+            viewPath: viewPath
+          }
+        } catch (error) {
+          logger.error('CNSNode.tree error:', error)
+          return null
+        }
       },
 
       async dp(node) {
