@@ -1,0 +1,51 @@
+# Mutations - Organized by domain
+
+type Mutation {
+  """Login mutation"""
+  login(username: String!, password: String!): AuthPayload!
+
+  """Data point mutations"""
+  dpCreate(dpeName: String!, dpType: String!, systemId: Int, dpId: Int): Boolean!
+  dpDelete(dpName: String!): Boolean!
+  dpCopy(source: String!, destination: String!, driver: Int): Boolean!
+  dpSet(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  dpSetWait(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  dpSetTimed(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  dpSetTimedWait(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """Data point type mutations"""
+  dpTypeCreate(startNode: DpTypeNodeInput!): Boolean!
+  dpTypeChange(startNode: DpTypeNodeInput!): Boolean!
+  dpTypeDelete(dpt: String!): Boolean!
+
+  """Alert mutations"""
+  alertSet(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  alertSetWait(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  alertSetTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  alertSetTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """CNS mutations"""
+  cnsCreateView(view: String!, displayName: JSON!, separator: JSON): Boolean!
+  cnsAddTree(cnsParentPath: String!, tree: CnsTreeNodeInput!): Boolean!
+  cnsAddNode(cnsParentPath: String!, name: String!, displayName: JSON!, dp: String): Boolean!
+  cnsChangeTree(cnsPath: String!, tree: CnsTreeNodeInput!): Boolean!
+  cnsDeleteTree(cnsPath: String!): Boolean!
+  cnsDeleteView(view: String!): Boolean!
+  cnsSetProperty(cnsPath: String!, key: String!, value: JSON!, valueType: CtrlType!): Boolean!
+
+  """OPC UA configuration"""
+  setOpcUaAddress(
+    datapointName: String!
+    driverNumber: Int!
+    addressDirection: Int!
+    addressDataType: Int!
+    serverName: String!
+    subscriptionName: String!
+    nodeId: String!
+  ): Boolean!
+}
+
+type AuthPayload {
+  token: String!
+  expiresAt: String!
+}

@@ -1,0 +1,128 @@
+# CNS types - Central Navigation Service
+
+type CNS {
+  """Get a specific view by name"""
+  view(name: String!): CNSView
+
+  """List all views in the system"""
+  views: [CNSView!]!
+
+  """
+  Search for nodes by name pattern
+  """
+  searchNodes(
+    pattern: String!
+    viewPath: String
+    searchMode: Int
+    langIdx: Int
+    type: Int
+  ): [CNSNode!]!
+
+  """
+  Search for nodes linked to a data point
+  """
+  searchByDataPoint(
+    dataPoint: String!
+    type: Int
+    viewPath: String
+  ): [CNSNode!]!
+}
+
+type CNSView {
+  """View name"""
+  name: String!
+
+  """Display name (multi-language)"""
+  displayName: LangString!
+
+  """Path separator"""
+  separator: String
+
+  """System this view belongs to"""
+  system: System!
+
+  """Get a specific tree by name"""
+  tree(name: String!): CNSTree
+
+  """List all trees in this view"""
+  trees: [CNSTree!]!
+
+  """Check if view exists"""
+  exists: Boolean!
+}
+
+type CNSTree {
+  """Tree name"""
+  name: String!
+
+  """Display name (multi-language)"""
+  displayName: LangString!
+
+  """Root node of this tree"""
+  root: CNSNode!
+
+  """Parent view"""
+  view: CNSView!
+
+  """Check if tree exists"""
+  exists: Boolean!
+}
+
+type CNSNode {
+  """Node name"""
+  name: String!
+
+  """Full CNS path"""
+  path: String!
+
+  """Display name (multi-language)"""
+  displayName: LangString!
+
+  """Display path (multi-language)"""
+  displayPath: LangString!
+
+  """Parent node (null if root)"""
+  parent: CNSNode
+
+  """Child nodes"""
+  children: [CNSNode!]!
+
+  """Root node of the tree"""
+  root: CNSNode!
+
+  """Tree this node belongs to"""
+  tree: CNSTree!
+
+  """Linked data point (if any)"""
+  dataPoint: DataPoint
+
+  """Linked data point name string"""
+  dataPointName: String
+
+  """Get a specific property value"""
+  property(key: String!): JSON
+
+  """List all properties"""
+  properties: [CNSProperty!]!
+
+  """Check if node exists"""
+  exists: Boolean!
+}
+
+type CNSProperty {
+  """Property key"""
+  key: String!
+
+  """Property value"""
+  value: JSON!
+
+  """Property type"""
+  type: CtrlType!
+}
+
+input CnsTreeNodeInput {
+  name: String!
+  displayName: JSON!
+  dp: String
+  children: [CnsTreeNodeInput!]
+}

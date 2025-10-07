@@ -1,0 +1,41 @@
+# Tag type - Convenience wrapper with value + metadata
+
+type Tag {
+  """Tag name"""
+  name: String!
+
+  """Current value"""
+  value: JSON!
+
+  """Timestamp of last update"""
+  timestamp: Time!
+
+  """Status information"""
+  status: ElementStatus!
+
+  """Underlying data point element"""
+  element: DataPointElement!
+
+  """
+  Historical values for this tag
+  """
+  history(
+    startTime: Time!
+    endTime: Time!
+    limit: Int
+    offset: Int
+  ): TagHistory!
+}
+
+type TagHistory {
+  """Tag name"""
+  name: String!
+
+  """Historical values"""
+  values: [TagValue!]!
+}
+
+type TagValue {
+  timestamp: Time!
+  value: JSON!
+}

@@ -1,0 +1,34 @@
+# Subscriptions - Real-time updates (UNCHANGED from original)
+
+type Subscription {
+  """Establishes a connection to receive updates for specified data point elements"""
+  dpConnect(dpeNames: [String!]!, answer: Boolean): DpConnectUpdate!
+
+  """Connects to receive updates for a single query"""
+  dpQueryConnectSingle(query: String!, answer: Boolean, blockingTime: Int): DpQueryConnectUpdate!
+
+  """Connects to receive updates for all matching query results"""
+  dpQueryConnectAll(query: String!, answer: Boolean, blockingTime: Int): DpQueryConnectUpdate!
+
+  """Establishes a typed connection to receive updates for specified data point elements"""
+  tagSubscribe(dpeNames: [String!]!, answer: Boolean): TagUpdate!
+}
+
+type DpConnectUpdate {
+  dpeNames: [String!]!
+  values: [JSON!]!
+  type: String!
+  error: JSON
+}
+
+type DpQueryConnectUpdate {
+  values: [[JSON!]!]!
+  type: String!
+  error: JSON
+}
+
+type TagUpdate {
+  tags: [MethodTag!]!
+  type: String!
+  error: JSON
+}

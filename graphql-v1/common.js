@@ -244,6 +244,37 @@ function createCommonResolvers(winccoa, logger) {
          }
        },
 
+       // Data Point Type queries
+       async dpTypeGet(_, { dpt, includeSubTypes = false }) {
+         try {
+           const result = await winccoa.dpTypeGet(dpt, includeSubTypes);
+           return result;
+         } catch (error) {
+           logger.error('dpTypeGet error:', error);
+           throw new Error(`Failed to get data point type structure: ${error.message}`);
+         }
+       },
+
+       async dpGetDpTypeRefs(_, { dpt }) {
+         try {
+           const result = await winccoa.dpGetDpTypeRefs(dpt);
+           return result;
+         } catch (error) {
+           logger.error('dpGetDpTypeRefs error:', error);
+           throw new Error(`Failed to get data point type references: ${error.message}`);
+         }
+       },
+
+       async dpGetRefsToDpType(_, { reference }) {
+         try {
+           const result = await winccoa.dpGetRefsToDpType(reference);
+           return result;
+         } catch (error) {
+           logger.error('dpGetRefsToDpType error:', error);
+           throw new Error(`Failed to get references to data point type: ${error.message}`);
+         }
+       },
+
        async tagGet(_, { dpeNames }) {
          try {
            const results = [];

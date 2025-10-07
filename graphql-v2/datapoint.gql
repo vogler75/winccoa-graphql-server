@@ -1,0 +1,154 @@
+# Data Point types - Core type representing a WinCC OA data point
+
+type DataPoint {
+  """Data point name (without system prefix)"""
+  name: String!
+
+  """Full qualified name (with system prefix if applicable)"""
+  fullName: String!
+
+  """The system this data point belongs to"""
+  system: System!
+
+  """Data point type definition"""
+  type: DataPointType!
+
+  """Whether this data point exists"""
+  exists: Boolean!
+
+  """
+  Get a specific element by path (e.g., "status", "value", "status.code")
+  """
+  element(path: String!): DataPointElement
+
+  """
+  Get all elements, optionally filtered by pattern
+  """
+  elements(pattern: String): [DataPointElement!]!
+
+  """
+  Convenience: Get the root value directly (equivalent to element with empty path)
+  """
+  value: JSON
+
+  """
+  Get alerts associated with this data point
+  """
+  alerts(limit: Int, offset: Int): [Alert!]!
+
+  """
+  Get CNS nodes that link to this data point
+  """
+  cnsNodes: [CNSNode!]!
+}
+
+# Data Point Element - Represents an element within a data point
+type DataPointElement {
+  """Element name (last part of path)"""
+  name: String!
+
+  """Full path within the data point (e.g., "status.code")"""
+  path: String!
+
+  """Parent data point"""
+  dataPoint: DataPoint!
+
+  """Current value"""
+  value: JSON
+
+  """Timestamp of last value change"""
+  timestamp: Time
+
+  """Element status information"""
+  status: ElementStatus!
+
+  """Element data type"""
+  elementType: ElementType!
+
+  """
+  Get historical values for this element
+  """
+  history(
+    startTime: Time!
+    endTime: Time!
+    limit: Int
+    offset: Int
+  ): ElementHistory!
+
+  """Parent element (null if root)"""
+  parent: DataPointElement
+
+  """Child elements (empty if leaf)"""
+  children: [DataPointElement!]!
+}
+
+type ElementStatus {
+  """Raw status value"""
+  raw: JSON!
+
+  """Whether the element is online"""
+  online: Boolean!
+
+  """Quality code (if available)"""
+  quality: Int
+}
+
+type ElementHistory {
+  """Element this history belongs to"""
+  element: DataPointElement!
+
+  """Historical values"""
+  values: [ElementHistoryValue!]!
+
+  """Total number of values in the time range"""
+  totalCount: Int!
+}
+
+type ElementHistoryValue {
+  timestamp: Time!
+  value: JSON!
+  status: ElementStatus
+}
+
+# Data Point Type - Type definition/structure
+type DataPointType {
+  """Type name"""
+  name: String!
+
+  """Type structure/hierarchy"""
+  structure: DataPointTypeNode!
+
+  """Data point types referenced by this type"""
+  references: [DataPointType!]!
+
+  """Data point types that reference this type"""
+  usedBy: [DataPointType!]!
+
+  """Data points of this type"""
+  dataPoints(limit: Int, offset: Int): [DataPoint!]!
+
+  """Count of data points of this type"""
+  count: Int!
+}
+
+type DataPointTypeNode {
+  """Node name"""
+  name: String!
+
+  """Element type"""
+  elementType: ElementType!
+
+  """Referenced type (if this node is a reference)"""
+  refType: DataPointType
+
+  """Child nodes"""
+  children: [DataPointTypeNode!]!
+}
+
+input DpTypeNodeInput {
+  name: String!
+  type: ElementType!
+  refName: String
+  children: [DpTypeNodeInput!]
+  newName: String
+}

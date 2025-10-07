@@ -1,0 +1,99 @@
+# System type - Represents a WinCC OA system (local or remote)
+
+type System {
+  """System identifier"""
+  id: Int!
+
+  """System name"""
+  name: String!
+
+  """Whether this is the current/local system"""
+  isLocal: Boolean!
+
+  """Whether this system is currently active"""
+  isActive: Boolean!
+
+  """
+  Get a specific data point by name
+  """
+  dataPoint(name: String!): DataPoint
+
+  """
+  Search for data points
+  """
+  dataPoints(
+    pattern: String
+    type: String
+    limit: Int
+    offset: Int
+  ): [DataPoint!]!
+
+  """
+  Get a specific data point type definition
+  """
+  dataPointType(name: String!): DataPointType
+
+  """
+  List available data point types
+  """
+  dataPointTypes(pattern: String, includeEmpty: Boolean): [DataPointType!]!
+
+  """
+  Access to alerts in this system
+  """
+  alerts(
+    startTime: Time
+    endTime: Time
+    dataPoint: String
+    limit: Int
+    offset: Int
+  ): [Alert!]!
+
+  """
+  Access to CNS (Central Navigation Service)
+  """
+  cns: CNS!
+
+  """
+  System version information
+  """
+  version: SystemVersion!
+
+  """
+  Redundancy configuration
+  """
+  redundancy: RedundancyInfo!
+}
+
+# Version information types
+type VersionInfo {
+  """API version"""
+  api: ApiVersion!
+
+  """WinCC OA version"""
+  winccoa: SystemVersion!
+}
+
+type ApiVersion {
+  version: Int!
+}
+
+type SystemVersion {
+  display: String!
+  major: Int!
+  minor: Int!
+  numeric: Int!
+  numeric_full: Int!
+  patch: Int!
+  platform: String!
+  revision: Int!
+  version: String!
+}
+
+type RedundancyInfo {
+  """Whether redundancy is configured for this project"""
+  isConfigured: Boolean!
+
+  """Whether this system is the active redundancy partner"""
+  isActive: Boolean!
+}

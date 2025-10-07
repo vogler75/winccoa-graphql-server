@@ -1,0 +1,191 @@
+# Methods type - Legacy flat API (backward compatibility)
+# All existing query functions are available here unchanged
+
+type Methods {
+  """Retrieves the current values of one or more data point elements"""
+  dpGet(dpeNames: [String!]!): JSON!
+
+  """Returns all the data point names that match a pattern"""
+  dpNames(dpPattern: String, dpType: String, ignoreCase: Boolean): [String!]!
+
+  """Returns all or selected data point types"""
+  dpTypes(pattern: String, systemId: Int, includeEmpty: Boolean): [String!]!
+
+  """Returns the value of data point elements from the driver if older than specified age"""
+  dpGetMaxAge(age: Int!, dpeNames: [String!]!): JSON!
+
+  """Returns the data type of a specific data point element"""
+  dpElementType(dpeName: String!): ElementType!
+
+  """Returns the data type of a data point attribute"""
+  dpAttributeType(dpAttributeName: String!): CtrlType!
+
+  """Returns the data point type for a given data point name"""
+  dpTypeName(dp: String!): String!
+
+  """Returns the type reference of a selected data point element"""
+  dpTypeRefName(dpe: String!): String!
+
+  """Checks whether a data point exists"""
+  dpExists(dpeName: String!): Boolean!
+
+  """Returns historic values of data point elements within a specified time period"""
+  dpGetPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
+
+  """Checks if the event manager is currently the active redundancy partner"""
+  isReduActive: Boolean!
+
+  """Checks whether the project has been configured as redundant"""
+  isRedundant: Boolean!
+
+  """Returns the system ID for a specified system or the current system"""
+  getSystemId(systemName: String): Int!
+
+  """Returns the system name for a specified system ID or the current system"""
+  getSystemName(systemId: Int): String!
+
+  """Returns information about current API and WinCC OA versions"""
+  getVersionInfo: WinccoaVersionDetails!
+
+  """Retrieves typed tags with value, timestamp, and status"""
+  tagGet(dpeNames: [String!]!): [MethodTag!]!
+
+  """Retrieves historical data for multiple tags"""
+  tagGetHistory(startTime: Time!, endTime: Time!, dpeNames: [String!]!, limit: Int, offset: Int): [MethodTagHistory!]!
+
+  """Retrieves the last alert attributes of a data point"""
+  alertGet(alertsTime: [AlertTimeInput!]!, dpeNames: [String!]!, alertCount: Int): JSON!
+
+  """Retrieves alert values for a specific time period"""
+  alertGetPeriod(startTime: Time!, endTime: Time!, names: [String!]!): AlertPeriodResult!
+
+  # CNS methods
+  """Returns paths of all views for given system"""
+  cnsGetViews(systemName: String!): [String!]!
+
+  """Returns ID paths of all trees in a view"""
+  cnsGetTrees(view: String!): [String!]!
+
+  """Returns paths of all children nodes for given path"""
+  cnsGetChildren(cnsPath: String!): [String!]!
+
+  """Returns parent node path for given path"""
+  cnsGetParent(cnsPath: String!): String!
+
+  """Returns root node path of tree containing given node"""
+  cnsGetRoot(cnsNodePath: String!): String!
+
+  """Returns display names for node with given path"""
+  cnsGetDisplayNames(cnsPath: String!): JSON!
+
+  """Returns display path for node with given path"""
+  cnsGetDisplayPath(cnsPath: String!): JSON!
+
+  """Returns data point element name linked with given path"""
+  cnsGetId(cnsPath: String!): String!
+
+  """Returns data point element names linked to nodes matching pattern"""
+  cnsGetIdSet(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
+
+  """Returns CNS paths matching given pattern and criteria"""
+  cnsGetNodesByName(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
+
+  """Returns CNS paths for nodes linked to given data point"""
+  cnsGetNodesByData(dpName: String!, type: Int, viewPath: String): [String!]!
+
+  """Returns property value for given key from node"""
+  cnsGetProperty(cnsPath: String!, key: String!): JSON
+
+  """Returns list of property keys for node"""
+  cnsGetPropertyKeys(cnsPath: String!): [String!]!
+
+  """Checks if node with given path exists"""
+  cnsNodeExists(path: String!): Boolean!
+
+  """Checks if tree with given path exists"""
+  cnsTreeExists(path: String!): Boolean!
+
+  """Checks if view with given path exists"""
+  cnsViewExists(path: String!): Boolean!
+
+  """Checks if path is a node"""
+  cnsIsNode(path: String!): Boolean!
+
+  """Checks if path is a tree"""
+  cnsIsTree(path: String!): Boolean!
+
+  """Checks if path is a view"""
+  cnsIsView(path: String!): Boolean!
+
+  """Checks if ID is valid CNS ID"""
+  cnsCheckId(id: String!): Boolean!
+
+  """Checks if name is valid CNS display name"""
+  cnsCheckName(name: JSON!): Int!
+
+  """Checks if separator is valid CNS separator"""
+  cnsCheckSeparator(separator: String!): Boolean!
+
+  # Data Point Type methods
+  """Retrieves the structure of a data point type"""
+  dpTypeGet(dpt: String!, includeSubTypes: Boolean): DpTypeNode!
+
+  """Retrieves references to other DPTs in a DPT"""
+  dpGetDpTypeRefs(dpt: String!): DpTypeReferences!
+
+  """Returns all DPTs and DPs that contain a specific DPT as a reference"""
+  dpGetRefsToDpType(reference: String!): DpTypeReferences!
+}
+
+# Legacy types for methods namespace
+type MethodTag {
+  name: String!
+  value: JSON!
+  timestamp: Time!
+  status: JSON!
+  history(startTime: Time!, endTime: Time!, limit: Int, offset: Int): MethodTagHistory!
+}
+
+type MethodTagHistory {
+  name: String!
+  values: [MethodTagValue!]!
+}
+
+type MethodTagValue {
+  timestamp: Time!
+  value: JSON!
+}
+
+type WinccoaVersionDetails {
+  api: WinccoaApiVersion!
+  winccoa: WinccoaSystemVersion!
+}
+
+type WinccoaApiVersion {
+  version: Int!
+}
+
+type WinccoaSystemVersion {
+  display: String!
+  major: Int!
+  minor: Int!
+  numeric: Int!
+  numeric_full: Int!
+  patch: Int!
+  platform: String!
+  revision: Int!
+  version: String!
+}
+
+type DpTypeNode {
+  name: String!
+  type: ElementType!
+  refName: String
+  children: [DpTypeNode!]
+  newName: String
+}
+
+type DpTypeReferences {
+  dptNames: [String!]!
+  dpePaths: [String!]!
+}

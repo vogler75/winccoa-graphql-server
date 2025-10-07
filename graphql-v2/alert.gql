@@ -1,0 +1,61 @@
+# Alert types - Alert/alarm handling
+
+type Alert {
+  """Alert timestamp"""
+  time: Time!
+
+  """Alert count/sequence number"""
+  count: Int!
+
+  """Data point this alert belongs to"""
+  dataPoint: DataPoint!
+
+  """Data point element name"""
+  dataPointElementName: String!
+
+  """
+  Get a specific alert attribute by name
+  Examples: "_alert_hdl.._text", "_alert_hdl.._ack_state", etc.
+  """
+  attribute(name: String!): JSON
+
+  """
+  Common alert attributes (convenience accessors)
+  """
+  text: String
+  acknowledged: Boolean
+  acknowledgedBy: String
+  acknowledgedAt: Time
+  priority: Int
+  severity: String
+
+  """
+  Get all available attributes for this alert
+  """
+  attributes: [AlertAttribute!]!
+}
+
+type AlertAttribute {
+  """Attribute name"""
+  name: String!
+
+  """Attribute value"""
+  value: JSON!
+}
+
+input AlertTimeInput {
+  time: Time!
+  count: Int!
+  dpe: String!
+}
+
+type AlertPeriodResult {
+  alertTimes: [AlertTime!]!
+  values: [JSON!]!
+}
+
+type AlertTime {
+  time: Time!
+  count: Int!
+  dpe: String!
+}

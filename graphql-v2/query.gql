@@ -1,0 +1,45 @@
+# Root Query type - Entry points to the graph
+
+type Query {
+  """
+  Get current system or a specific system by name.
+  Without arguments, returns the current/local system.
+  """
+  system(name: String): System!
+
+  """
+  List all available systems in the distributed system
+  """
+  systems: [System!]!
+
+  """
+  Direct access to a data point in the current system (convenience shortcut)
+  """
+  dataPoint(name: String!): DataPoint
+
+  """
+  Search for data points in the current system (convenience shortcut)
+  """
+  dataPoints(pattern: String, type: String, limit: Int, offset: Int): [DataPoint!]!
+
+  """
+  Direct access to a tag with metadata (convenience shortcut)
+  """
+  tag(name: String!): Tag
+
+  """
+  Get multiple tags at once (convenience shortcut)
+  """
+  tags(names: [String!]!): [Tag!]!
+
+  """
+  Access to legacy method-based API (backward compatibility)
+  All existing flat query functions are available here
+  """
+  methods: Methods!
+
+  """
+  API and WinCC OA version information
+  """
+  version: VersionInfo!
+}

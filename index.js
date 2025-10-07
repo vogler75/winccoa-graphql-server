@@ -19,12 +19,15 @@ if (dotenvResult.error) {
 const { WinccoaManager } = require('winccoa-manager');
 const winccoa = new WinccoaManager();
 
-// Import resolver modules
-const { createCommonResolvers } = require('./graphql/common');
-const { createAlertResolvers } = require('./graphql/alerting');
-const { createSubscriptionResolvers } = require('./graphql/subscriptions');
-const { createCnsResolvers } = require('./graphql/cns');
-const { createExtrasResolvers } = require('./graphql/extras');
+// Import V1 resolver modules
+const { createCommonResolvers } = require('./graphql-v1/common');
+const { createAlertResolvers } = require('./graphql-v1/alerting');
+const { createSubscriptionResolvers } = require('./graphql-v1/subscriptions');
+const { createCnsResolvers } = require('./graphql-v1/cns');
+const { createExtrasResolvers } = require('./graphql-v1/extras');
+
+// Import V2 resolvers
+const { createV2Resolvers } = require('./graphql-v2/resolvers');
 
 // Import REST API
 const { createRestApi } = require('./restapi/rest-api');
@@ -121,27 +124,11 @@ const logger = {
   }
 };
 
-// Load GraphQL schema files
-const commonSchema = readFileSync(join(__dirname, 'graphql/common.gql'), 'utf-8');
-const alertingSchema = readFileSync(join(__dirname, 'graphql/alerting.gql'), 'utf-8');
-const cnsSchema = readFileSync(join(__dirname, 'graphql/cns.gql'), 'utf-8');
-const extrasSchema = readFileSync(join(__dirname, 'graphql/extras.gql'), 'utf-8');
+// Load GraphQL V2 schema (modular structure)
+const schemaV2 = require('./graphql-v2');
 
-// Combine all schema files
-const typeDefs = [commonSchema, alertingSchema, cnsSchema, extrasSchema];
-
-
-// Add authentication types to schema
-const authTypeDefs = `
-  type AuthPayload {
-    token: String!
-    expiresAt: String!
-  }
-
-  type Mutation {
-    login(username: String!, password: String!): AuthPayload!
-  }
-`;
+// Combine all schema modules
+const typeDefs = schemaV2.typeDefs;
 
 // Utility functions for authentication
 function generateToken(userId, role = 'admin') {
@@ -280,26 +267,34 @@ function mergeResolvers(...resolverObjects) {
   return merged;
 }
 
-// GraphQL Resolvers
-const resolvers = mergeResolvers(
+// Create old resolvers for backward compatibility via Methods type
+const oldResolvers = mergeResolvers(
   commonResolvers,
   alertResolvers,
   subscriptionResolvers,
   cnsResolvers,
-  extrasResolvers,
+  extrasResolvers
+);
+
+// Create v2 resolvers with hierarchical structure
+const v2Resolvers = createV2Resolvers(winccoa, logger, oldResolvers);
+
+// GraphQL Resolvers - merge v2 with login mutation
+const resolvers = mergeResolvers(
+  v2Resolvers,
   {
     Mutation: {
       async login(_, { username, password }) {
         const user = authenticateUser(username, password);
-        
+
         if (!user) {
           throw new Error('Invalid username or password');
         }
-        
+
         const { token, expiresAt } = generateToken(user.id, user.role);
-        
+
         logger.info(`User ${username} logged in successfully with role: ${user.role}`);
-        
+
         return {
           token,
           expiresAt: new Date(expiresAt).toISOString()
@@ -311,7 +306,7 @@ const resolvers = mergeResolvers(
 
 // Create executable schema
 const schema = makeExecutableSchema({
-  typeDefs: [...typeDefs, authTypeDefs],
+  typeDefs,
   resolvers
 });
 
@@ -603,8 +598,8 @@ async function startServer() {
       })
     );
 
-    // Apply REST API middleware
-    const restApi = createRestApi(winccoa, logger, resolvers, DISABLE_AUTH);
+    // Apply REST API middleware (use oldResolvers for backward compatibility)
+    const restApi = createRestApi(winccoa, logger, oldResolvers, DISABLE_AUTH);
     app.use('/restapi', restApi);
 
     // Serve OpenAPI specification

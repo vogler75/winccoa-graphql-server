@@ -1,0 +1,64 @@
+# Core scalars and enums used across the schema
+
+scalar JSON
+scalar LangString
+scalar Time
+
+# Element type enum - WinCC OA data types
+enum ElementType {
+  BOOL
+  UINT8
+  INT32
+  INT64
+  FLOAT
+  DOUBLE
+  BIT
+  BIT32
+  BIT64
+  STRING
+  TIME
+  DPID
+  LANGSTRING
+  BLOB
+  MIXED
+  DYN_BOOL
+  DYN_UINT8
+  DYN_INT32
+  DYN_INT64
+  DYN_FLOAT
+  DYN_DOUBLE
+  DYN_BIT
+  DYN_BIT32
+  DYN_BIT64
+  DYN_STRING
+  DYN_TIME
+  DYN_DPID
+  DYN_LANGSTRING
+  DYN_BLOB
+}
+
+# Control type enum - WinCC OA control variable types
+enum CtrlType {
+  TIME_VAR
+  BOOL_VAR
+  INT_VAR
+  UINT_VAR
+  FLOAT_VAR
+  STRING_VAR
+  BIT32_VAR
+  CHAR_VAR
+  DYN_TIME_VAR
+  DYN_BOOL_VAR
+  DYN_INT_VAR
+  DYN_UINT_VAR
+  DYN_FLOAT_VAR
+  DYN_STRING_VAR
+  DYN_BIT32_VAR
+  DYN_CHAR_VAR
+  ATIME_VAR
+  LANGSTRING_VAR
+  BLOB_VAR
+  LONG_VAR
+  ULONG_VAR
+  BIT64_VAR
+}
