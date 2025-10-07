@@ -638,6 +638,14 @@ async function startServer() {
       })(req, res);
     });
 
+    // Serve static files from public directory
+    app.use(express.static(join(__dirname, 'public')));
+
+    // Landing page
+    app.get('/', (req, res) => {
+      res.sendFile(join(__dirname, 'public', 'index.html'));
+    });
+
     // Health check endpoint
     app.get('/health', (req, res) => {
       res.json({ status: 'healthy', uptime: process.uptime() });
@@ -646,11 +654,16 @@ async function startServer() {
     // Start HTTP server
     await new Promise((resolve) => {
       httpServer.listen(PORT, () => {
-        logger.info(`🚀 GraphQL server ready at http://localhost:${PORT}/graphql`);
-        logger.info(`🔌 WebSocket subscriptions ready at ws://localhost:${PORT}/graphql`);
-        logger.info(`🌐 REST API ready at http://localhost:${PORT}/restapi`);
-        logger.info(`📚 API documentation at http://localhost:${PORT}/api-docs`);
-        logger.info(`📄 OpenAPI spec at http://localhost:${PORT}/openapi.json`);
+        logger.info(`\n🏭 WinCC OA API Server Started`);
+        logger.info(`─────────────────────────────────────────────────`);
+        logger.info(`🏠 Landing page:        http://localhost:${PORT}/`);
+        logger.info(`🚀 GraphQL API:         http://localhost:${PORT}/graphql`);
+        logger.info(`🔌 WebSocket:           ws://localhost:${PORT}/graphql`);
+        logger.info(`🌐 REST API:            http://localhost:${PORT}/restapi`);
+        logger.info(`📚 API Documentation:   http://localhost:${PORT}/api-docs`);
+        logger.info(`📄 OpenAPI Spec:        http://localhost:${PORT}/openapi.json`);
+        logger.info(`💚 Health Check:        http://localhost:${PORT}/restapi/health`);
+        logger.info(`─────────────────────────────────────────────────`);
         if (DISABLE_AUTH) {
           logger.warn('⚠️  Authentication is DISABLED. Set DISABLE_AUTH=false to enable authentication.');
         }

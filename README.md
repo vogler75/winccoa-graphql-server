@@ -110,6 +110,8 @@ winccoa-graphql-server/
 ├── .env                    # Configuration file (create this)
 ├── .env.example            # Example configuration
 ├── package.json
+├── public/                 # Static web assets
+│   └── index.html         # Landing page
 ├── graphql/                # GraphQL-related files
 │   ├── common.gql         # Common schema
 │   ├── common.js          # Common resolvers
@@ -193,6 +195,9 @@ npm run dev
 
 ## API Endpoints
 
+### Landing Page
+- **Home**: `http://localhost:4000/` - Interactive landing page with quick access to all endpoints
+
 ### GraphQL API
 - **GraphQL Endpoint**: `http://localhost:4000/graphql`
 - **WebSocket Endpoint**: `ws://localhost:4000/graphql`
@@ -203,7 +208,7 @@ npm run dev
 - **OpenAPI Specification**: `http://localhost:4000/openapi.json`
 
 ### Monitoring
-- **Health Check**: `http://localhost:4000/health`
+- **Health Check**: `http://localhost:4000/restapi/health`
 
 ## Choosing Between GraphQL and REST
 
@@ -279,12 +284,20 @@ Authorization: Bearer your-direct-access-token
 
 ## Quick Start Examples
 
-### Using the Interactive API Documentation (Easiest!)
+### Getting Started (Easiest!)
 
 1. Start the server: `npm run dev`
-2. Open your browser to `http://localhost:4000/api-docs`
-3. Click the "Authorize" button and enter your token
-4. Try out any endpoint directly from the browser!
+2. Open your browser to `http://localhost:4000/`
+3. Click on any of the API buttons:
+   - **GraphQL API** - For flexible queries and real-time subscriptions
+   - **REST API Docs** - Interactive Swagger UI with try-it-out
+   - **Health Check** - Server status monitoring
+
+### Using the Interactive API Documentation
+
+1. Go to `http://localhost:4000/api-docs`
+2. Click the "Authorize" button and enter your token
+3. Try out any endpoint directly from the browser!
 
 ### GraphQL Examples
 
