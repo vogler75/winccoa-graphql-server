@@ -645,7 +645,7 @@ async function startServer() {
     // Start HTTP server
     await new Promise((resolve) => {
       httpServer.listen(PORT, () => {
-        logger.info(`\n🏭 WinCC OA API Server Started`);
+        logger.info(`🏭 WinCC OA API Server Started`);
         logger.info(`─────────────────────────────────────────────────`);
         logger.info(`🏠 Landing page:        http://localhost:${PORT}/`);
         logger.info(`🚀 GraphQL API:         http://localhost:${PORT}/graphql`);
