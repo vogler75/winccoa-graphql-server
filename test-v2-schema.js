@@ -144,28 +144,43 @@ try {
     },
     Mutation: {
       login: () => ({ token: '', expiresAt: '' }),
-      dpCreate: () => true,
-      dpDelete: () => true,
-      dpCopy: () => true,
-      dpSet: () => true,
-      dpSetWait: () => true,
-      dpSetTimed: () => true,
-      dpSetTimedWait: () => true,
-      dpTypeCreate: () => true,
-      dpTypeChange: () => true,
-      dpTypeDelete: () => true,
-      alertSet: () => true,
-      alertSetWait: () => true,
-      alertSetTimed: () => true,
-      alertSetTimedWait: () => true,
-      cnsCreateView: () => true,
-      cnsAddTree: () => true,
-      cnsAddNode: () => true,
-      cnsChangeTree: () => true,
-      cnsDeleteTree: () => true,
-      cnsDeleteView: () => true,
-      cnsSetProperty: () => true,
-      setOpcUaAddress: () => true
+      dataPoint: () => ({}),
+      dataPointType: () => ({}),
+      alert: () => ({}),
+      cns: () => ({}),
+      opcua: () => ({})
+    },
+    DataPointMutations: {
+      create: () => true,
+      delete: () => true,
+      copy: () => true,
+      set: () => true,
+      setWait: () => true,
+      setTimed: () => true,
+      setTimedWait: () => true
+    },
+    DataPointTypeMutations: {
+      create: () => true,
+      change: () => true,
+      delete: () => true
+    },
+    AlertMutations: {
+      set: () => true,
+      setWait: () => true,
+      setTimed: () => true,
+      setTimedWait: () => true
+    },
+    CnsMutations: {
+      createView: () => true,
+      addTree: () => true,
+      addNode: () => true,
+      changeTree: () => true,
+      deleteTree: () => true,
+      deleteView: () => true,
+      setProperty: () => true
+    },
+    OpcUaMutations: {
+      setAddress: () => true
     },
     Subscription: {
       dpConnect: {

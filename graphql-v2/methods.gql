@@ -32,6 +32,13 @@ type Methods {
   """Returns historic values of data point elements within a specified time period"""
   dpGetPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
 
+  """
+  Retrieves attribute values with the help of SQL statements.
+  Returns a table-like structure where [0][0] is empty, [0][1..n] are column headers,
+  and [1..n][0] are line names (data point names), [1..n][1..n] are the values.
+  """
+  dpQuery(query: String!): [[JSON!]!]!
+
   """Checks if the event manager is currently the active redundancy partner"""
   isReduActive: Boolean!
 

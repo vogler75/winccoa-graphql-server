@@ -7,6 +7,14 @@ const { createTagResolvers } = require('./tag-resolvers')
 const { createAlertResolvers } = require('./alert-resolvers')
 const { createCnsResolvers } = require('./cns-resolvers')
 const { createMethodsResolvers } = require('./methods-resolvers')
+const {
+  createMutationResolvers,
+  createDataPointMutationResolvers,
+  createDataPointTypeMutationResolvers,
+  createAlertMutationResolvers,
+  createCnsMutationResolvers,
+  createOpcUaMutationResolvers
+} = require('./mutation-resolvers')
 
 function createV2Resolvers(winccoa, logger, existingResolvers) {
   const queryResolvers = createQueryResolvers(winccoa, logger, existingResolvers)
@@ -16,6 +24,14 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
   const alertResolvers = createAlertResolvers(winccoa, logger)
   const cnsResolvers = createCnsResolvers(winccoa, logger)
   const methodsResolvers = createMethodsResolvers(existingResolvers)
+
+  // Mutation namespaces
+  const mutationResolvers = createMutationResolvers(existingResolvers)
+  const dataPointMutations = createDataPointMutationResolvers(existingResolvers)
+  const dataPointTypeMutations = createDataPointTypeMutationResolvers(existingResolvers)
+  const alertMutations = createAlertMutationResolvers(existingResolvers)
+  const cnsMutations = createCnsMutationResolvers(existingResolvers)
+  const opcuaMutations = createOpcUaMutationResolvers(existingResolvers)
 
   return {
     Query: queryResolvers,
@@ -39,8 +55,13 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
       }
     },
 
-    // Mutations - keep all existing mutations from V1
-    Mutation: existingResolvers.Mutation,
+    // Mutations - namespaced by domain
+    Mutation: mutationResolvers,
+    DataPointMutations: dataPointMutations,
+    DataPointTypeMutations: dataPointTypeMutations,
+    AlertMutations: alertMutations,
+    CnsMutations: cnsMutations,
+    OpcUaMutations: opcuaMutations,
 
     // Subscriptions - keep all existing subscriptions from V1
     Subscription: existingResolvers.Subscription

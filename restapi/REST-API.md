@@ -313,6 +313,61 @@ Get the data type of a data point attribute.
 
 ---
 
+## Query
+
+### Execute SQL-like Query
+
+**POST** `/restapi/query`
+
+Execute SQL-like queries on data points to retrieve attribute values. This endpoint is equivalent to the WinCC OA `dpQuery()` function.
+
+**Request Body:**
+```json
+{
+  "query": "SELECT '_original.._value' FROM 'ExampleDP_Arg*'"
+}
+```
+
+**Response:**
+
+Returns a table-like structure where:
+- `[0][0]` is empty
+- `[0][1..n]` are column headers (attribute names)
+- `[1..n][0]` are line names (data point names)
+- `[1..n][1..n]` are the values
+
+```json
+{
+  "result": [
+    ["", ":_original.._value"],
+    ["System1:ExampleDP_Arg1.", 2.43],
+    ["System1:ExampleDP_Arg2.", 5.76]
+  ]
+}
+```
+
+**Example - Query multiple attributes:**
+```bash
+curl -X POST http://localhost:4000/restapi/query \
+  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "SELECT '\''_original.._value'\'', '\''_original.._stime'\'' FROM '\''ExampleDP_*'\''"
+  }'
+```
+
+**Example - Query with WHERE clause:**
+```bash
+curl -X POST http://localhost:4000/restapi/query \
+  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "SELECT '\''_original.._value'\'' FROM '\''*'\'' WHERE _DPT=\"ExampleDP_Arg\""
+  }'
+```
+
+---
+
 ## Data Point Types
 
 ### List Data Point Types

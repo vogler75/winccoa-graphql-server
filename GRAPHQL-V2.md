@@ -427,6 +427,84 @@ query LegacyQuery {
 }
 ```
 
+## Namespaced Mutations
+
+V2 organizes mutations by domain for better discoverability:
+
+```graphql
+mutation {
+  # Authentication at top level
+  login(username: "user", password: "pass") {
+    token
+    expiresAt
+  }
+
+  # Data point operations
+  dataPoint {
+    create(dpeName: "NewPump", dpType: "ExampleDP_Float")
+    set(dpeNames: ["Pump1.value"], values: [42.5])
+  }
+
+  # CNS operations
+  cns {
+    createView(view: "MyView", displayName: {en_US: "My View"})
+    addNode(
+      cnsParentPath: "MyView/MyTree/Root"
+      name: "Node1"
+      displayName: {en_US: "Node 1"}
+      dp: "Pump1"
+    )
+  }
+
+  # Alert operations
+  alert {
+    set(
+      alerts: [{time: "2024-01-01T12:00:00Z", count: 1, dpe: "Pump1"}]
+      values: [{_alert_hdl.._ack_state: 1}]
+    )
+  }
+
+  # OPC UA configuration
+  opcua {
+    setAddress(
+      datapointName: "Pump1.value"
+      driverNumber: 1
+      addressDirection: 1
+      addressDataType: 5
+      serverName: "OpcServer"
+      subscriptionName: "Sub1"
+      nodeId: "ns=2;s=Pump.Value"
+    )
+  }
+}
+```
+
+### Migration from Flat Mutations
+
+**Old way (still works via REST API):**
+```graphql
+mutation {
+  dpCreate(dpeName: "NewPump", dpType: "ExampleDP_Float")
+  dpSet(dpeNames: ["Pump1.value"], values: [42.5])
+}
+```
+
+**New way (namespaced):**
+```graphql
+mutation {
+  dataPoint {
+    create(dpeName: "NewPump", dpType: "ExampleDP_Float")
+    set(dpeNames: ["Pump1.value"], values: [42.5])
+  }
+}
+```
+
+Benefits:
+- Better organization in GraphQL Playground/IDE
+- Clear domain boundaries
+- Easier to discover related operations
+- Follows GraphQL best practices
+
 ## Example Queries
 
 ### Get System Overview

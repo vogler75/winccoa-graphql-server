@@ -193,6 +193,16 @@ function createCommonResolvers(winccoa, logger) {
          }
        },
 
+      async dpQuery(_, { query }) {
+        try {
+          const result = await winccoa.dpQuery(query);
+          return result;
+        } catch (error) {
+          logger.error('dpQuery error:', error);
+          throw new Error(`Failed to execute dpQuery: ${error.message}`);
+        }
+      },
+
       // Manager and System Information Functions
       isReduActive() {
         try {
@@ -464,7 +474,38 @@ function createCommonResolvers(winccoa, logger) {
           logger.error('dpSetTimedWait error:', error);
           throw new Error(`Failed to set timed data point values with wait: ${error.message}`);
         }
-       }
+      },
+
+      // Data Point Type mutations
+      async dpTypeCreate(_, { startNode }) {
+        try {
+          const result = await winccoa.dpTypeCreate(startNode);
+          return result;
+        } catch (error) {
+          logger.error('dpTypeCreate error:', error);
+          throw new Error(`Failed to create data point type: ${error.message}`);
+        }
+      },
+
+      async dpTypeChange(_, { startNode }) {
+        try {
+          const result = await winccoa.dpTypeChange(startNode);
+          return result;
+        } catch (error) {
+          logger.error('dpTypeChange error:', error);
+          throw new Error(`Failed to change data point type: ${error.message}`);
+        }
+      },
+
+      async dpTypeDelete(_, { dpt }) {
+        try {
+          const result = await winccoa.dpTypeDelete(dpt);
+          return result;
+        } catch (error) {
+          logger.error('dpTypeDelete error:', error);
+          throw new Error(`Failed to delete data point type: ${error.message}`);
+        }
+      }
      },
 
      Tag: {

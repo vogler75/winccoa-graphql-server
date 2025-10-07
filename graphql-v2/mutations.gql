@@ -1,40 +1,109 @@
-# Mutations - Organized by domain
+# Mutations - Organized by domain with namespacing
 
 type Mutation {
-  """Login mutation"""
+  """Authentication"""
   login(username: String!, password: String!): AuthPayload!
 
-  """Data point mutations"""
-  dpCreate(dpeName: String!, dpType: String!, systemId: Int, dpId: Int): Boolean!
-  dpDelete(dpName: String!): Boolean!
-  dpCopy(source: String!, destination: String!, driver: Int): Boolean!
-  dpSet(dpeNames: [String!]!, values: [JSON!]!): Boolean!
-  dpSetWait(dpeNames: [String!]!, values: [JSON!]!): Boolean!
-  dpSetTimed(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
-  dpSetTimedWait(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  """Data point operations"""
+  dataPoint: DataPointMutations!
 
-  """Data point type mutations"""
-  dpTypeCreate(startNode: DpTypeNodeInput!): Boolean!
-  dpTypeChange(startNode: DpTypeNodeInput!): Boolean!
-  dpTypeDelete(dpt: String!): Boolean!
+  """Data point type operations"""
+  dataPointType: DataPointTypeMutations!
 
-  """Alert mutations"""
-  alertSet(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
-  alertSetWait(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
-  alertSetTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
-  alertSetTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  """Alert operations"""
+  alert: AlertMutations!
 
-  """CNS mutations"""
-  cnsCreateView(view: String!, displayName: JSON!, separator: JSON): Boolean!
-  cnsAddTree(cnsParentPath: String!, tree: CnsTreeNodeInput!): Boolean!
-  cnsAddNode(cnsParentPath: String!, name: String!, displayName: JSON!, dp: String): Boolean!
-  cnsChangeTree(cnsPath: String!, tree: CnsTreeNodeInput!): Boolean!
-  cnsDeleteTree(cnsPath: String!): Boolean!
-  cnsDeleteView(view: String!): Boolean!
-  cnsSetProperty(cnsPath: String!, key: String!, value: JSON!, valueType: CtrlType!): Boolean!
+  """CNS (Central Navigation Service) operations"""
+  cns: CnsMutations!
 
   """OPC UA configuration"""
-  setOpcUaAddress(
+  opcua: OpcUaMutations!
+}
+
+type AuthPayload {
+  token: String!
+  expiresAt: String!
+}
+
+# Data Point Mutations
+type DataPointMutations {
+  """Create a new data point"""
+  create(dpeName: String!, dpType: String!, systemId: Int, dpId: Int): Boolean!
+
+  """Delete a data point"""
+  delete(dpName: String!): Boolean!
+
+  """Copy a data point"""
+  copy(source: String!, destination: String!, driver: Int): Boolean!
+
+  """Set data point element values"""
+  set(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """Set data point element values and wait for confirmation"""
+  setWait(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """Set data point element values at a specific time"""
+  setTimed(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """Set data point element values at a specific time and wait"""
+  setTimedWait(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+}
+
+# Data Point Type Mutations
+type DataPointTypeMutations {
+  """Create a new data point type"""
+  create(startNode: DpTypeNodeInput!): Boolean!
+
+  """Change an existing data point type"""
+  change(startNode: DpTypeNodeInput!): Boolean!
+
+  """Delete a data point type"""
+  delete(dpt: String!): Boolean!
+}
+
+# Alert Mutations
+type AlertMutations {
+  """Set alert attributes"""
+  set(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """Set alert attributes and wait"""
+  setWait(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """Set alert attributes at a specific time"""
+  setTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+
+  """Set alert attributes at a specific time and wait"""
+  setTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+}
+
+# CNS Mutations
+type CnsMutations {
+  """Create a new CNS view"""
+  createView(view: String!, displayName: JSON!, separator: JSON): Boolean!
+
+  """Add a tree to a CNS view"""
+  addTree(cnsParentPath: String!, tree: CnsTreeNodeInput!): Boolean!
+
+  """Add a node to a CNS tree"""
+  addNode(cnsParentPath: String!, name: String!, displayName: JSON!, dp: String): Boolean!
+
+  """Change a CNS tree"""
+  changeTree(cnsPath: String!, tree: CnsTreeNodeInput!): Boolean!
+
+  """Delete a CNS tree"""
+  deleteTree(cnsPath: String!): Boolean!
+
+  """Delete a CNS view"""
+  deleteView(view: String!): Boolean!
+
+  """Set a property on a CNS node"""
+  setProperty(cnsPath: String!, key: String!, value: JSON!, valueType: CtrlType!): Boolean!
+}
+
+# OPC UA Mutations
+type OpcUaMutations {
+  """Configure OPC UA address for a data point"""
+  setAddress(
     datapointName: String!
     driverNumber: Int!
     addressDirection: Int!
@@ -43,9 +112,4 @@ type Mutation {
     subscriptionName: String!
     nodeId: String!
   ): Boolean!
-}
-
-type AuthPayload {
-  token: String!
-  expiresAt: String!
 }

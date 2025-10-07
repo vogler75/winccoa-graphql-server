@@ -7,6 +7,7 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
 
   // Import route modules
   const authRoutes = require('./routes/auth-routes')
+  const { createQueryRouter } = require('./routes/datapoint-routes')
   const datapointRoutes = require('./routes/datapoint-routes')
   const datapointTypeRoutes = require('./routes/datapoint-type-routes')
   const tagRoutes = require('./routes/tag-routes')
@@ -76,6 +77,7 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
   router.use('/cns', cnsRoutes(winccoa, logger, resolvers, requireAdmin))
   router.use('/system', systemRoutes(winccoa, logger, resolvers))
   router.use('/extras', extrasRoutes(winccoa, logger, resolvers, requireAdmin))
+  router.use('/query', createQueryRouter(winccoa, logger, resolvers))
 
   // 404 handler
   router.use((req, res) => {

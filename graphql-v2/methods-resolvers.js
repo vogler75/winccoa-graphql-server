@@ -13,6 +13,7 @@ function createMethodsResolvers(existingResolvers) {
     dpTypeRefName: existingResolvers.Query.dpTypeRefName,
     dpExists: existingResolvers.Query.dpExists,
     dpGetPeriod: existingResolvers.Query.dpGetPeriod,
+    dpQuery: existingResolvers.Query.dpQuery,
     isReduActive: existingResolvers.Query.isReduActive,
     isRedundant: existingResolvers.Query.isRedundant,
     getSystemId: existingResolvers.Query.getSystemId,

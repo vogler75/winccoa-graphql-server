@@ -458,3 +458,43 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
 
   return router
 }
+
+// Create a separate router for dpQuery to avoid conflicts with parameterized routes
+module.exports.createQueryRouter = function(winccoa, logger, resolvers) {
+  const router = express.Router()
+
+  /**
+   * POST /restapi/query
+   * Execute SQL-like query on data points
+   *
+   * Body:
+   * {
+   *   "query": "string" - SQL statement (e.g., "SELECT '_original.._value' FROM 'ExampleDP_Arg*'")
+   * }
+   *
+   * Response:
+   * {
+   *   "result": [[any]] - Table-like structure where [0][0] is empty, [0][1..n] are column headers,
+   *                        [1..n][0] are line names (data point names), [1..n][1..n] are values
+   * }
+   */
+  router.post('/', async (req, res, next) => {
+    try {
+      const { query } = req.body
+
+      if (!query) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'query is required'
+        })
+      }
+
+      const result = await resolvers.Query.dpQuery(null, { query })
+      res.json({ result })
+    } catch (error) {
+      next(error)
+    }
+  })
+
+  return router
+}
