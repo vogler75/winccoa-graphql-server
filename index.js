@@ -20,18 +20,18 @@ const { WinccoaManager } = require('winccoa-manager');
 const winccoa = new WinccoaManager();
 
 // Import resolver modules
-const { createCommonResolvers } = require('./common');
-const { createAlertResolvers } = require('./alerting');
-const { createSubscriptionResolvers } = require('./subscriptions');
-const { createCnsResolvers } = require('./cns');
-const { createExtrasResolvers } = require('./extras');
+const { createCommonResolvers } = require('./graphql/common');
+const { createAlertResolvers } = require('./graphql/alerting');
+const { createSubscriptionResolvers } = require('./graphql/subscriptions');
+const { createCnsResolvers } = require('./graphql/cns');
+const { createExtrasResolvers } = require('./graphql/extras');
 
 // Import REST API
-const { createRestApi } = require('./rest-api');
+const { createRestApi } = require('./restapi/rest-api');
 
 // Import Swagger
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./openapi');
+const swaggerSpec = require('./restapi/openapi');
 
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
@@ -122,10 +122,10 @@ const logger = {
 };
 
 // Load GraphQL schema files
-const commonSchema = readFileSync(join(__dirname, 'common.gql'), 'utf-8');
-const alertingSchema = readFileSync(join(__dirname, 'alerting.gql'), 'utf-8');
-const cnsSchema = readFileSync(join(__dirname, 'cns.gql'), 'utf-8');
-const extrasSchema = readFileSync(join(__dirname, 'extras.gql'), 'utf-8');
+const commonSchema = readFileSync(join(__dirname, 'graphql/common.gql'), 'utf-8');
+const alertingSchema = readFileSync(join(__dirname, 'graphql/alerting.gql'), 'utf-8');
+const cnsSchema = readFileSync(join(__dirname, 'graphql/cns.gql'), 'utf-8');
+const extrasSchema = readFileSync(join(__dirname, 'graphql/extras.gql'), 'utf-8');
 
 // Combine all schema files
 const typeDefs = [commonSchema, alertingSchema, cnsSchema, extrasSchema];

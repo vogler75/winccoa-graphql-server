@@ -102,18 +102,43 @@ TOKEN_EXPIRY_MS=3600000
 LOG_LEVEL=info
 ```
 
-### Configuration File Location
-
-**Important:** The `.env` file must be placed in the same directory as the `index.js` file:
+### Project Structure
 
 ```
 winccoa-graphql-server/
-├── index.js          # Main server file
-├── .env              # Configuration file (create this)
-├── .env.example      # Example configuration
+├── index.js                # Main server file
+├── .env                    # Configuration file (create this)
+├── .env.example            # Example configuration
 ├── package.json
-└── ...
+├── graphql/                # GraphQL-related files
+│   ├── common.gql         # Common schema
+│   ├── common.js          # Common resolvers
+│   ├── alerting.gql       # Alert schema
+│   ├── alerting.js        # Alert resolvers
+│   ├── cns.gql            # CNS schema
+│   ├── cns.js             # CNS resolvers
+│   ├── extras.gql         # Extras schema
+│   ├── extras.js          # Extras resolvers
+│   └── subscriptions.js   # Subscription resolvers
+└── restapi/               # REST API files
+    ├── rest-api.js        # REST API router
+    ├── openapi.js         # OpenAPI loader
+    ├── openapi-full.yaml  # Complete OpenAPI spec
+    ├── REST-API.md        # REST API documentation
+    └── routes/            # REST endpoint routes
+        ├── auth-routes.js
+        ├── datapoint-routes.js
+        ├── datapoint-type-routes.js
+        ├── tag-routes.js
+        ├── alert-routes.js
+        ├── cns-routes.js
+        ├── system-routes.js
+        └── extras-routes.js
 ```
+
+### Configuration File Location
+
+**Important:** The `.env` file must be placed in the root directory (same directory as `index.js`).
 
 The server automatically detects its own directory and looks for the `.env` file there, so it will work regardless of where you start the server from.
 
@@ -424,8 +449,9 @@ Visit `http://localhost:4000/api-docs` for interactive REST API documentation wh
 - Import into tools like Postman, Insomnia, or generate client SDKs
 
 ### Additional Documentation
-- **REST API Reference**: [REST-API.md](./REST-API.md) - Complete REST endpoint documentation with examples
+- **REST API Reference**: [REST-API.md](./restapi/REST-API.md) - Complete REST endpoint documentation with examples
 - **GraphQL Schema**: Available via introspection at the GraphQL endpoint
+- **OpenAPI YAML**: [openapi-full.yaml](./restapi/openapi-full.yaml) - Complete OpenAPI 3.0 specification
 
 ## Environment Variables
 
