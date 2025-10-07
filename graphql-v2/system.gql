@@ -16,12 +16,12 @@ type System {
   """
   Get a specific data point by name
   """
-  dataPoint(name: String!): DataPoint
+  dp(name: String!): DataPoint
 
   """
   Search for data points
   """
-  dataPoints(
+  dps(
     pattern: String
     type: String
     limit: Int
@@ -31,12 +31,12 @@ type System {
   """
   Get a specific data point type definition
   """
-  dataPointType(name: String!): DataPointType
+  dpType(name: String!): DataPointType
 
   """
   List available data point types
   """
-  dataPointTypes(pattern: String, includeEmpty: Boolean): [DataPointType!]!
+  dpTypes(pattern: String, includeEmpty: Boolean): [DataPointType!]!
 
   """
   Access to alerts in this system

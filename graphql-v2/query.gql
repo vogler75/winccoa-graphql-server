@@ -15,12 +15,12 @@ type Query {
   """
   Direct access to a data point in the current system (convenience shortcut)
   """
-  dataPoint(name: String!): DataPoint
+  dp(name: String!): DataPoint
 
   """
   Search for data points in the current system (convenience shortcut)
   """
-  dataPoints(pattern: String, type: String, limit: Int, offset: Int): [DataPoint!]!
+  dps(pattern: String, type: String, limit: Int, offset: Int): [DataPoint!]!
 
   """
   Direct access to a tag with metadata (convenience shortcut)

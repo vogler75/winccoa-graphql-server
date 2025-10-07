@@ -15,9 +15,40 @@ if (dotenvResult.error) {
   console.log('   Loaded variables:', Object.keys(dotenvResult.parsed || {}).join(', '));
 }
 
+// Check for debug flag
+const DEBUG_WINCCOA = process.argv.includes('--debug');
+if (DEBUG_WINCCOA) {
+  console.log('🐛 Debug mode enabled: All WinCC OA Node.js function calls will be logged');
+}
+
 // Require WinCC OA interface
 const { WinccoaManager } = require('winccoa-manager');
-const winccoa = new WinccoaManager();
+const winccoaBase = new WinccoaManager();
+
+// Wrap WinCC OA manager to log all function calls if debug is enabled
+const winccoa = new Proxy(winccoaBase, {
+  get(target, prop) {
+    const value = target[prop];
+    if (typeof value === 'function' && DEBUG_WINCCOA) {
+      return function(...args) {
+        console.log(`[WINCCOA] ${prop}(${args.map(a => JSON.stringify(a)).join(', ')})`);
+        const result = value.apply(target, args);
+        if (result instanceof Promise) {
+          return result.then(res => {
+            console.log(`[WINCCOA] ${prop} => ${JSON.stringify(res)}`);
+            return res;
+          }).catch(err => {
+            console.log(`[WINCCOA] ${prop} => ERROR: ${err.message}`);
+            throw err;
+          });
+        }
+        console.log(`[WINCCOA] ${prop} => ${JSON.stringify(result)}`);
+        return result;
+      };
+    }
+    return value;
+  }
+});
 
 // Import V1 resolver modules
 const { createCommonResolvers } = require('./graphql-v1/common');
@@ -338,21 +369,24 @@ const authMiddleware = (req) => {
 const wsAuthMiddleware = (ctx) => {
   // Skip authentication if DISABLE_AUTH is true
   if (DISABLE_AUTH) {
+    logger.debug('WebSocket auth disabled, allowing anonymous access');
     return { user: { userId: 'anonymous', tokenId: 'no-auth', role: 'admin' } };
   }
-  
+
   const token = ctx.connectionParams?.Authorization;
-  
+
   if (!token) {
+    logger.warn('WebSocket connection missing authorization token');
     throw new Error('Missing authorization token');
   }
-  
+
   const user = validateToken(token.replace('Bearer ', ''));
-  
+
   if (!user) {
+    logger.warn('WebSocket connection has invalid or expired token');
     throw new Error('Invalid or expired token');
   }
-  
+
   return { user };
 };
 

@@ -73,7 +73,7 @@ function createCnsResolvers(winccoa, logger) {
 
           return paths.map(path => ({
             path,
-            dataPointName: dataPoint,
+            dpName: dataPoint,
             system: cns.system
           }))
         } catch (error) {
@@ -164,7 +164,7 @@ function createCnsResolvers(winccoa, logger) {
             name: rootPath.split('/').pop(),
             displayName: displayNames,
             displayPath: displayPath,
-            dataPointName: dpName,
+            dpName: dpName,
             tree
           }
         } catch (error) {
@@ -264,8 +264,8 @@ function createCnsResolvers(winccoa, logger) {
         return node.tree
       },
 
-      async dataPoint(node) {
-        const dpeName = node.dataPointName || (await winccoa.cnsGetId(node.path))
+      async dp(node) {
+        const dpeName = node.dpName || (await winccoa.cnsGetId(node.path))
         if (!dpeName) return null
 
         try {
@@ -280,13 +280,13 @@ function createCnsResolvers(winccoa, logger) {
             typeName
           }
         } catch (error) {
-          logger.error('CNSNode.dataPoint error:', error)
+          logger.error('CNSNode.dp error:', error)
           return null
         }
       },
 
-      async dataPointName(node) {
-        if (node.dataPointName) return node.dataPointName
+      async dpName(node) {
+        if (node.dpName) return node.dpName
 
         try {
           return await winccoa.cnsGetId(node.path)

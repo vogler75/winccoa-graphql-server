@@ -5,10 +5,10 @@ type Mutation {
   login(username: String!, password: String!): AuthPayload!
 
   """Data point operations"""
-  dataPoint: DataPointMutations!
+  dp: DataPointMutations!
 
   """Data point type operations"""
-  dataPointType: DataPointTypeMutations!
+  dpType: DataPointTypeMutations!
 
   """Alert operations"""
   alert: AlertMutations!

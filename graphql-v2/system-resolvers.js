@@ -5,7 +5,7 @@ const { convertAlertTimes } = require('../graphql-v1/alerting')
 
 function createSystemResolvers(winccoa, logger) {
   return {
-    async dataPoint(system, { name }) {
+    async dp(system, { name }) {
       const fullName = system.isLocal ? name : `${system.name}:${name}`
       const parsed = parseDataPointName(fullName)
       return {
@@ -15,7 +15,7 @@ function createSystemResolvers(winccoa, logger) {
       }
     },
 
-    async dataPoints(system, { pattern, type, limit, offset }) {
+    async dps(system, { pattern, type, limit, offset }) {
       try {
         const names = await winccoa.dpNames(pattern || '*', type)
 
@@ -38,7 +38,7 @@ function createSystemResolvers(winccoa, logger) {
       }
     },
 
-    async dataPointType(system, { name }) {
+    async dpType(system, { name }) {
       try {
         const types = await winccoa.dpTypes(name)
         if (!types || types.length === 0) return null
@@ -48,12 +48,12 @@ function createSystemResolvers(winccoa, logger) {
           system
         }
       } catch (error) {
-        logger.error('System.dataPointType error:', error)
+        logger.error('System.dpType error:', error)
         return null
       }
     },
 
-    async dataPointTypes(system, { pattern, includeEmpty }) {
+    async dpTypes(system, { pattern, includeEmpty }) {
       try {
         const types = await winccoa.dpTypes(pattern)
         return types.map(name => ({

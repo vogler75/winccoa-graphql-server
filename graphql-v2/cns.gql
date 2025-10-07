@@ -94,10 +94,10 @@ type CNSNode {
   tree: CNSTree!
 
   """Linked data point (if any)"""
-  dataPoint: DataPoint
+  dp: DataPoint
 
   """Linked data point name string"""
-  dataPointName: String
+  dpName: String
 
   """Get a specific property value"""
   property(key: String!): JSON

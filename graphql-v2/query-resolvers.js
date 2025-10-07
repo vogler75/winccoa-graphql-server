@@ -17,7 +17,7 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
     },
 
     // Direct data point access (convenience)
-    async dataPoint(_, { name }) {
+    async dp(_, { name }) {
       const parsed = parseDataPointName(name)
       return {
         name: parsed.dpName,
@@ -25,7 +25,7 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
       }
     },
 
-    async dataPoints(_, { pattern, type, limit, offset }) {
+    async dps(_, { pattern, type, limit, offset }) {
       try {
         const names = await winccoa.dpNames(pattern || '*', type)
 

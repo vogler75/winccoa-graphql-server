@@ -3,11 +3,11 @@
 function createMutationResolvers(existingResolvers) {
   return {
     // Top-level mutation resolvers return namespace objects
-    dataPoint() {
+    dp() {
       return {} // DataPointMutations resolvers will handle fields
     },
 
-    dataPointType() {
+    dpType() {
       return {} // DataPointTypeMutations resolvers will handle fields
     },
 

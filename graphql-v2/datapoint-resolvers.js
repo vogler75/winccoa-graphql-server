@@ -96,10 +96,19 @@ function createDataPointResolvers(winccoa, logger) {
 
       async cnsNodes(dataPoint) {
         try {
-          const paths = await winccoa.cnsGetNodesByData(dataPoint.fullName, 0, null)
+          // cnsGetNodesByData expects type and viewPath parameters
+          // type: optional (default searches all types)
+          // viewPath: optional (default '' searches all views)
+          const paths = await winccoa.cnsGetNodesByData(dataPoint.fullName)
+
+          if (!paths || paths.length === 0) {
+            logger.debug(`No CNS nodes found for data point: ${dataPoint.fullName}`)
+            return []
+          }
+
           return paths.map(path => ({
             path,
-            dataPointName: dataPoint.fullName,
+            dpName: dataPoint.fullName,
             dataPoint
           }))
         } catch (error) {
