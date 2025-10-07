@@ -1,5 +1,4 @@
 // Common GraphQL resolver functions for WinCC OA
-console.log('[DEBUG] common.js module loaded');
 
 // Element type mapping from WinCC OA numeric values to GraphQL enum
 const ElementTypeMap = {
@@ -183,9 +182,7 @@ function createCommonResolvers(winccoa, logger) {
       
        async dpGetPeriod(_, { startTime, endTime, dpeNames }) {
          try {
-           console.log(`[DEBUG] Original dpGetPeriod called with dpeNames: ${JSON.stringify(dpeNames)}`);
            const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
-           console.log(`[DEBUG] Original dpGetPeriod result:`, result);
            return result;
          } catch (error) {
            logger.error('dpGetPeriod error:', error);
@@ -314,30 +311,14 @@ function createCommonResolvers(winccoa, logger) {
        },
 
        async tagGetHistory(_, { startTime, endTime, dpeNames, limit, offset }) {
-         console.log(`[DEBUG] tagGetHistory called for ${dpeNames.join(', ')}`);
          try {
-           console.log(`[DEBUG] startTime: ${startTime}, endTime: ${endTime}, dpeNames: ${JSON.stringify(dpeNames)}`);
            logger.info(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
 
            const startDate = new Date(startTime);
            const endDate = new Date(endTime);
-           console.log(`[DEBUG] Parsed dates: start=${startDate.toISOString()}, end=${endDate.toISOString()}`);
 
            const result = await winccoa.dpGetPeriod(startDate, endDate, dpeNames);
 
-           console.log(`[DEBUG] dpGetPeriod returned: ${result}`);
-           console.log(`[DEBUG] Result type: ${typeof result}`);
-           if (result) {
-             console.log(`[DEBUG] Result keys: ${Object.keys(result)}`);
-             console.log(`[DEBUG] Result is array: ${Array.isArray(result)}`);
-             if (Array.isArray(result)) {
-               console.log(`[DEBUG] Array length: ${result.length}`);
-               if (result.length > 0) {
-                 console.log(`[DEBUG] First element:`, result[0]);
-                 console.log(`[DEBUG] First element type: ${typeof result[0]}`);
-               }
-             }
-           }
            logger.info('tagGetHistory dpGetPeriod result:', JSON.stringify(result, null, 2));
 
             // Transform the result into TagHistory format
@@ -510,33 +491,15 @@ function createCommonResolvers(winccoa, logger) {
 
      Tag: {
         async history(tag, { startTime, endTime, limit, offset }) {
-         console.log(`[DEBUG] Tag.history called for ${tag.name}`);
          try {
-           console.log(`[DEBUG] startTime: ${startTime}, endTime: ${endTime}`);
-           console.log(`[DEBUG] About to call logger.info`);
            logger.info(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
-           console.log(`[DEBUG] logger.info called`);
 
            const startDate = new Date(startTime);
            const endDate = new Date(endTime);
-           console.log(`[DEBUG] Parsed dates: start=${startDate.toISOString()}, end=${endDate.toISOString()}`);
 
            // Get historical data for this specific tag
            const result = await winccoa.dpGetPeriod(startDate, endDate, [tag.name]);
 
-           console.log(`[DEBUG] dpGetPeriod returned: ${result}`);
-           console.log(`[DEBUG] Result type: ${typeof result}`);
-           if (result) {
-             console.log(`[DEBUG] Result keys: ${Object.keys(result)}`);
-             console.log(`[DEBUG] Result is array: ${Array.isArray(result)}`);
-             if (Array.isArray(result)) {
-               console.log(`[DEBUG] Array length: ${result.length}`);
-               if (result.length > 0) {
-                 console.log(`[DEBUG] First element:`, result[0]);
-                 console.log(`[DEBUG] First element type: ${typeof result[0]}`);
-               }
-             }
-           }
            logger.info(`dpGetPeriod result for ${tag.name}:`, JSON.stringify(result, null, 2));
 
            const tagValues = [];

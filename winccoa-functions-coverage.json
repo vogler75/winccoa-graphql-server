@@ -1,0 +1,688 @@
+{
+  "alert": [
+    {
+      "function": "alertGet",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "alertGetPeriod",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "alertSet",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "alertSetTimed",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "alertSetTimedWait",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "alertSetWait",
+      "graphql": true,
+      "rest": true
+    }
+  ],
+  "cns": [
+    {
+      "function": "cns_checkId",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_checkName",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_checkSeparator",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_getNodeIcon",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cns_getNodeTypeDisplayName",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cns_getNodeTypes",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cns_getNodeTypeValue",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cns_getReadableViews",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cns_getViewPermission",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cns_isNode",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_isTree",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_isView",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_nodeExists",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_treeExists",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_viewDpToName",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cns_viewExists",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "cns_viewNameToDpName",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsAddNode",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsAddObserver",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsAddTree",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsChangeTree",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsCreateView",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsDeleteTree",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsDeleteView",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetAccessRight",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsGetChildren",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetDisplayNames",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetDisplayPath",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetId",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetIdSet",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetNodesByData",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetNodesByName",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetOPCAccessRight",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsGetParent",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetProperty",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetPropertyKeys",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetRoot",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetSystemNames",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsGetTrees",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetUserData",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsGetViewDisplayNames",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsGetViews",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsGetViewSeparators",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsRemoveObserver",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsSetProperty",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "cnsSetUserData",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "cnsSubStr",
+      "graphql": false,
+      "rest": false
+    }
+  ],
+  "cryptography": [
+    {
+      "function": "checkCrypt",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "crypt",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "decryptToBuffer",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "decryptToString",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "encrypt",
+      "graphql": false,
+      "rest": false
+    }
+  ],
+  "dataPoint": [
+    {
+      "function": "dpAliasToName",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpAttributeType",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpCancelSplitRequest",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpConnect",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "dpCopy",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpCreate",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpDelete",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpDisconnect",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpElementType",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpExists",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpGet",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpGetAlias",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetAllAliases",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetAllAttributes",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetAllConfigs",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetAllDescriptions",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetAllDetails",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetDescription",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetFormat",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetId",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetMaxAge",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpGetName",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetPeriod",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpGetPeriodSplit",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpGetUnit",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpNames",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpQuery",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpQueryConnectAll",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "dpQueryConnectSingle",
+      "graphql": true,
+      "rest": false
+    },
+    {
+      "function": "dpQueryDisconnect",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpQuerySplit",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpSet",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpSetAlias",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpSetAndWaitForValue",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpSetDescription",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpSetFormat",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpSetTimed",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpSetTimedWait",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpSetUnit",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpSetWait",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpSubStr",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "dpTypes",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpWaitForValue",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "nameCheck",
+      "graphql": false,
+      "rest": false
+    }
+  ],
+  "dataPointType": [
+    {
+      "function": "dpGetDpTypeRefs",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpGetRefsToDpType",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpTypeChange",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpTypeCreate",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpTypeDelete",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpTypeGet",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpTypeName",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "dpTypeRefName",
+      "graphql": true,
+      "rest": true
+    }
+  ],
+  "logging": [
+    {
+      "function": "logDebugF",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "logFatal",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "logInfo",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "logSevere",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "logWarning",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "securityEvent",
+      "graphql": false,
+      "rest": false
+    }
+  ],
+  "manager": [
+    {
+      "function": "cfgReadContent",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "exit",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "findFile",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "getOptions",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "getPaths",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "getProjectLangs",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "getSystemId",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "getSystemName",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "getUserId",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "getUserName",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "getVersionInfo",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "isDbgFlag",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "setOptions",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "setUserId",
+      "graphql": false,
+      "rest": false
+    }
+  ],
+  "redundancy": [
+    {
+      "function": "isReduActive",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "isRedundant",
+      "graphql": true,
+      "rest": true
+    },
+    {
+      "function": "myReduHost",
+      "graphql": false,
+      "rest": false
+    },
+    {
+      "function": "myReduHostNum",
+      "graphql": false,
+      "rest": false
+    }
+  ]
+}

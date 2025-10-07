@@ -104,22 +104,22 @@ const currentLogLevel = logLevels[LOG_LEVEL.toLowerCase()] || logLevels.info;
 const logger = {
   info: (...args) => {
     if (currentLogLevel >= logLevels.info) {
-      console.log(...args, '[INFO]');
+      console.log(...args);
     }
   },
   error: (...args) => {
     if (currentLogLevel >= logLevels.error) {
-      console.error(...args, '[ERROR]');
+      console.error(...args);
     }
   },
   warn: (...args) => {
     if (currentLogLevel >= logLevels.warn) {
-      console.warn(...args, '[WARN]');
+      console.warn(...args);
     }
   },
   debug: (...args) => {
     if (currentLogLevel >= logLevels.debug) {
-      console.log(...args, '[DEBUG]');
+      console.log(...args);
     }
   }
 };
@@ -238,7 +238,6 @@ function authenticateUser(username, password) {
 
 // Create resolver modules
 const commonResolvers = createCommonResolvers(winccoa, logger);
-console.log('[DEBUG] commonResolvers keys:', Object.keys(commonResolvers));
 const alertResolvers = createAlertResolvers(winccoa, logger);
 const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
 const cnsResolvers = createCnsResolvers(winccoa, logger);
@@ -246,11 +245,9 @@ const extrasResolvers = createExtrasResolvers(winccoa, logger);
 
 // Merge resolvers
 function mergeResolvers(...resolverObjects) {
-  console.log('[DEBUG] mergeResolvers called with', resolverObjects.length, 'resolver objects');
   const merged = {};
 
   for (const resolverObj of resolverObjects) {
-    console.log('[DEBUG] Processing resolver object with keys:', Object.keys(resolverObj));
     for (const [key, value] of Object.entries(resolverObj)) {
       if (!merged[key]) {
         merged[key] = {};
@@ -263,7 +260,6 @@ function mergeResolvers(...resolverObjects) {
     }
   }
 
-  console.log('[DEBUG] Final merged resolver keys:', Object.keys(merged));
   return merged;
 }
 
