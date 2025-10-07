@@ -38,8 +38,9 @@ type DataPoint {
 
   """
   Get historical tag values with metadata
+  Use either (startTime + endTime) OR lastMinutes
   """
-  tagHistory(startTime: Time!, endTime: Time!, limit: Int, offset: Int): TagHistory
+  tagHistory(startTime: Time, endTime: Time, lastMinutes: Int, limit: Int, offset: Int): TagHistory
 
   """
   Get alerts associated with this data point
@@ -77,10 +78,12 @@ type DataPointElement {
 
   """
   Get historical values for this element
+  Use either (startTime + endTime) OR lastMinutes
   """
   history(
-    startTime: Time!
-    endTime: Time!
+    startTime: Time
+    endTime: Time
+    lastMinutes: Int
     limit: Int
     offset: Int
   ): ElementHistory!

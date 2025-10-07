@@ -138,11 +138,23 @@ function createDataPointResolvers(winccoa, logger) {
         }
       },
 
-      async tagHistory(dataPoint, { startTime, endTime, limit, offset }) {
+      async tagHistory(dataPoint, { startTime, endTime, lastMinutes, limit, offset }) {
         try {
+          // Calculate time range
+          let rangeStart, rangeEnd
+          if (lastMinutes) {
+            rangeEnd = new Date()
+            rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
+          } else if (startTime && endTime) {
+            rangeStart = new Date(startTime)
+            rangeEnd = new Date(endTime)
+          } else {
+            throw new Error('Either provide (startTime and endTime) or lastMinutes')
+          }
+
           const result = await winccoa.dpGetPeriod(
-            new Date(startTime),
-            new Date(endTime),
+            rangeStart,
+            rangeEnd,
             [dataPoint.fullName]
           )
 
@@ -294,15 +306,27 @@ function createDataPointResolvers(winccoa, logger) {
         }
       },
 
-      async history(element, { startTime, endTime, limit, offset }) {
+      async history(element, { startTime, endTime, lastMinutes, limit, offset }) {
         try {
           const fullPath = element.path
             ? `${element.dataPoint.fullName}.${element.path}`
             : element.dataPoint.fullName
 
+          // Calculate time range
+          let rangeStart, rangeEnd
+          if (lastMinutes) {
+            rangeEnd = new Date()
+            rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
+          } else if (startTime && endTime) {
+            rangeStart = new Date(startTime)
+            rangeEnd = new Date(endTime)
+          } else {
+            throw new Error('Either provide (startTime and endTime) or lastMinutes')
+          }
+
           const result = await winccoa.dpGetPeriod(
-            new Date(startTime),
-            new Date(endTime),
+            rangeStart,
+            rangeEnd,
             [fullPath]
           )
 
