@@ -40,10 +40,7 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
     Tag: tagResolvers,
     Alert: alertResolvers,
     ...cnsResolvers,
-    Methods: methodsResolvers,
-
-    // MethodTag - keep existing resolver
-    MethodTag: existingResolvers.Tag,
+    ...methodsResolvers,
 
     // Version info types
     VersionInfo: {

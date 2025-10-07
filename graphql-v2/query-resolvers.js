@@ -18,23 +18,10 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
 
     // Direct data point access (convenience)
     async dataPoint(_, { name }) {
-      try {
-        const exists = await winccoa.dpExists(name)
-        if (!exists) return null
-
-        const parsed = parseDataPointName(name)
-        const system = await getSystemInfo(winccoa, parsed.systemName)
-        const typeName = await winccoa.dpTypeName(parsed.dpName)
-
-        return {
-          name: parsed.dpName,
-          fullName: name,
-          system,
-          typeName
-        }
-      } catch (error) {
-        logger.error('dataPoint error:', error)
-        return null
+      const parsed = parseDataPointName(name)
+      return {
+        name: parsed.dpName,
+        fullName: name
       }
     },
 

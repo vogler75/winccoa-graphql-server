@@ -1,72 +1,37 @@
 # Methods type - Legacy flat API (backward compatibility)
-# All existing query functions are available here unchanged
+# Grouped by category for better organization
 
 type Methods {
-  """Retrieves the current values of one or more data point elements"""
-  dpGet(dpeNames: [String!]!): JSON!
+  """Alert-related functions"""
+  alert: AlertMethods!
 
-  """Returns all the data point names that match a pattern"""
-  dpNames(dpPattern: String, dpType: String, ignoreCase: Boolean): [String!]!
+  """CNS (Central Navigation Service) functions"""
+  cns: CnsMethods!
 
-  """Returns all or selected data point types"""
-  dpTypes(pattern: String, systemId: Int, includeEmpty: Boolean): [String!]!
+  """Data Point functions"""
+  dataPoint: DataPointMethods!
 
-  """Returns the value of data point elements from the driver if older than specified age"""
-  dpGetMaxAge(age: Int!, dpeNames: [String!]!): JSON!
+  """Data Point Type functions"""
+  dataPointType: DataPointTypeMethods!
 
-  """Returns the data type of a specific data point element"""
-  dpElementType(dpeName: String!): ElementType!
+  """System functions"""
+  system: SystemMethods!
 
-  """Returns the data type of a data point attribute"""
-  dpAttributeType(dpAttributeName: String!): CtrlType!
+  """Redundancy functions"""
+  redundancy: RedundancyMethods!
+}
 
-  """Returns the data point type for a given data point name"""
-  dpTypeName(dp: String!): String!
-
-  """Returns the type reference of a selected data point element"""
-  dpTypeRefName(dpe: String!): String!
-
-  """Checks whether a data point exists"""
-  dpExists(dpeName: String!): Boolean!
-
-  """Returns historic values of data point elements within a specified time period"""
-  dpGetPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
-
-  """
-  Retrieves attribute values with the help of SQL statements.
-  Returns a table-like structure where [0][0] is empty, [0][1..n] are column headers,
-  and [1..n][0] are line names (data point names), [1..n][1..n] are the values.
-  """
-  dpQuery(query: String!): [[JSON!]!]!
-
-  """Checks if the event manager is currently the active redundancy partner"""
-  isReduActive: Boolean!
-
-  """Checks whether the project has been configured as redundant"""
-  isRedundant: Boolean!
-
-  """Returns the system ID for a specified system or the current system"""
-  getSystemId(systemName: String): Int!
-
-  """Returns the system name for a specified system ID or the current system"""
-  getSystemName(systemId: Int): String!
-
-  """Returns information about current API and WinCC OA versions"""
-  getVersionInfo: WinccoaVersionDetails!
-
-  """Retrieves typed tags with value, timestamp, and status"""
-  tagGet(dpeNames: [String!]!): [MethodTag!]!
-
-  """Retrieves historical data for multiple tags"""
-  tagGetHistory(startTime: Time!, endTime: Time!, dpeNames: [String!]!, limit: Int, offset: Int): [MethodTagHistory!]!
-
+"""Alert-related WinCC OA functions"""
+type AlertMethods {
   """Retrieves the last alert attributes of a data point"""
   alertGet(alertsTime: [AlertTimeInput!]!, dpeNames: [String!]!, alertCount: Int): JSON!
 
   """Retrieves alert values for a specific time period"""
   alertGetPeriod(startTime: Time!, endTime: Time!, names: [String!]!): AlertPeriodResult!
+}
 
-  # CNS methods
+"""CNS (Central Navigation Service) WinCC OA functions"""
+type CnsMethods {
   """Returns paths of all views for given system"""
   cnsGetViews(systemName: String!): [String!]!
 
@@ -132,8 +97,50 @@ type Methods {
 
   """Checks if separator is valid CNS separator"""
   cnsCheckSeparator(separator: String!): Boolean!
+}
 
-  # Data Point Type methods
+"""Data Point WinCC OA functions"""
+type DataPointMethods {
+  """Retrieves the current values of one or more data point elements"""
+  dpGet(dpeNames: [String!]!): JSON!
+
+  """Returns all the data point names that match a pattern"""
+  dpNames(dpPattern: String, dpType: String, ignoreCase: Boolean): [String!]!
+
+  """Returns all or selected data point types"""
+  dpTypes(pattern: String, systemId: Int, includeEmpty: Boolean): [String!]!
+
+  """Returns the value of data point elements from the driver if older than specified age"""
+  dpGetMaxAge(age: Int!, dpeNames: [String!]!): JSON!
+
+  """Returns the data type of a specific data point element"""
+  dpElementType(dpeName: String!): ElementType!
+
+  """Returns the data type of a data point attribute"""
+  dpAttributeType(dpAttributeName: String!): CtrlType!
+
+  """Returns the data point type for a given data point name"""
+  dpTypeName(dp: String!): String!
+
+  """Returns the type reference of a selected data point element"""
+  dpTypeRefName(dpe: String!): String!
+
+  """Checks whether a data point exists"""
+  dpExists(dpeName: String!): Boolean!
+
+  """Returns historic values of data point elements within a specified time period"""
+  dpGetPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
+
+  """
+  Retrieves attribute values with the help of SQL statements.
+  Returns a table-like structure where [0][0] is empty, [0][1..n] are column headers,
+  and [1..n][0] are line names (data point names), [1..n][1..n] are the values.
+  """
+  dpQuery(query: String!): [[JSON!]!]!
+}
+
+"""Data Point Type WinCC OA functions"""
+type DataPointTypeMethods {
   """Retrieves the structure of a data point type"""
   dpTypeGet(dpt: String!, includeSubTypes: Boolean): DpTypeNode!
 
@@ -144,25 +151,28 @@ type Methods {
   dpGetRefsToDpType(reference: String!): DpTypeReferences!
 }
 
-# Legacy types for methods namespace
-type MethodTag {
-  name: String!
-  value: JSON!
-  timestamp: Time!
-  status: JSON!
-  history(startTime: Time!, endTime: Time!, limit: Int, offset: Int): MethodTagHistory!
+"""System information WinCC OA functions"""
+type SystemMethods {
+  """Returns the system ID for a specified system or the current system"""
+  getSystemId(systemName: String): Int!
+
+  """Returns the system name for a specified system ID or the current system"""
+  getSystemName(systemId: Int): String!
+
+  """Returns information about current API and WinCC OA versions"""
+  getVersionInfo: WinccoaVersionDetails!
 }
 
-type MethodTagHistory {
-  name: String!
-  values: [MethodTagValue!]!
+"""Redundancy WinCC OA functions"""
+type RedundancyMethods {
+  """Checks if the event manager is currently the active redundancy partner"""
+  isReduActive: Boolean!
+
+  """Checks whether the project has been configured as redundant"""
+  isRedundant: Boolean!
 }
 
-type MethodTagValue {
-  timestamp: Time!
-  value: JSON!
-}
-
+# Supporting types for Methods namespace (V1 compatibility)
 type WinccoaVersionDetails {
   api: WinccoaApiVersion!
   winccoa: WinccoaSystemVersion!

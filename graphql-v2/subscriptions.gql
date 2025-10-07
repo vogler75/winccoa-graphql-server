@@ -28,7 +28,7 @@ type DpQueryConnectUpdate {
 }
 
 type TagUpdate {
-  tags: [MethodTag!]!
+  tags: [Tag!]!
   type: String!
   error: JSON
 }
