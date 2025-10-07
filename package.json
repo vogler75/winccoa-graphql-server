@@ -11,15 +11,18 @@
   "dependencies": {
     "@apollo/server": "^4.10.0",
     "@graphql-tools/schema": "^10.0.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "graphql": "^16.8.1",
     "graphql-ws": "^5.14.3",
-    "ws": "^8.16.0",
+    "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1",
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "body-parser": "^1.20.2",
-    "dotenv": "^16.3.1"
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "node-fetch": "^2.7.0"

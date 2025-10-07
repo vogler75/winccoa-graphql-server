@@ -26,6 +26,13 @@ const { createSubscriptionResolvers } = require('./subscriptions');
 const { createCnsResolvers } = require('./cns');
 const { createExtrasResolvers } = require('./extras');
 
+// Import REST API
+const { createRestApi } = require('./rest-api');
+
+// Import Swagger
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./openapi');
+
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
 const { expressMiddleware } = require('@apollo/server/express4');
@@ -576,7 +583,12 @@ async function startServer() {
     // Apply middleware
     app.use(cors(corsOptions));
     app.use(bodyParser.json());
-    
+
+    // Make auth functions available to REST API
+    app.locals.validateToken = validateToken;
+    app.locals.authenticateUser = authenticateUser;
+    app.locals.generateToken = generateToken;
+
     // Apply GraphQL middleware
     app.use(
       '/graphql',
@@ -584,13 +596,48 @@ async function startServer() {
         context: async ({ req }) => {
           // Always try to authenticate if a token is provided
           const user = authMiddleware(req);
-          
+
           // Return context with user if authenticated, or empty if not
           return user ? { user } : {};
         }
       })
     );
-    
+
+    // Apply REST API middleware
+    const restApi = createRestApi(winccoa, logger, resolvers, DISABLE_AUTH);
+    app.use('/restapi', restApi);
+
+    // Serve OpenAPI specification
+    app.get('/openapi.json', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(swaggerSpec);
+    });
+
+    // Serve Swagger UI documentation with dynamic server URL
+    app.use('/api-docs', swaggerUi.serve);
+    app.get('/api-docs', (req, res) => {
+      // Get the base URL from the request
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const baseUrl = `${protocol}://${host}`;
+
+      // Create a modified spec with the correct server URL
+      const modifiedSpec = {
+        ...swaggerSpec,
+        servers: [
+          {
+            url: baseUrl,
+            description: 'Current server'
+          }
+        ]
+      };
+
+      swaggerUi.setup(modifiedSpec, {
+        customCss: '.swagger-ui .topbar { display: none }',
+        customSiteTitle: 'WinCC OA REST API Documentation'
+      })(req, res);
+    });
+
     // Health check endpoint
     app.get('/health', (req, res) => {
       res.json({ status: 'healthy', uptime: process.uptime() });
@@ -601,6 +648,9 @@ async function startServer() {
       httpServer.listen(PORT, () => {
         logger.info(`🚀 GraphQL server ready at http://localhost:${PORT}/graphql`);
         logger.info(`🔌 WebSocket subscriptions ready at ws://localhost:${PORT}/graphql`);
+        logger.info(`🌐 REST API ready at http://localhost:${PORT}/restapi`);
+        logger.info(`📚 API documentation at http://localhost:${PORT}/api-docs`);
+        logger.info(`📄 OpenAPI spec at http://localhost:${PORT}/openapi.json`);
         if (DISABLE_AUTH) {
           logger.warn('⚠️  Authentication is DISABLED. Set DISABLE_AUTH=false to enable authentication.');
         }

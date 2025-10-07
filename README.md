@@ -1,20 +1,38 @@
-# WinCC OA GraphQL Server
+# WinCC OA GraphQL & REST API Server
 
-A secure GraphQL server implementation for WinCC OA Manager with environment-based authentication, JWT tokens, and WebSocket subscription support.
+A dual-interface API server for WinCC OA Manager featuring both GraphQL and REST APIs with comprehensive authentication, JWT tokens, and real-time subscription support.
 
 ## Features
 
+### 🌐 Dual API Interface
+- **GraphQL API** with WebSocket subscriptions for real-time updates
+- **REST API** with comprehensive HTTP endpoints for all operations
+- **OpenAPI 3.0 Documentation** with interactive Swagger UI
+- Both APIs share the same authentication system
+
+### 🔐 Security & Authentication
 - **Environment-Based Authentication** with configurable credentials
 - **Multiple Authentication Methods**:
   - Username/Password with JWT tokens
   - Direct access tokens (non-JWT)
   - Read-only user support
-- **GraphQL API** for WinCC OA data point operations
-- **WebSocket Subscriptions** for real-time data updates
 - **Role-Based Access Control** (admin vs read-only)
 - **Token Management** with automatic expiration and renewal
-- **Comprehensive Error Handling** and logging
+
+### 📊 Operations
+- Data point CRUD operations and value management
+- Data point type structure management
+- Tag queries with metadata (value, timestamp, status)
+- Alert handling and historical queries
+- CNS (Central Navigation Service) operations
+- System information and redundancy status
+- OPC UA address configuration
+
+### 🛠️ Developer Experience
+- **Interactive API Documentation** at `/api-docs`
 - **Health Check Endpoint** for monitoring
+- **Comprehensive Error Handling** and logging
+- **CORS Support** with configurable origins
 
 ## Installation
 
@@ -150,20 +168,63 @@ npm run dev
 
 ## API Endpoints
 
+### GraphQL API
 - **GraphQL Endpoint**: `http://localhost:4000/graphql`
 - **WebSocket Endpoint**: `ws://localhost:4000/graphql`
+
+### REST API
+- **Base URL**: `http://localhost:4000/restapi`
+- **Interactive Documentation**: `http://localhost:4000/api-docs`
+- **OpenAPI Specification**: `http://localhost:4000/openapi.json`
+
+### Monitoring
 - **Health Check**: `http://localhost:4000/health`
+
+## Choosing Between GraphQL and REST
+
+### Use GraphQL When:
+- You need real-time updates via WebSocket subscriptions
+- You want to fetch multiple related resources in a single request
+- You need flexible queries with only the fields you want
+- You're building a modern web/mobile app with complex data requirements
+
+### Use REST API When:
+- You prefer traditional HTTP methods (GET, POST, PUT, DELETE)
+- You want simple, predictable URL structures
+- You're integrating with systems that work better with REST
+- You need to cache responses at the HTTP level
+- You want to explore the API interactively via Swagger UI
+
+**Both APIs provide the same functionality and share authentication!**
 
 ## Authentication
 
+Both GraphQL and REST APIs use the same authentication system with JWT tokens.
+
 ### Method 1: Username/Password Login
 
+**GraphQL:**
 ```graphql
 mutation {
   login(username: "admin", password: "your-password") {
     token
     expiresAt
   }
+}
+```
+
+**REST API:**
+```bash
+curl -X POST http://localhost:4000/restapi/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"your-password"}'
+```
+
+Response:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresAt": "2024-01-01T13:00:00.000Z"
 }
 ```
 
@@ -174,7 +235,7 @@ Authorization: Bearer <jwt-token>
 
 ### Method 2: Direct Token Access
 
-Use the configured direct access token directly:
+Use the configured direct access token directly (works for both GraphQL and REST):
 ```
 Authorization: Bearer your-direct-access-token
 ```
@@ -191,9 +252,18 @@ Authorization: Bearer your-direct-access-token
 - Mutations are blocked with "Forbidden" error
 - Configured via `READONLY_USERNAME`/`READONLY_PASSWORD` or `READONLY_TOKEN`
 
-## Example Usage
+## Quick Start Examples
 
-### Login and Query (Admin)
+### Using the Interactive API Documentation (Easiest!)
+
+1. Start the server: `npm run dev`
+2. Open your browser to `http://localhost:4000/api-docs`
+3. Click the "Authorize" button and enter your token
+4. Try out any endpoint directly from the browser!
+
+### GraphQL Examples
+
+#### Login and Query (Admin)
 ```graphql
 # 1. Login
 mutation {
@@ -214,7 +284,7 @@ mutation {
 }
 ```
 
-### Read-Only Access
+#### Read-Only Access
 ```graphql
 # Login as read-only user
 mutation {
@@ -235,7 +305,7 @@ mutation {
 }
 ```
 
-### WebSocket Subscriptions
+#### WebSocket Subscriptions
 
 For WebSocket connections, pass the token in connection parameters:
 
@@ -247,6 +317,79 @@ const client = createClient({
   }
 });
 ```
+
+### REST API Examples
+
+#### Login and Get Data Point Value
+```bash
+# 1. Login
+curl -X POST http://localhost:4000/restapi/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"your-password"}'
+
+# Response: {"token":"eyJhbG...", "expiresAt":"2024-01-01T13:00:00.000Z"}
+
+# 2. Get data point value
+curl http://localhost:4000/restapi/datapoints/ExampleDP_Arg1.value/value \
+  -H "Authorization: Bearer eyJhbG..."
+
+# Response: {"value": 42.5}
+```
+
+#### Set Data Point Value (Admin Only)
+```bash
+curl -X PUT http://localhost:4000/restapi/datapoints/ExampleDP_Arg1.value/value \
+  -H "Authorization: Bearer eyJhbG..." \
+  -H "Content-Type: application/json" \
+  -d '{"value": 50.0}'
+
+# Response: {"success": true}
+```
+
+#### List Data Points
+```bash
+curl "http://localhost:4000/restapi/datapoints?pattern=ExampleDP_*" \
+  -H "Authorization: Bearer eyJhbG..."
+
+# Response: {"datapoints": ["ExampleDP_Arg1.", "ExampleDP_Arg2."]}
+```
+
+#### Get Tags with Metadata
+```bash
+curl "http://localhost:4000/restapi/tags?dpeNames=ExampleDP_1.value,ExampleDP_2.value" \
+  -H "Authorization: Bearer eyJhbG..."
+
+# Response: {
+#   "tags": [
+#     {
+#       "name": "ExampleDP_1.value",
+#       "value": 42.5,
+#       "timestamp": "2024-01-01T12:00:00Z",
+#       "status": {"_online": {"_value": true}}
+#     }
+#   ]
+# }
+```
+
+#### Configure OPC UA Address
+```bash
+curl -X POST http://localhost:4000/restapi/extras/opcua/address \
+  -H "Authorization: Bearer eyJhbG..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "datapointName": "TestMe.",
+    "driverNumber": 2,
+    "addressDirection": 2,
+    "addressDataType": 750,
+    "serverName": "OpcUaServer",
+    "subscriptionName": "Sub1",
+    "nodeId": "ns=2;s=MyNode"
+  }'
+
+# Response: {"success": true}
+```
+
+For complete REST API documentation, see [REST-API.md](./REST-API.md) or visit the interactive documentation at `http://localhost:4000/api-docs`.
 
 ## Security Features
 
@@ -266,11 +409,29 @@ const client = createClient({
 - Token validity extension on each request
 - Secure token validation
 
+## API Documentation
+
+### Interactive Documentation (Swagger UI)
+Visit `http://localhost:4000/api-docs` for interactive REST API documentation where you can:
+- Browse all available endpoints
+- See request/response schemas
+- Try out API calls directly from your browser
+- Authenticate and test with your credentials
+
+### OpenAPI Specification
+- **OpenAPI 3.0 JSON**: `http://localhost:4000/openapi.json`
+- **YAML File**: `openapi-full.yaml` in the project root
+- Import into tools like Postman, Insomnia, or generate client SDKs
+
+### Additional Documentation
+- **REST API Reference**: [REST-API.md](./REST-API.md) - Complete REST endpoint documentation with examples
+- **GraphQL Schema**: Available via introspection at the GraphQL endpoint
+
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GRAPHQL_PORT` | No | 4000 | Server port |
+| `GRAPHQL_PORT` | No | 4000 | Server port (used by both GraphQL and REST) |
 | `DISABLE_AUTH` | No | false | Disable all authentication (⚠️ dangerous) |
 | `JWT_SECRET` | Yes | - | JWT signing secret (change in production!) |
 | `TOKEN_EXPIRY_MS` | No | 3600000 | Token expiry time in milliseconds |
@@ -280,6 +441,8 @@ const client = createClient({
 | `READONLY_USERNAME` | No | - | Read-only username |
 | `READONLY_PASSWORD` | No | - | Read-only password |
 | `READONLY_TOKEN` | No | - | Direct read-only token |
+| `CORS_ORIGIN` | No | * | CORS allowed origins (comma-separated) |
+| `LOG_LEVEL` | No | info | Logging level (debug, info, warn, error) |
 
 ## Testing
 
@@ -363,6 +526,12 @@ Looking for .env file at: /path/to/.env
 🔐 Authentication Configuration: [shows configured options]
 ✅ Authentication is properly configured.
 
+🚀 GraphQL server ready at http://localhost:4000/graphql
+🔌 WebSocket subscriptions ready at ws://localhost:4000/graphql
+🌐 REST API ready at http://localhost:4000/restapi
+📚 API documentation at http://localhost:4000/api-docs
+📄 OpenAPI spec at http://localhost:4000/openapi.json
+
 # Missing .env file:
 Looking for .env file at: /path/to/.env
 ⚠️  .env file not found or could not be loaded: ENOENT: no such file or directory
@@ -372,3 +541,45 @@ Looking for .env file at: /path/to/.env
 Error: Cannot find module 'dotenv'
 # Solution: Run "npm install dotenv"
 ```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   HTTP Server (Port 4000)               │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌───────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │   GraphQL     │  │   REST API   │  │  Swagger UI │  │
+│  │  /graphql     │  │  /restapi/*  │  │  /api-docs  │  │
+│  │               │  │              │  │             │  │
+│  │  - Queries    │  │  - GET       │  │  - Browse   │  │
+│  │  - Mutations  │  │  - POST      │  │  - Try out  │  │
+│  │  - WebSocket  │  │  - PUT       │  │  - Auth     │  │
+│  │    (real-time)│  │  - DELETE    │  │             │  │
+│  └───────┬───────┘  └──────┬───────┘  └─────────────┘  │
+│          │                 │                            │
+│          └─────────┬───────┘                            │
+│                    │                                    │
+│         ┌──────────▼──────────┐                         │
+│         │  Shared Auth Layer  │                         │
+│         │  - JWT Tokens       │                         │
+│         │  - Role-Based Auth  │                         │
+│         └──────────┬──────────┘                         │
+│                    │                                    │
+│         ┌──────────▼──────────┐                         │
+│         │   WinCC OA Manager  │                         │
+│         │   - Data Points     │                         │
+│         │   - Alerts          │                         │
+│         │   - CNS             │                         │
+│         └─────────────────────┘                         │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key Benefits of Dual Interface:**
+- Use GraphQL for modern apps with real-time needs
+- Use REST for traditional integrations and easy testing
+- Share authentication tokens between both APIs
+- Explore and test via Swagger UI before writing code
+- One server, two complete APIs, same powerful functionality
