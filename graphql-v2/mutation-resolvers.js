@@ -19,8 +19,8 @@ function createMutationResolvers(existingResolvers) {
       return {} // CnsMutations resolvers will handle fields
     },
 
-    opcua() {
-      return {} // OpcUaMutations resolvers will handle fields
+    extras() {
+      return {} // ExtrasMutations resolvers will handle fields
     },
 
     // Login stays at top level
@@ -73,6 +73,15 @@ function createCnsMutationResolvers(existingResolvers) {
   }
 }
 
+// Extras mutation namespace resolvers
+function createExtrasMutationResolvers() {
+  return {
+    opcua() {
+      return {} // OpcUaMutations resolvers will handle fields
+    }
+  }
+}
+
 // OPC UA mutation namespace resolvers
 function createOpcUaMutationResolvers(existingResolvers) {
   return {
@@ -86,5 +95,6 @@ module.exports = {
   createDataPointTypeMutationResolvers,
   createAlertMutationResolvers,
   createCnsMutationResolvers,
+  createExtrasMutationResolvers,
   createOpcUaMutationResolvers
 }

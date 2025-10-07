@@ -1,7 +1,7 @@
-# Methods type - Legacy flat API (backward compatibility)
+# API type - WinCC OA Node.js API (backward compatibility)
 # Grouped by category for better organization
 
-type Methods {
+type API {
   """Alert-related functions"""
   alert: AlertMethods!
 

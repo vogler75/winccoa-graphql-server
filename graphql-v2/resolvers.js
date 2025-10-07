@@ -13,6 +13,7 @@ const {
   createDataPointTypeMutationResolvers,
   createAlertMutationResolvers,
   createCnsMutationResolvers,
+  createExtrasMutationResolvers,
   createOpcUaMutationResolvers
 } = require('./mutation-resolvers')
 
@@ -31,6 +32,7 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
   const dataPointTypeMutations = createDataPointTypeMutationResolvers(existingResolvers)
   const alertMutations = createAlertMutationResolvers(existingResolvers)
   const cnsMutations = createCnsMutationResolvers(existingResolvers)
+  const extrasMutations = createExtrasMutationResolvers()
   const opcuaMutations = createOpcUaMutationResolvers(existingResolvers)
 
   return {
@@ -58,6 +60,7 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
     DataPointTypeMutations: dataPointTypeMutations,
     AlertMutations: alertMutations,
     CnsMutations: cnsMutations,
+    ExtrasMutations: extrasMutations,
     OpcUaMutations: opcuaMutations,
 
     // Subscriptions - keep all existing subscriptions from V1

@@ -16,8 +16,8 @@ type Mutation {
   """CNS (Central Navigation Service) operations"""
   cns: CnsMutations!
 
-  """OPC UA configuration"""
-  opcua: OpcUaMutations!
+  """Extra operations (OPC UA, etc.)"""
+  extras: ExtrasMutations!
 }
 
 type AuthPayload {
@@ -98,6 +98,12 @@ type CnsMutations {
 
   """Set a property on a CNS node"""
   setProperty(cnsPath: String!, key: String!, value: JSON!, valueType: CtrlType!): Boolean!
+}
+
+# Extras Mutations
+type ExtrasMutations {
+  """OPC UA configuration"""
+  opcua: OpcUaMutations!
 }
 
 # OPC UA Mutations

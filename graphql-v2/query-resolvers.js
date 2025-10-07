@@ -61,9 +61,9 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
       }
     },
 
-    // Methods - delegate to existing resolvers
-    methods() {
-      return {} // The Methods type resolvers will handle the rest
+    // API - delegate to existing resolvers
+    api() {
+      return {} // The API type resolvers will handle the rest
     },
 
     // Version info

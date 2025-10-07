@@ -1,9 +1,9 @@
-// Methods type resolvers - Backward compatibility layer
+// API type resolvers - Backward compatibility layer
 // Delegates to existing V1 resolvers, grouped by category
 
 function createMethodsResolvers(existingResolvers) {
   return {
-    Methods: {
+    API: {
       alert: () => ({}),
       cns: () => ({}),
       dataPoint: () => ({}),

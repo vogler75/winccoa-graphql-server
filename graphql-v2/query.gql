@@ -23,10 +23,10 @@ type Query {
   dps(pattern: String, type: String, limit: Int, offset: Int): [DataPoint!]!
 
   """
-  Access to legacy method-based API (backward compatibility)
+  Access to WinCC OA Node.js API methods (backward compatibility)
   All existing flat query functions are available here
   """
-  methods: Methods!
+  api: API!
 
   """
   API and WinCC OA version information
