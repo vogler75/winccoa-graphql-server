@@ -2,6 +2,7 @@
 
 const { parseDataPointName, getSystemInfo } = require('./helpers')
 const { convertAlertTimes } = require('../graphql-v1/alerting')
+const { ALERT_ATTRIBUTE_MAP } = require('./alert-resolvers')
 
 function createSystemResolvers(winccoa, logger) {
   return {
@@ -66,38 +67,106 @@ function createSystemResolvers(winccoa, logger) {
       }
     },
 
-    async alerts(system, { startTime, endTime, lastMinutes, dataPoint, limit, offset }) {
+    async alerts(system, { startTime, endTime, lastMinutes, dpFilter, dpFilters, limit, offset }, context, info) {
       try {
-        const names = dataPoint ? [dataPoint] : []
+        // Collect requested alert attributes from GraphQL query
+        const selections = info.fieldNodes[0].selectionSet?.selections || []
+        const alertAttributes = ['_alert_hdl.._last'] // Always include _last
 
-        // Calculate time range
-        let rangeStart, rangeEnd
-        if (lastMinutes) {
-          rangeEnd = new Date()
-          rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
-        } else if (startTime && endTime) {
-          rangeStart = new Date(startTime)
-          rangeEnd = new Date(endTime)
-        } else {
-          throw new Error('Either provide (startTime and endTime) or lastMinutes')
+        for (const selection of selections) {
+          const fieldName = selection.name.value
+
+          if (fieldName === 'text') {
+            alertAttributes.push(ALERT_ATTRIBUTE_MAP.TEXT)
+          } else if (fieldName === 'acknowledged') {
+            alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_STATE)
+          } else if (fieldName === 'acknowledgedBy') {
+            alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_STATE)
+            alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_USER)
+          } else if (fieldName === 'acknowledgedAt') {
+            alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_STATE)
+            alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_TIME)
+          } else if (fieldName === 'priority' || fieldName === 'severity') {
+            alertAttributes.push(ALERT_ATTRIBUTE_MAP.PRIORITY)
+          } else if (fieldName === 'attribute') {
+            const args = selection.arguments || []
+            const nameArg = args.find(arg => arg.name.value === 'name')
+            if (nameArg && nameArg.value.value) {
+              const attrEnum = nameArg.value.value
+              if (ALERT_ATTRIBUTE_MAP[attrEnum]) {
+                alertAttributes.push(ALERT_ATTRIBUTE_MAP[attrEnum])
+              }
+            }
+          }
         }
 
-        const result = await winccoa.alertGetPeriod(
-          rangeStart,
-          rangeEnd,
-          names
-        )
+        // Remove duplicates
+        const uniqueAttributes = [...new Set(alertAttributes)]
+        const attributeList = uniqueAttributes.map(attr => `'${attr}'`).join(',')
 
-        const alertTimes = convertAlertTimes(result.alertTimes)
+        // Build dpQuery SELECT ALERT statement
+        // Priority: dpFilters > dpFilter > default "*"
+        let dpPattern
+        if (dpFilters && dpFilters.length > 0) {
+          // Format as {name1,name2,name3}
+          dpPattern = `{${dpFilters.join(',')}}`
+        } else {
+          dpPattern = dpFilter || '*'
+        }
 
-        // Build alert objects
-        const alerts = alertTimes.map((at, index) => ({
-          time: at.time,
-          count: at.count,
-          dpeName: at.dpe,
-          values: result.values[index] || {},
-          system
-        }))
+        let query = `SELECT ALERT ${attributeList} FROM '${dpPattern}'`
+
+        // Add TIMERANGE clause if time range is provided
+        if (lastMinutes || (startTime && endTime)) {
+          let rangeStart, rangeEnd
+          if (lastMinutes) {
+            rangeEnd = new Date()
+            rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
+          } else {
+            rangeStart = new Date(startTime)
+            rangeEnd = new Date(endTime)
+          }
+          query += ` TIMERANGE("${rangeStart.toISOString()}","${rangeEnd.toISOString()}",1,0)`
+        }
+
+        logger.info(`dpQuery SELECT ALERT: ${query}`)
+        const result = await winccoa.dpQuery(query)
+
+        // Parse dpQuery results into Alert objects
+        // Format: [header, ...dataRows]
+        // Header: ["", "", ":_alert_hdl.._last", ":_alert_hdl.._text", ...]
+        // DataRow: [dpeName, lastObject, value1, value2, ...]
+        const alerts = []
+        if (result && Array.isArray(result) && result.length > 1) {
+          const header = result[0]
+
+          // Skip first row (header) and process data rows
+          for (let i = 1; i < result.length; i++) {
+            const row = result[i]
+            const dpeName = row[0]
+            const lastObject = row[1] // _alert_hdl.._last contains {time, count, dpe}
+
+            // Build values object mapping attribute names to their values
+            const values = {}
+            // Start from column 2 (column 0 is dpeName, column 1 is _last)
+            for (let col = 2; col < row.length; col++) {
+              const attrName = header[col].replace(/^:/, '') // Remove leading ':'
+              values[attrName] = row[col]
+            }
+
+            // Extract time and count from lastObject
+            const time = lastObject && lastObject.time ? new Date(lastObject.time) : new Date()
+            const count = lastObject && lastObject.count !== undefined ? lastObject.count : 0
+
+            alerts.push({
+              time,
+              count,
+              dpeName,
+              values,
+              system
+            })
+          }
+        }
 
         // Apply pagination
         const start = offset || 0
@@ -105,7 +174,7 @@ function createSystemResolvers(winccoa, logger) {
         return alerts.slice(start, end)
       } catch (error) {
         logger.error('System.alerts error:', error)
-        return []
+        throw new Error(`Failed to query alerts: ${error.message}`)
       }
     },
 

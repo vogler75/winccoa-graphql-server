@@ -41,12 +41,14 @@ type System {
   """
   Access to alerts in this system
   Use either (startTime + endTime) OR lastMinutes
+  Filter by dpFilter (single pattern) or dpFilters (array of names)
   """
   alerts(
     startTime: Time
     endTime: Time
     lastMinutes: Int
-    dataPoint: String
+    dpFilter: String
+    dpFilters: [String!]
     limit: Int
     offset: Int
   ): [Alert!]!

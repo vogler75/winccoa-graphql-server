@@ -2,6 +2,7 @@
 
 const { parseDataPointName, getSystemInfo } = require('./helpers')
 const { ElementTypeMap } = require('../graphql-v1/common')
+const { ALERT_ATTRIBUTE_MAP } = require('./alert-resolvers')
 
 // Element status bit mapping (0-23)
 const STATUS_BIT_NAMES = [
@@ -205,34 +206,42 @@ function createDataPointResolvers(winccoa, logger) {
           const { convertAlertTimes } = require('../graphql-v1/alerting')
 
           // Collect alert attributes based on requested fields
-          const requestedFields = info.fieldNodes[0].selectionSet?.selections.map(s => s.name.value) || []
+          const selections = info.fieldNodes[0].selectionSet?.selections || []
           const alertAttributes = []
 
-          // Map GraphQL fields to WinCC OA alert attributes
-          if (requestedFields.includes('text')) {
-            alertAttributes.push('_alert_hdl.._text')
-          }
-          if (requestedFields.includes('acknowledged') || requestedFields.includes('acknowledgedBy') || requestedFields.includes('acknowledgedAt')) {
-            alertAttributes.push('_alert_hdl.._ack_state')
-            if (requestedFields.includes('acknowledgedBy')) {
-              alertAttributes.push('_alert_hdl.._ack_user')
+          for (const selection of selections) {
+            const fieldName = selection.name.value
+
+            // Map GraphQL fields to WinCC OA alert attributes
+            if (fieldName === 'text') {
+              alertAttributes.push(ALERT_ATTRIBUTE_MAP.TEXT)
+            } else if (fieldName === 'acknowledged') {
+              alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_STATE)
+            } else if (fieldName === 'acknowledgedBy') {
+              alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_STATE)
+              alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_USER)
+            } else if (fieldName === 'acknowledgedAt') {
+              alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_STATE)
+              alertAttributes.push(ALERT_ATTRIBUTE_MAP.ACK_TIME)
+            } else if (fieldName === 'priority' || fieldName === 'severity') {
+              alertAttributes.push(ALERT_ATTRIBUTE_MAP.PRIORITY)
+            } else if (fieldName === 'attribute') {
+              // Extract the specific attribute name from arguments
+              const args = selection.arguments || []
+              const nameArg = args.find(arg => arg.name.value === 'name')
+              if (nameArg && nameArg.value.value) {
+                const attrEnum = nameArg.value.value
+                if (ALERT_ATTRIBUTE_MAP[attrEnum]) {
+                  alertAttributes.push(ALERT_ATTRIBUTE_MAP[attrEnum])
+                }
+              }
             }
-            if (requestedFields.includes('acknowledgedAt')) {
-              alertAttributes.push('_alert_hdl.._ack_time')
-            }
-          }
-          if (requestedFields.includes('priority') || requestedFields.includes('severity')) {
-            alertAttributes.push('_alert_hdl.._prior')
-          }
-          if (requestedFields.includes('attributes') || requestedFields.includes('attribute')) {
-            // If attributes or attribute() is requested, we need to get all attributes
-            // For now, query common ones
-            alertAttributes.push('_alert_hdl.._text', '_alert_hdl.._ack_state', '_alert_hdl.._ack_user', '_alert_hdl.._ack_time', '_alert_hdl.._prior')
           }
 
-          // Build the full attribute paths with data point
-          const names = alertAttributes.length > 0
-            ? alertAttributes.map(attr => `${dataPoint.fullName}:${attr}`)
+          // Remove duplicates and build the full attribute paths with data point
+          const uniqueAttributes = [...new Set(alertAttributes)]
+          const names = uniqueAttributes.length > 0
+            ? uniqueAttributes.map(attr => `${dataPoint.fullName}:${attr}`)
             : [dataPoint.fullName]
 
           logger.info(`alertGetPeriod args: startTime=${rangeStart.toISOString()}, endTime=${rangeEnd.toISOString()}, names=${JSON.stringify(names)}`)
@@ -250,7 +259,8 @@ function createDataPointResolvers(winccoa, logger) {
                 time: at.time,
                 count: at.count,
                 dpeName: at.dpe.replace(/:_alert_hdl\.\..*$/, ''), // Remove attribute suffix
-                values: {}
+                values: {},
+                system: dataPoint.system
               })
             }
 

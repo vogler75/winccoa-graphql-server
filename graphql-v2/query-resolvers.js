@@ -19,9 +19,11 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
     // Direct data point access (convenience)
     async dp(_, { name }) {
       const parsed = parseDataPointName(name)
+      const system = await getSystemInfo(winccoa, parsed.systemName)
       return {
         name: parsed.dpName,
-        fullName: name
+        fullName: name,
+        system
       }
     },
 
@@ -34,11 +36,14 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
         const end = limit ? start + limit : names.length
         const paginatedNames = names.slice(start, end)
 
+        // Get system once for all data points (assuming same system)
+        const localSystem = await getSystemInfo(winccoa)
+
         // Build data point objects
         const dataPoints = []
         for (const name of paginatedNames) {
           const parsed = parseDataPointName(name)
-          const system = await getSystemInfo(winccoa, parsed.systemName)
+          const system = parsed.systemName ? await getSystemInfo(winccoa, parsed.systemName) : localSystem
           const typeName = await winccoa.dpTypeName(parsed.dpName)
 
           dataPoints.push({
