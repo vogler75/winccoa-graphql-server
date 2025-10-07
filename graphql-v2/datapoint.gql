@@ -44,8 +44,9 @@ type DataPoint {
 
   """
   Get alerts associated with this data point
+  Use either (startTime + endTime) OR lastMinutes
   """
-  alerts(limit: Int, offset: Int): [Alert!]!
+  alerts(startTime: Time, endTime: Time, lastMinutes: Int, limit: Int, offset: Int): [Alert!]!
 
   """
   Get CNS nodes that link to this data point

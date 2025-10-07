@@ -188,23 +188,81 @@ function createDataPointResolvers(winccoa, logger) {
         }
       },
 
-      async alerts(dataPoint, { limit, offset }) {
-        // Get recent alerts for this data point
-        const now = new Date()
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-
+      async alerts(dataPoint, { startTime, endTime, lastMinutes, limit, offset }, context, info) {
         try {
+          // Calculate time range
+          let rangeStart, rangeEnd
+          if (lastMinutes) {
+            rangeEnd = new Date()
+            rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
+          } else if (startTime && endTime) {
+            rangeStart = new Date(startTime)
+            rangeEnd = new Date(endTime)
+          } else {
+            throw new Error('Either provide (startTime and endTime) or lastMinutes')
+          }
+
           const { convertAlertTimes } = require('../graphql-v1/alerting')
-          const result = await winccoa.alertGetPeriod(yesterday, now, [dataPoint.fullName])
+
+          // Collect alert attributes based on requested fields
+          const requestedFields = info.fieldNodes[0].selectionSet?.selections.map(s => s.name.value) || []
+          const alertAttributes = []
+
+          // Map GraphQL fields to WinCC OA alert attributes
+          if (requestedFields.includes('text')) {
+            alertAttributes.push('_alert_hdl.._text')
+          }
+          if (requestedFields.includes('acknowledged') || requestedFields.includes('acknowledgedBy') || requestedFields.includes('acknowledgedAt')) {
+            alertAttributes.push('_alert_hdl.._ack_state')
+            if (requestedFields.includes('acknowledgedBy')) {
+              alertAttributes.push('_alert_hdl.._ack_user')
+            }
+            if (requestedFields.includes('acknowledgedAt')) {
+              alertAttributes.push('_alert_hdl.._ack_time')
+            }
+          }
+          if (requestedFields.includes('priority') || requestedFields.includes('severity')) {
+            alertAttributes.push('_alert_hdl.._prior')
+          }
+          if (requestedFields.includes('attributes') || requestedFields.includes('attribute')) {
+            // If attributes or attribute() is requested, we need to get all attributes
+            // For now, query common ones
+            alertAttributes.push('_alert_hdl.._text', '_alert_hdl.._ack_state', '_alert_hdl.._ack_user', '_alert_hdl.._ack_time', '_alert_hdl.._prior')
+          }
+
+          // Build the full attribute paths with data point
+          const names = alertAttributes.length > 0
+            ? alertAttributes.map(attr => `${dataPoint.fullName}:${attr}`)
+            : [dataPoint.fullName]
+
+          logger.info(`alertGetPeriod args: startTime=${rangeStart.toISOString()}, endTime=${rangeEnd.toISOString()}, names=${JSON.stringify(names)}`)
+          const result = await winccoa.alertGetPeriod(rangeStart, rangeEnd, names)
           const alertTimes = convertAlertTimes(result.alertTimes)
 
-          const alerts = alertTimes.map((at, index) => ({
-            time: at.time,
-            count: at.count,
-            dpeName: at.dpe,
-            values: result.values[index] || {},
-            dataPoint
-          }))
+          // Group alert results by time+count to reconstruct alert objects
+          // alertGetPeriod returns one entry per attribute, we need to group them
+          const alertMap = new Map()
+
+          alertTimes.forEach((at, index) => {
+            const key = `${at.time}_${at.count}`
+            if (!alertMap.has(key)) {
+              alertMap.set(key, {
+                time: at.time,
+                count: at.count,
+                dpeName: at.dpe.replace(/:_alert_hdl\.\..*$/, ''), // Remove attribute suffix
+                values: {}
+              })
+            }
+
+            // Extract attribute name from dpe (e.g., "System1:ExampleDP.:_alert_hdl.._text" -> "_alert_hdl.._text")
+            const attrMatch = at.dpe.match(/:(_alert_hdl\.\..+)$/)
+            if (attrMatch) {
+              const attrName = attrMatch[1]
+              alertMap.get(key).values[attrName] = result.values[index]
+            }
+          })
+
+          const alerts = Array.from(alertMap.values())
 
           const start = offset || 0
           const end = limit ? start + limit : alerts.length

@@ -4,7 +4,11 @@ const { parseDataPointName, getSystemInfo } = require('./helpers')
 
 function createAlertResolvers(winccoa, logger) {
   return {
-    async dataPoint(alert) {
+    dpeName(alert) {
+      return alert.dpeName
+    },
+
+    async dp(alert) {
       const parsed = parseDataPointName(alert.dpeName)
       const system = alert.system || await getSystemInfo(winccoa, parsed.systemName)
       const typeName = await winccoa.dpTypeName(parsed.dpName)
@@ -15,10 +19,6 @@ function createAlertResolvers(winccoa, logger) {
         system,
         typeName
       }
-    },
-
-    dataPointElementName(alert) {
-      return alert.dpeName
     },
 
     attribute(alert, { name }) {

@@ -66,17 +66,25 @@ function createSystemResolvers(winccoa, logger) {
       }
     },
 
-    async alerts(system, { startTime, endTime, dataPoint, limit, offset }) {
+    async alerts(system, { startTime, endTime, lastMinutes, dataPoint, limit, offset }) {
       try {
         const names = dataPoint ? [dataPoint] : []
-        if (!startTime || !endTime) {
-          // Need time range for alerts
-          return []
+
+        // Calculate time range
+        let rangeStart, rangeEnd
+        if (lastMinutes) {
+          rangeEnd = new Date()
+          rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
+        } else if (startTime && endTime) {
+          rangeStart = new Date(startTime)
+          rangeEnd = new Date(endTime)
+        } else {
+          throw new Error('Either provide (startTime and endTime) or lastMinutes')
         }
 
         const result = await winccoa.alertGetPeriod(
-          new Date(startTime),
-          new Date(endTime),
+          rangeStart,
+          rangeEnd,
           names
         )
 

@@ -40,10 +40,12 @@ type System {
 
   """
   Access to alerts in this system
+  Use either (startTime + endTime) OR lastMinutes
   """
   alerts(
     startTime: Time
     endTime: Time
+    lastMinutes: Int
     dataPoint: String
     limit: Int
     offset: Int

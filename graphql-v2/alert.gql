@@ -7,11 +7,11 @@ type Alert {
   """Alert count/sequence number"""
   count: Int!
 
-  """Data point this alert belongs to"""
-  dataPoint: DataPoint!
-
   """Data point element name"""
-  dataPointElementName: String!
+  dpeName: String!
+
+  """Data point this alert belongs to"""
+  dp: DataPoint!
 
   """
   Get a specific alert attribute by name
