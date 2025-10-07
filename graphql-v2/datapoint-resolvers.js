@@ -3,6 +3,56 @@
 const { parseDataPointName, getSystemInfo } = require('./helpers')
 const { ElementTypeMap } = require('../graphql-v1/common')
 
+// Element status bit mapping (0-23)
+const STATUS_BIT_NAMES = [
+  'ACTIVE',              // 0
+  'EXP_DEFAULT',         // 1
+  'AUT_DEFAULT',         // 2
+  'OUT_PRANGE',          // 3
+  'OUT_RANGE',           // 4
+  'EXP_INV',             // 5
+  'AUT_INV',             // 6
+  'ONLINE_BAD',          // 7
+  'DEFAULT_BAD',         // 8
+  'FROM_GI',             // 9
+  'FROM_SI',             // 10
+  'PER_ACTIVE',          // 11
+  'CORR',                // 12
+  'COMPR',               // 13
+  'COMP_CORR',           // 14
+  'CORR_ADD',            // 15
+  'COMP_INV',            // 16
+  'STIME_INV',           // 17
+  'TRANSITION',          // 18
+  'LAST_VALUE_STORAGE_OFF', // 19
+  'VALUE_CHANGED',       // 20
+  'VALUE_UP',            // 21
+  'UNCERTAIN',           // 22
+  'RESERVED'             // 23
+]
+
+function decodeStatusBits(statusValue) {
+  if (statusValue === null || statusValue === undefined) {
+    return { value: 0, bits: '0', on: [], off: STATUS_BIT_NAMES }
+  }
+
+  const value = typeof statusValue === 'number' ? statusValue : parseInt(statusValue, 10)
+  const bits = value.toString(2).padStart(24, '0')
+  const on = []
+  const off = []
+
+  for (let i = 0; i < 24; i++) {
+    const bitSet = (value & (1 << i)) !== 0
+    if (bitSet) {
+      on.push(STATUS_BIT_NAMES[i])
+    } else {
+      off.push(STATUS_BIT_NAMES[i])
+    }
+  }
+
+  return { value, bits, on, off }
+}
+
 function createDataPointResolvers(winccoa, logger) {
   return {
     DataPoint: {
@@ -80,7 +130,7 @@ function createDataPointResolvers(winccoa, logger) {
             name: dataPoint.fullName,
             value: results[0],
             timestamp: results[1],
-            status: results[2]
+            status: decodeStatusBits(results[2])
           }
         } catch (error) {
           logger.error('DataPoint.tag error:', error)
@@ -220,18 +270,10 @@ function createDataPointResolvers(winccoa, logger) {
           const result = await winccoa.dpGet([statusAttr])
           const statusValue = result[0]
 
-          return {
-            raw: statusValue,
-            online: statusValue !== null && statusValue !== undefined,
-            quality: null // TODO: Extract quality from status bits
-          }
+          return decodeStatusBits(statusValue)
         } catch (error) {
           logger.error('DataPointElement.status error:', error)
-          return {
-            raw: null,
-            online: false,
-            quality: null
-          }
+          return decodeStatusBits(0)
         }
       },
 
@@ -418,6 +460,26 @@ function createDataPointResolvers(winccoa, logger) {
       },
       children(node) {
         return node.children || []
+      }
+    },
+
+    ElementStatus: {
+      value(status) {
+        return status.value
+      },
+      bits(status) {
+        return status.bits
+      },
+      on(status) {
+        return status.on
+      },
+      off(status) {
+        return status.off
+      },
+      status(status, { bit }) {
+        const bitIndex = STATUS_BIT_NAMES.indexOf(bit)
+        if (bitIndex === -1) return false
+        return (status.value & (1 << bitIndex)) !== 0
       }
     }
   }

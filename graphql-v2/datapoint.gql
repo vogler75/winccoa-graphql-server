@@ -92,15 +92,49 @@ type DataPointElement {
   children: [DataPointElement!]!
 }
 
+"""Element status bit attributes"""
+enum ElementStatusBit {
+  ACTIVE
+  EXP_DEFAULT
+  AUT_DEFAULT
+  OUT_PRANGE
+  OUT_RANGE
+  EXP_INV
+  AUT_INV
+  ONLINE_BAD
+  DEFAULT_BAD
+  FROM_GI
+  FROM_SI
+  PER_ACTIVE
+  CORR
+  COMPR
+  COMP_CORR
+  CORR_ADD
+  COMP_INV
+  STIME_INV
+  TRANSITION
+  LAST_VALUE_STORAGE_OFF
+  VALUE_CHANGED
+  VALUE_UP
+  UNCERTAIN
+  RESERVED
+}
+
 type ElementStatus {
-  """Raw status value"""
-  raw: JSON!
+  """Raw status integer value"""
+  value: Int!
 
-  """Whether the element is online"""
-  online: Boolean!
+  """Binary representation as string"""
+  bits: String!
 
-  """Quality code (if available)"""
-  quality: Int
+  """Status bits that are ON (set to 1)"""
+  on: [ElementStatusBit!]!
+
+  """Status bits that are OFF (set to 0)"""
+  off: [ElementStatusBit!]!
+
+  """Check if a specific status bit is set"""
+  status(bit: ElementStatusBit!): Boolean!
 }
 
 type ElementHistory {
