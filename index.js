@@ -495,6 +495,10 @@ async function startServer() {
   try {
     // Create Express app
     const app = express();
+
+    // Trust proxy to get correct protocol/host when behind reverse proxy
+    app.set('trust proxy', true);
+
     const httpServer = http.createServer(app);
     
     // Create WebSocket server
@@ -675,8 +679,8 @@ async function startServer() {
     // Serve Swagger UI documentation with dynamic server URL
     app.use('/api-docs', swaggerUi.serve);
     app.get('/api-docs', (req, res) => {
-      // Get the base URL from the request
-      const protocol = req.protocol;
+      // Get the base URL from the request (handles reverse proxy correctly)
+      const protocol = req.get('x-forwarded-proto') || req.protocol;
       const host = req.get('host');
       const baseUrl = `${protocol}://${host}`;
 
