@@ -7,12 +7,15 @@ function createCnsResolvers(winccoa, logger) {
     CNS: {
       async view(cns, { name }) {
         try {
-          const systemName = cns.system ? cns.system.name : winccoa.getSystemName()
-          const views = await winccoa.cnsGetViews(systemName)
+          // For local system, use empty string; for remote systems, use "SystemName."
+          const systemPrefix = (cns.system && cns.system.isLocal) ? '' : (cns.system ? `${cns.system.name.replace(/:$/, '')}.` : '')
+          const viewPaths = await winccoa.cnsGetViews(systemPrefix)
 
-          if (!views.includes(name)) return null
+          // Build full path for checking
+          const fullPath = systemPrefix + name
+          if (!viewPaths.includes(fullPath)) return null
 
-          const displayNames = await winccoa.cnsGetDisplayNames(name)
+          const displayNames = await winccoa.cnsGetViewDisplayNames(fullPath)
 
           return {
             name,
@@ -28,21 +31,33 @@ function createCnsResolvers(winccoa, logger) {
 
       async views(cns) {
         try {
-          const systemName = cns.system ? cns.system.name : winccoa.getSystemName()
-          const viewNames = await winccoa.cnsGetViews(systemName)
+          // For local system, use empty string; for remote systems, use "SystemName."
+          const systemPrefix = (cns.system && cns.system.isLocal) ? '' : (cns.system ? `${cns.system.name.replace(/:$/, '')}.` : '')
+          logger.debug(`CNS.views: Getting views for system prefix '${systemPrefix}' (isLocal: ${cns.system?.isLocal})`)
+          const viewPaths = await winccoa.cnsGetViews(systemPrefix)
+          logger.debug(`CNS.views: Found ${viewPaths.length} views: ${JSON.stringify(viewPaths)}`)
 
           const views = []
-          for (const name of viewNames) {
+          for (const fullPath of viewPaths) {
             try {
-              const displayNames = await winccoa.cnsGetDisplayNames(name)
+              // Strip system prefix from view path
+              // e.g., "System1.Test:" -> "Test:" or "Test:" -> "Test:"
+              const viewName = systemPrefix ? fullPath.replace(systemPrefix, '') : fullPath
+              logger.debug(`CNS.views: Processing fullPath='${fullPath}', systemPrefix='${systemPrefix}', viewName='${viewName}'`)
+
+              // Get actual multi-language display names from CNS
+              logger.debug(`CNS.views: Calling cnsGetViewDisplayNames('${fullPath}')`)
+              const displayNames = await winccoa.cnsGetViewDisplayNames(fullPath)
+              logger.debug(`CNS.views: Got displayNames: ${JSON.stringify(displayNames)}`)
+
               views.push({
-                name,
+                name: viewName,  // e.g., "Test:"
                 displayName: displayNames,
                 separator: '/',
                 system: cns.system
               })
             } catch (e) {
-              logger.warn(`Failed to get display name for view ${name}:`, e)
+              logger.warn(`Failed to get display names for view ${fullPath}:`, e)
             }
           }
 

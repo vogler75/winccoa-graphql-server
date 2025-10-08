@@ -13,7 +13,9 @@ function parseDataPointName(fullName) {
 async function getSystemInfo(winccoa, systemName) {
   try {
     const systemId = systemName ? winccoa.getSystemId(systemName) : winccoa.getSystemId()
-    const name = systemName || winccoa.getSystemName(systemId)
+    let name = systemName || winccoa.getSystemName(systemId)
+    // Remove trailing colon if present (e.g., "System1:" -> "System1")
+    name = name.replace(/:$/, '')
     const localSystemId = winccoa.getSystemId()
 
     return {
