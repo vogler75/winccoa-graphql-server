@@ -6,9 +6,4 @@ type Query {
   All existing flat query functions are available here
   """
   api: API!
-
-  """
-  API and WinCC OA version information
-  """
-  version: VersionInfo!
 }
