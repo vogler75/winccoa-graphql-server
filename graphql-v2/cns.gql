@@ -38,9 +38,6 @@ type CNSView {
   """Path separator"""
   separator: String
 
-  """System this view belongs to"""
-  system: System!
-
   """Get a specific tree by name"""
   tree(name: String!): CNSTree
 

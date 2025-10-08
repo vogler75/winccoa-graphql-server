@@ -1,14 +1,14 @@
 // CNS hierarchy resolvers
 
-const { parseDataPointName, getSystemInfo } = require('./helpers')
+const { parseDataPointName } = require('./helpers')
 
 function createCnsResolvers(winccoa, logger) {
   return {
     CNS: {
       async view(cns, { name }) {
         try {
-          // For local system, use empty string; for remote systems, use "SystemName."
-          const systemPrefix = (cns.system && cns.system.isLocal) ? '' : (cns.system ? `${cns.system.name.replace(/:$/, '')}.` : '')
+          // Always use empty string for local system
+          const systemPrefix = ''
           const viewPaths = await winccoa.cnsGetViews(systemPrefix)
 
           // Build full path for checking
@@ -21,7 +21,7 @@ function createCnsResolvers(winccoa, logger) {
             name,
             displayName: displayNames,
             separator: '/',
-            system: cns.system
+            
           }
         } catch (error) {
           logger.error('CNS.view error:', error)
@@ -31,9 +31,9 @@ function createCnsResolvers(winccoa, logger) {
 
       async views(cns) {
         try {
-          // For local system, use empty string; for remote systems, use "SystemName."
-          const systemPrefix = (cns.system && cns.system.isLocal) ? '' : (cns.system ? `${cns.system.name.replace(/:$/, '')}.` : '')
-          logger.debug(`CNS.views: Getting views for system prefix '${systemPrefix}' (isLocal: ${cns.system?.isLocal})`)
+          // Always use empty string for local system
+          const systemPrefix = ''
+          logger.debug(`CNS.views: Getting views for local system`)
           const viewPaths = await winccoa.cnsGetViews(systemPrefix)
           logger.debug(`CNS.views: Found ${viewPaths.length} views: ${JSON.stringify(viewPaths)}`)
 
@@ -54,7 +54,7 @@ function createCnsResolvers(winccoa, logger) {
                 name: viewName,  // e.g., "Test:"
                 displayName: displayNames,
                 separator: '/',
-                system: cns.system
+                
               })
             } catch (e) {
               logger.warn(`Failed to get display names for view ${fullPath}:`, e)
@@ -74,7 +74,7 @@ function createCnsResolvers(winccoa, logger) {
 
           return paths.map(path => ({
             path,
-            system: cns.system
+            
           }))
         } catch (error) {
           logger.error('CNS.searchNodes error:', error)
@@ -89,7 +89,7 @@ function createCnsResolvers(winccoa, logger) {
           return paths.map(path => ({
             path,
             dpName: dataPoint,
-            system: cns.system
+            
           }))
         } catch (error) {
           logger.error('CNS.searchByDataPoint error:', error)
@@ -99,10 +99,6 @@ function createCnsResolvers(winccoa, logger) {
     },
 
     CNSView: {
-      system(view) {
-        return view.system
-      },
-
       async tree(view, { name }) {
         try {
           const treePath = `${view.name}/${name}`
@@ -315,13 +311,11 @@ function createCnsResolvers(winccoa, logger) {
 
         try {
           const parsed = parseDataPointName(dpeName)
-          const system = await getSystemInfo(winccoa, parsed.systemName)
           const typeName = await winccoa.dpTypeName(parsed.dpName)
 
           return {
             name: parsed.dpName,
             fullName: dpeName,
-            system,
             typeName
           }
         } catch (error) {

@@ -1,6 +1,6 @@
 // Alert type resolvers
 
-const { parseDataPointName, getSystemInfo } = require('./helpers')
+const { parseDataPointName } = require('./helpers')
 
 // Map GraphQL enum values to WinCC OA attribute names
 const ALERT_ATTRIBUTE_MAP = {

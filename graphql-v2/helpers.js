@@ -9,27 +9,6 @@ function parseDataPointName(fullName) {
   }
 }
 
-// Helper: Get system info
-async function getSystemInfo(winccoa, systemName) {
-  try {
-    const systemId = systemName ? winccoa.getSystemId(systemName) : winccoa.getSystemId()
-    let name = systemName || winccoa.getSystemName(systemId)
-    // Remove trailing colon if present (e.g., "System1:" -> "System1")
-    name = name.replace(/:$/, '')
-    const localSystemId = winccoa.getSystemId()
-
-    return {
-      id: systemId,
-      name: name,
-      isLocal: systemId === localSystemId,
-      isActive: true // TODO: Could check system connectivity
-    }
-  } catch (error) {
-    throw error
-  }
-}
-
 module.exports = {
-  parseDataPointName,
-  getSystemInfo
+  parseDataPointName
 }

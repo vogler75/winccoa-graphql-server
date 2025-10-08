@@ -1,60 +1,5 @@
-# System type - Represents a WinCC OA system (local or remote)
-
-type System {
-  """System identifier"""
-  id: Int!
-
-  """System name"""
-  name: String!
-
-  """Whether this is the current/local system"""
-  isLocal: Boolean!
-
-  """Whether this system is currently active"""
-  isActive: Boolean!
-
-  """
-  Get a specific data point type definition
-  """
-  dpType(name: String!): DataPointType
-
-  """
-  List available data point types
-  """
-  dpTypes(pattern: String, includeEmpty: Boolean): [DataPointType!]!
-
-  """
-  Access to alerts in this system
-  Use either (startTime + endTime) OR lastMinutes
-  Filter by dpFilter (single pattern) or dpFilters (array of names)
-  """
-  alerts(
-    startTime: Time
-    endTime: Time
-    lastMinutes: Int
-    dpFilter: String
-    dpFilters: [String!]
-    limit: Int
-    offset: Int
-  ): [Alert!]!
-
-  """
-  Access to CNS (Central Navigation Service)
-  """
-  cns: CNS!
-
-  """
-  System version information
-  """
-  version: SystemVersion!
-
-  """
-  Redundancy configuration
-  """
-  redundancy: RedundancyInfo!
-}
-
 # Version information types
+
 type VersionInfo {
   """API version"""
   api: ApiVersion!
@@ -77,12 +22,4 @@ type SystemVersion {
   platform: String!
   revision: Int!
   version: String!
-}
-
-type RedundancyInfo {
-  """Whether redundancy is configured for this project"""
-  isConfigured: Boolean!
-
-  """Whether this system is the active redundancy partner"""
-  isActive: Boolean!
 }

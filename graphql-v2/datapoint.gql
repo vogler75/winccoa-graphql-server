@@ -7,9 +7,6 @@ type DataPoint {
   """Full qualified name (with system prefix if applicable)"""
   fullName: String!
 
-  """The system this data point belongs to"""
-  system: System!
-
   """Data point type definition"""
   type: DataPointType!
 

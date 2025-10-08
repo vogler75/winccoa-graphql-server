@@ -1,7 +1,6 @@
 // GraphQL V2 Resolvers - Main resolver combiner
 
 const { createQueryResolvers } = require('./query-resolvers')
-const { createSystemResolvers } = require('./system-resolvers')
 const { createDataPointResolvers } = require('./datapoint-resolvers')
 const { createTagResolvers } = require('./tag-resolvers')
 const { createAlertResolvers } = require('./alert-resolvers')
@@ -19,7 +18,6 @@ const {
 
 function createV2Resolvers(winccoa, logger, existingResolvers) {
   const queryResolvers = createQueryResolvers(winccoa, logger, existingResolvers)
-  const systemResolvers = createSystemResolvers(winccoa, logger)
   const dataPointResolvers = createDataPointResolvers(winccoa, logger)
   const tagResolvers = createTagResolvers(winccoa, logger, existingResolvers)
   const alertResolvers = createAlertResolvers(winccoa, logger)
@@ -37,7 +35,6 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
 
   return {
     Query: queryResolvers,
-    System: systemResolvers,
     ...dataPointResolvers,
     Tag: tagResolvers,
     Alert: alertResolvers,

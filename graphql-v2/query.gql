@@ -2,17 +2,6 @@
 
 type Query {
   """
-  Get current system or a specific system by name.
-  Without arguments, returns the current/local system.
-  """
-  system(name: String): System!
-
-  """
-  List all available systems in the distributed system
-  """
-  systems: [System!]!
-
-  """
   Access to WinCC OA Node.js API methods (backward compatibility)
   All existing flat query functions are available here
   """

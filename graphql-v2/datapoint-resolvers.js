@@ -1,6 +1,6 @@
 // DataPoint and DataPointElement resolvers
 
-const { parseDataPointName, getSystemInfo } = require('./helpers')
+const { parseDataPointName } = require('./helpers')
 const { ElementTypeMap } = require('../graphql-v1/common')
 const { ALERT_ATTRIBUTE_MAP } = require('./alert-resolvers')
 
@@ -57,16 +57,11 @@ function decodeStatusBits(statusValue) {
 function createDataPointResolvers(winccoa, logger) {
   return {
     DataPoint: {
-      system(dataPoint) {
-        return dataPoint.system
-      },
-
       async type(dataPoint) {
         try {
           const typeName = dataPoint.typeName || await winccoa.dpTypeName(dataPoint.name)
           return {
-            name: typeName,
-            system: dataPoint.system
+            name: typeName
           }
         } catch (error) {
           logger.error('DataPoint.type error:', error)
@@ -281,7 +276,7 @@ function createDataPointResolvers(winccoa, logger) {
                 count: at.count,
                 dpeName: at.dpe.replace(/:_alert_hdl\.\..*$/, ''), // Remove attribute suffix
                 values: {},
-                system: dataPoint.system
+                
               })
             }
 
@@ -505,7 +500,7 @@ function createDataPointResolvers(winccoa, logger) {
           const refs = await winccoa.dpGetDpTypeRefs(dpType.name)
           return refs.dptNames.map(name => ({
             name,
-            system: dpType.system
+            
           }))
         } catch (error) {
           logger.error('DataPointType.references error:', error)
@@ -518,7 +513,7 @@ function createDataPointResolvers(winccoa, logger) {
           const refs = await winccoa.dpGetRefsToDpType(dpType.name)
           return refs.dptNames.map(name => ({
             name,
-            system: dpType.system
+            
           }))
         } catch (error) {
           logger.error('DataPointType.usedBy error:', error)
@@ -539,7 +534,7 @@ function createDataPointResolvers(winccoa, logger) {
             return {
               name: parsed.dpName,
               fullName: name,
-              system: dpType.system,
+              
               typeName: dpType.name
             }
           })

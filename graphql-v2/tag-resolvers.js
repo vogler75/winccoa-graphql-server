@@ -1,6 +1,6 @@
 // Tag type resolvers
 
-const { getSystemInfo } = require('./helpers')
+const {} = require('./helpers')
 
 function createTagResolvers(winccoa, logger, existingResolvers) {
   return {
@@ -14,7 +14,7 @@ function createTagResolvers(winccoa, logger, existingResolvers) {
         dataPoint: {
           name: tag.name,
           fullName: tag.name,
-          system: await getSystemInfo(winccoa),
+          
           typeName: null
         },
         value: tag.value
