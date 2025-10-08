@@ -36,9 +36,21 @@ window.addEventListener('load', function() {
 
       console.log('[Swagger Custom] Final servers list:', servers);
 
-      // Update the servers list
-      window.ui.setServers(servers);
-      console.log('[Swagger Custom] Servers updated!');
+      // Update the servers list using the correct Swagger UI API
+      try {
+        // Get the current spec
+        const spec = window.ui.getSystem().specSelectors.specJson().toJS();
+        console.log('[Swagger Custom] Current spec servers:', spec.servers);
+
+        // Update the servers in the spec
+        spec.servers = servers;
+
+        // Update the spec
+        window.ui.getSystem().specActions.updateSpec(JSON.stringify(spec));
+        console.log('[Swagger Custom] Spec updated with new servers!');
+      } catch (error) {
+        console.error('[Swagger Custom] Error updating servers:', error);
+      }
     } else {
       console.log('[Swagger Custom] window.ui not found yet');
     }
