@@ -6,39 +6,6 @@ const { ALERT_ATTRIBUTE_MAP } = require('./alert-resolvers')
 
 function createSystemResolvers(winccoa, logger) {
   return {
-    async dp(system, { name }) {
-      const fullName = system.isLocal ? name : `${system.name}:${name}`
-      const parsed = parseDataPointName(fullName)
-      return {
-        name: parsed.dpName,
-        fullName,
-        system
-      }
-    },
-
-    async dps(system, { pattern, type, limit, offset }) {
-      try {
-        const names = await winccoa.dpNames(pattern || '*', type)
-
-        // Apply pagination
-        const start = offset || 0
-        const end = limit ? start + limit : names.length
-        const paginatedNames = names.slice(start, end)
-
-        return paginatedNames.map(name => {
-          const parsed = parseDataPointName(name)
-          return {
-            name: parsed.dpName,
-            fullName: name,
-            system
-          }
-        })
-      } catch (error) {
-        logger.error('System.dataPoints error:', error)
-        return []
-      }
-    },
-
     async dpType(system, { name }) {
       try {
         const types = await winccoa.dpTypes(name)
@@ -183,7 +150,7 @@ function createSystemResolvers(winccoa, logger) {
     },
 
     version(system) {
-      return winccoa.getVersionInfo()
+      return winccoa.getVersionInfo().winccoa
     },
 
     redundancy(system) {

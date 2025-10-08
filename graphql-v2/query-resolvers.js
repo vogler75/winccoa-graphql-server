@@ -16,52 +16,6 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
       return [local]
     },
 
-    // Direct data point access (convenience)
-    async dp(_, { name }) {
-      const parsed = parseDataPointName(name)
-      const system = await getSystemInfo(winccoa, parsed.systemName)
-      return {
-        name: parsed.dpName,
-        fullName: name,
-        system
-      }
-    },
-
-    async dps(_, { pattern, type, limit, offset }) {
-      try {
-        const names = await winccoa.dpNames(pattern || '*', type)
-
-        // Apply pagination
-        const start = offset || 0
-        const end = limit ? start + limit : names.length
-        const paginatedNames = names.slice(start, end)
-
-        // Get system once for all data points (assuming same system)
-        const localSystem = await getSystemInfo(winccoa)
-
-        // Build data point objects
-        const dataPoints = []
-        for (const name of paginatedNames) {
-          const parsed = parseDataPointName(name)
-          const system = parsed.systemName ? await getSystemInfo(winccoa, parsed.systemName) : localSystem
-          // Use full name (with system prefix if present) to get type name
-          const typeName = await winccoa.dpTypeName(name)
-
-          dataPoints.push({
-            name: parsed.dpName,
-            fullName: name,
-            system,
-            typeName
-          })
-        }
-
-        return dataPoints
-      } catch (error) {
-        logger.error('dataPoints error:', error)
-        throw new Error(`Failed to get data points: ${error.message}`)
-      }
-    },
-
     // API - delegate to existing resolvers
     api() {
       return {} // The API type resolvers will handle the rest

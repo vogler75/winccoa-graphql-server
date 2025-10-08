@@ -14,21 +14,6 @@ type System {
   isActive: Boolean!
 
   """
-  Get a specific data point by name
-  """
-  dp(name: String!): DataPoint
-
-  """
-  Search for data points
-  """
-  dps(
-    pattern: String
-    type: String
-    limit: Int
-    offset: Int
-  ): [DataPoint!]!
-
-  """
   Get a specific data point type definition
   """
   dpType(name: String!): DataPointType

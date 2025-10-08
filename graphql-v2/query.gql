@@ -13,16 +13,6 @@ type Query {
   systems: [System!]!
 
   """
-  Direct access to a data point in the current system (convenience shortcut)
-  """
-  dp(name: String!): DataPoint
-
-  """
-  Search for data points in the current system (convenience shortcut)
-  """
-  dps(pattern: String, type: String, limit: Int, offset: Int): [DataPoint!]!
-
-  """
   Access to WinCC OA Node.js API methods (backward compatibility)
   All existing flat query functions are available here
   """
