@@ -680,8 +680,23 @@ async function startServer() {
     app.use('/api-docs', swaggerUi.serve);
     app.get('/api-docs', (req, res) => {
       // Get the base URL from the request (handles reverse proxy correctly)
-      const protocol = req.get('x-forwarded-proto') || req.protocol;
-      const host = req.get('host');
+      // Check multiple headers for HTTPS detection
+      let protocol = req.protocol;
+
+      // Check X-Forwarded-Proto (most common)
+      if (req.get('x-forwarded-proto')) {
+        protocol = req.get('x-forwarded-proto').split(',')[0].trim();
+      }
+      // Check X-Forwarded-Ssl (some proxies)
+      else if (req.get('x-forwarded-ssl') === 'on') {
+        protocol = 'https';
+      }
+      // Check if connection is secure
+      else if (req.secure) {
+        protocol = 'https';
+      }
+
+      const host = req.get('x-forwarded-host') || req.get('host');
       const baseUrl = `${protocol}://${host}`;
 
       // Create a modified spec with the correct server URL
@@ -712,6 +727,24 @@ async function startServer() {
     // Health check endpoint
     app.get('/health', (req, res) => {
       res.json({ status: 'healthy', uptime: process.uptime() });
+    });
+
+    // Debug endpoint to check headers (can be removed later)
+    app.get('/debug-headers', (req, res) => {
+      res.json({
+        protocol: req.protocol,
+        secure: req.secure,
+        hostname: req.hostname,
+        host: req.get('host'),
+        headers: {
+          'x-forwarded-proto': req.get('x-forwarded-proto'),
+          'x-forwarded-ssl': req.get('x-forwarded-ssl'),
+          'x-forwarded-host': req.get('x-forwarded-host'),
+          'x-forwarded-for': req.get('x-forwarded-for'),
+          'forwarded': req.get('forwarded'),
+        },
+        allHeaders: req.headers
+      });
     });
     
     // Start HTTP server
