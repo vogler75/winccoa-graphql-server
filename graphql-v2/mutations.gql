@@ -4,6 +4,15 @@ type Mutation {
   """Authentication"""
   login(username: String!, password: String!): AuthPayload!
 
+  """WinCC OA API mutations (backward compatibility)"""
+  api: APIMutations!
+
+  """Extra operations (OPC UA, etc.)"""
+  extras: ExtrasMutations!
+}
+
+# API Mutations - All existing flat mutation functions available here
+type APIMutations {
   """Data point operations"""
   dp: DataPointMutations!
 
@@ -15,9 +24,6 @@ type Mutation {
 
   """CNS (Central Navigation Service) operations"""
   cns: CnsMutations!
-
-  """Extra operations (OPC UA, etc.)"""
-  extras: ExtrasMutations!
 }
 
 type AuthPayload {

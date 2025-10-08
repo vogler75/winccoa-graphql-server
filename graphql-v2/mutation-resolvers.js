@@ -2,7 +2,23 @@
 
 function createMutationResolvers(existingResolvers) {
   return {
-    // Top-level mutation resolvers return namespace objects
+    // API mutations namespace
+    api() {
+      return {} // APIMutations resolvers will handle fields
+    },
+
+    extras() {
+      return {} // ExtrasMutations resolvers will handle fields
+    },
+
+    // Login stays at top level
+    login: existingResolvers.Mutation.login
+  }
+}
+
+// APIMutations resolver - groups all API-level mutations
+function createAPIMutationResolvers() {
+  return {
     dp() {
       return {} // DataPointMutations resolvers will handle fields
     },
@@ -17,14 +33,7 @@ function createMutationResolvers(existingResolvers) {
 
     cns() {
       return {} // CnsMutations resolvers will handle fields
-    },
-
-    extras() {
-      return {} // ExtrasMutations resolvers will handle fields
-    },
-
-    // Login stays at top level
-    login: existingResolvers.Mutation.login
+    }
   }
 }
 
@@ -91,6 +100,7 @@ function createOpcUaMutationResolvers(existingResolvers) {
 
 module.exports = {
   createMutationResolvers,
+  createAPIMutationResolvers,
   createDataPointMutationResolvers,
   createDataPointTypeMutationResolvers,
   createAlertMutationResolvers,

@@ -8,6 +8,7 @@ const { createCnsResolvers } = require('./cns-resolvers')
 const { createMethodsResolvers } = require('./methods-resolvers')
 const {
   createMutationResolvers,
+  createAPIMutationResolvers,
   createDataPointMutationResolvers,
   createDataPointTypeMutationResolvers,
   createAlertMutationResolvers,
@@ -26,6 +27,7 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
 
   // Mutation namespaces
   const mutationResolvers = createMutationResolvers(existingResolvers)
+  const apiMutations = createAPIMutationResolvers()
   const dataPointMutations = createDataPointMutationResolvers(existingResolvers)
   const dataPointTypeMutations = createDataPointTypeMutationResolvers(existingResolvers)
   const alertMutations = createAlertMutationResolvers(existingResolvers)
@@ -53,6 +55,7 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
 
     // Mutations - namespaced by domain
     Mutation: mutationResolvers,
+    APIMutations: apiMutations,
     DataPointMutations: dataPointMutations,
     DataPointTypeMutations: dataPointTypeMutations,
     AlertMutations: alertMutations,
