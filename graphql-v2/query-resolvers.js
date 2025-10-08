@@ -44,7 +44,8 @@ function createQueryResolvers(winccoa, logger, existingResolvers) {
         for (const name of paginatedNames) {
           const parsed = parseDataPointName(name)
           const system = parsed.systemName ? await getSystemInfo(winccoa, parsed.systemName) : localSystem
-          const typeName = await winccoa.dpTypeName(parsed.dpName)
+          // Use full name (with system prefix if present) to get type name
+          const typeName = await winccoa.dpTypeName(name)
 
           dataPoints.push({
             name: parsed.dpName,
