@@ -173,6 +173,10 @@
             <div class="logo">🏭</div>
             <h1>WinCC OA API Server</h1>
             <p class="subtitle">Dual-Interface API for Industrial Automation</p>
+            <div class="status-indicator" style="margin-top: 1.5rem;">
+                <span class="status-dot"></span>
+                <span id="healthStatus">Server Online</span>
+            </div>
         </div>
 
         <div class="api-grid">
@@ -194,19 +198,14 @@
                 <div class="api-endpoint">/api-docs</div>
             </a>
 
-            <a href="/restapi/health" class="api-card">
-                <div class="api-icon">💚</div>
-                <div class="api-title">Health Check</div>
+            <a href="/stats.html" class="api-card">
+                <div class="api-icon">📊</div>
+                <div class="api-title">Usage Statistics</div>
                 <div class="api-description">
-                    Server status and uptime monitoring
+                    Real-time API usage tracking and analytics
                 </div>
-                <div class="api-endpoint">/restapi/health</div>
+                <div class="api-endpoint">/stats.html</div>
             </a>
-        </div>
-
-        <div class="status-indicator">
-            <span class="status-dot"></span>
-            <span>Server Online</span>
         </div>
 
         <div class="footer">
@@ -221,19 +220,46 @@
     </div>
 
     <script>
-        // Optional: Check server health and update status indicator
-        fetch('/restapi/health')
-            .then(response => response.json())
-            .then(data => {
-                console.log('Server health:', data);
-            })
-            .catch(error => {
-                console.error('Health check failed:', error);
-                const statusDot = document.querySelector('.status-dot');
-                if (statusDot) {
-                    statusDot.style.background = '#ef4444';
-                }
-            });
+        // Check server health and update status indicator
+        function updateHealth() {
+            fetch('/restapi/health')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Server health:', data);
+                    const healthStatus = document.getElementById('healthStatus');
+                    const uptimeMinutes = Math.floor(data.uptime / 60);
+                    const uptimeHours = Math.floor(uptimeMinutes / 60);
+                    const uptimeDays = Math.floor(uptimeHours / 24);
+
+                    let uptimeStr = '';
+                    if (uptimeDays > 0) {
+                        uptimeStr = `${uptimeDays}d ${uptimeHours % 24}h uptime`;
+                    } else if (uptimeHours > 0) {
+                        uptimeStr = `${uptimeHours}h ${uptimeMinutes % 60}m uptime`;
+                    } else {
+                        uptimeStr = `${uptimeMinutes}m uptime`;
+                    }
+
+                    if (healthStatus) {
+                        healthStatus.textContent = `Server Online • ${uptimeStr}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Health check failed:', error);
+                    const statusDot = document.querySelector('.status-dot');
+                    const healthStatus = document.getElementById('healthStatus');
+                    if (statusDot) {
+                        statusDot.style.background = '#ef4444';
+                    }
+                    if (healthStatus) {
+                        healthStatus.textContent = 'Server Offline';
+                    }
+                });
+        }
+
+        // Update health on load and every 30 seconds
+        updateHealth();
+        setInterval(updateHealth, 30000);
     </script>
 </body>
 </html>

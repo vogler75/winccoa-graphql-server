@@ -54,12 +54,43 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
     next()
   }
 
+  // Usage tracking middleware - track all REST API calls
+  router.use((req, res, next) => {
+    // Track the API call
+    const usageTracker = req.app.locals.usageTracker
+    if (usageTracker) {
+      // Create endpoint identifier: method + path
+      const endpoint = `${req.method} ${req.path}`
+      usageTracker.track('restapi', endpoint)
+    }
+    next()
+  })
+
   // Health check endpoint (no auth required)
   router.get('/health', (req, res) => {
     res.json({
       status: 'healthy',
       service: 'WinCC OA REST API',
       uptime: process.uptime()
+    })
+  })
+
+  // Usage stats endpoint (no auth required)
+  router.get('/stats', (req, res) => {
+    const usageTracker = req.app.locals.usageTracker
+    if (!usageTracker) {
+      return res.status(500).json({ error: 'Usage tracker not available' })
+    }
+
+    const sortBy = req.query.sortBy || 'name' // 'name' or 'count'
+    const stats = sortBy === 'count'
+      ? usageTracker.getStatsSortedByCount()
+      : usageTracker.getStatsSortedByName()
+
+    res.json({
+      stats,
+      total: stats.length,
+      sortBy
     })
   })
 

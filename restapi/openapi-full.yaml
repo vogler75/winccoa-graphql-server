@@ -307,6 +307,63 @@ paths:
                     type: number
                     example: 12345.67
 
+  # Usage Statistics
+  /restapi/stats:
+    get:
+      tags: [System]
+      summary: Get API usage statistics
+      description: |
+        Retrieve usage statistics for all GraphQL and REST API endpoints (no authentication required).
+        Data is tracked in-memory and persisted to disk every 10 seconds.
+      parameters:
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [name, count]
+            default: name
+          description: Sort results by name or call count
+          example: count
+      responses:
+        '200':
+          description: Usage statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: graphql/query/dataPoint
+                          description: API endpoint name (prefixed with graphql/ or restapi/)
+                        count:
+                          type: integer
+                          example: 42
+                          description: Number of times this endpoint was called
+                  total:
+                    type: integer
+                    example: 15
+                    description: Total number of unique endpoints tracked
+                  sortBy:
+                    type: string
+                    example: count
+                    description: Current sort method applied
+              example:
+                stats:
+                  - name: graphql/query/dataPoint
+                    count: 42
+                  - name: restapi/GET /health
+                    count: 35
+                  - name: graphql/mutation/dpSet
+                    count: 18
+                total: 3
+                sortBy: count
+
   # Data Points - List and Create
   /restapi/datapoints:
     get:

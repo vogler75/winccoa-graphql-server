@@ -67,6 +67,9 @@ const { createRestApi } = require('./restapi/rest-api');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./restapi/openapi');
 
+// Import usage tracker
+const { UsageTracker } = require('./usage-tracker');
+
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
 const { expressMiddleware } = require('@apollo/server/express4');
@@ -154,6 +157,9 @@ const logger = {
     }
   }
 };
+
+// Create usage tracker instance
+const usageTracker = new UsageTracker(logger);
 
 // Load GraphQL V2 schema (modular structure)
 const schemaV2 = require('./graphql-v2');
@@ -574,12 +580,39 @@ async function startServer() {
       }
     };
     
+    // Usage tracking plugin
+    const usageTrackingPlugin = {
+      async requestDidStart() {
+        return {
+          async didResolveOperation(requestContext) {
+            const { operationName, operation } = requestContext;
+
+            // Skip introspection queries
+            if (operationName === 'IntrospectionQuery') return;
+
+            // Track the operation
+            if (operation) {
+              const selections = operation.selectionSet?.selections || [];
+              for (const selection of selections) {
+                if (selection.kind === 'Field') {
+                  const fieldName = selection.name.value;
+                  const operationType = operation.operation; // query, mutation, subscription
+                  usageTracker.track('graphql', `${operationType}/${fieldName}`);
+                }
+              }
+            }
+          }
+        };
+      }
+    };
+
     // Create Apollo Server
     const server = new ApolloServer({
       schema,
       plugins: [
         ApolloServerPluginDrainHttpServer({ httpServer }),
         authPlugin,
+        usageTrackingPlugin,
         {
           async serverWillStart() {
             return {
@@ -609,10 +642,11 @@ async function startServer() {
     app.use(cors(corsOptions));
     app.use(bodyParser.json());
 
-    // Make auth functions available to REST API
+    // Make auth functions and usage tracker available to REST API
     app.locals.validateToken = validateToken;
     app.locals.authenticateUser = authenticateUser;
     app.locals.generateToken = generateToken;
+    app.locals.usageTracker = usageTracker;
 
     // Apply GraphQL middleware
     app.use(
@@ -686,6 +720,7 @@ async function startServer() {
         logger.info(`🔌 WebSocket:           ws://localhost:${PORT}/graphql`);
         logger.info(`🌐 REST API:            http://localhost:${PORT}/restapi`);
         logger.info(`📚 API Documentation:   http://localhost:${PORT}/api-docs`);
+        logger.info(`📊 Usage Statistics:    http://localhost:${PORT}/stats.html`);
         logger.info(`📄 OpenAPI Spec:        http://localhost:${PORT}/openapi.json`);
         logger.info(`💚 Health Check:        http://localhost:${PORT}/restapi/health`);
         logger.info(`─────────────────────────────────────────────────`);
@@ -715,11 +750,13 @@ async function startServer() {
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   logger.info('Shutting down gracefully...');
+  usageTracker.shutdown();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   logger.info('Shutting down gracefully...');
+  usageTracker.shutdown();
   process.exit(0);
 });
 
