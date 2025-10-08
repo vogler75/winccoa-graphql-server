@@ -15,26 +15,9 @@ window.addEventListener('load', function() {
       const origin = window.location.origin;
       console.log('[Swagger Custom] Detected origin:', origin);
 
-      // Get existing servers from the spec (includes localhost)
-      const existingServers = window.ui.specSelectors?.servers()?.toJS() || [];
-      console.log('[Swagger Custom] Existing servers:', existingServers);
-
-      // Add the detected client URL if it's different from existing servers
-      const clientUrl = { url: origin, description: 'Current server (detected)' };
-      const isDuplicate = existingServers.some(s => s.url === origin);
-      console.log('[Swagger Custom] Is duplicate?', isDuplicate);
-
-      let servers;
-      if (!isDuplicate) {
-        // Add client URL first, then existing servers
-        servers = [clientUrl, ...existingServers];
-        console.log('[Swagger Custom] Adding client URL to server list');
-      } else {
-        servers = existingServers;
-        console.log('[Swagger Custom] Client URL already in list, using existing servers');
-      }
-
-      console.log('[Swagger Custom] Final servers list:', servers);
+      // Only use the detected URL, remove localhost
+      const servers = [{ url: origin, description: 'Current server' }];
+      console.log('[Swagger Custom] Setting servers to:', servers);
 
       // Update the servers list using the correct Swagger UI API
       try {
@@ -42,12 +25,12 @@ window.addEventListener('load', function() {
         const spec = window.ui.getSystem().specSelectors.specJson().toJS();
         console.log('[Swagger Custom] Current spec servers:', spec.servers);
 
-        // Update the servers in the spec
+        // Replace servers with only the detected URL
         spec.servers = servers;
 
         // Update the spec
         window.ui.getSystem().specActions.updateSpec(JSON.stringify(spec));
-        console.log('[Swagger Custom] Spec updated with new servers!');
+        console.log('[Swagger Custom] Spec updated! Only detected URL in list.');
       } catch (error) {
         console.error('[Swagger Custom] Error updating servers:', error);
       }
