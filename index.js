@@ -679,40 +679,11 @@ async function startServer() {
     // Serve Swagger UI documentation with dynamic server URL
     app.use('/api-docs', swaggerUi.serve);
     app.get('/api-docs', (req, res) => {
-      // Get the base URL from the request (handles reverse proxy correctly)
-      // Check multiple headers for HTTPS detection
-      let protocol = req.protocol;
-
-      // Check X-Forwarded-Proto (most common)
-      if (req.get('x-forwarded-proto')) {
-        protocol = req.get('x-forwarded-proto').split(',')[0].trim();
-      }
-      // Check X-Forwarded-Ssl (some proxies)
-      else if (req.get('x-forwarded-ssl') === 'on') {
-        protocol = 'https';
-      }
-      // Check if connection is secure
-      else if (req.secure) {
-        protocol = 'https';
-      }
-
-      const host = req.get('x-forwarded-host') || req.get('host');
-      const baseUrl = `${protocol}://${host}`;
-
-      // Create a modified spec with the correct server URL
-      const modifiedSpec = {
-        ...swaggerSpec,
-        servers: [
-          {
-            url: baseUrl,
-            description: 'Current server'
-          }
-        ]
-      };
-
-      swaggerUi.setup(modifiedSpec, {
+      // Don't set server URL on server side - let client-side JS detect it correctly
+      swaggerUi.setup(swaggerSpec, {
         customCss: '.swagger-ui .topbar { display: none }',
-        customSiteTitle: 'WinCC OA REST API Documentation'
+        customSiteTitle: 'WinCC OA REST API Documentation',
+        customJs: '/swagger-custom.js'
       })(req, res);
     });
 
