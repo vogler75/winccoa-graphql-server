@@ -103,9 +103,30 @@ function createDataPointResolvers(winccoa, logger) {
       },
 
       async elements(dataPoint, { pattern }) {
-        // For now, return empty array
-        // Full implementation would enumerate all elements of the DP type
-        return []
+        try {
+          // Use dpNames to get all elements matching the pattern
+          // ** gets all elements at all levels
+          const searchPattern = pattern || '**'
+          const fullPattern = `${dataPoint.fullName}.${searchPattern}`
+
+          const elementNames = await winccoa.dpNames(fullPattern)
+
+          return elementNames.map(fullDpeName => {
+            // Extract the element path relative to the data point
+            // e.g., "pump1.status.value" -> "status.value"
+            const elementPath = fullDpeName.replace(`${dataPoint.fullName}.`, '')
+            const elementName = elementPath.split('.').pop()
+
+            return {
+              name: elementName,
+              path: elementPath,
+              dataPoint
+            }
+          })
+        } catch (error) {
+          logger.error('DataPoint.elements error:', error)
+          return []
+        }
       },
 
       async value(dataPoint) {
