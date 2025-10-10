@@ -66,7 +66,11 @@ Check API health status (no authentication required).
 
 **GET** `/restapi/datapoints`
 
+**WinCC OA Function:** `dpNames(dpPattern, dpType, ignoreCase)`
+
 Search for data points by pattern.
+
+> Returns all the data point names or the data point element names that match a pattern in alphabetical order. Wildcards `*` and `?` can be used to filter data point names.
 
 **Query Parameters:**
 - `pattern` (optional): Search pattern for data point names
@@ -84,7 +88,11 @@ Search for data points by pattern.
 
 **POST** `/restapi/datapoints`
 
+**WinCC OA Function:** `dpCreate(dpeName, dpType, systemId?, dpId?)`
+
 Create a new data point (Admin only).
+
+> Creates a data point with the specified name and type. Optionally, you can specify a system ID for distributed systems and a data point ID.
 
 **Request Body:**
 ```json
@@ -107,7 +115,11 @@ Create a new data point (Admin only).
 
 **GET** `/restapi/datapoints/:dpeName/value`
 
+**WinCC OA Function:** `dpGet(dpeNames)`
+
 Get the current value of a data point element.
+
+> Gets the current values of one or more data point elements. The received values must be cast to their expected types before they can be used.
 
 **URL Parameters:**
 - `dpeName`: Name of the data point element (URL encoded)
@@ -123,7 +135,11 @@ Get the current value of a data point element.
 
 **PUT** `/restapi/datapoints/:dpeName/value`
 
+**WinCC OA Function:** `dpSet(dpeNames, values)`
+
 Set the value of a data point element (Admin only).
+
+> Sets the value of one or more data point elements. This method does not wait for the actual value update in the database, so the update can still fail after this method returns true. Use `dpSetWait` to also get informed about these errors.
 
 **Request Body:**
 ```json
@@ -143,7 +159,11 @@ Set the value of a data point element (Admin only).
 
 **PUT** `/restapi/datapoints/:dpeName/value/wait`
 
+**WinCC OA Function:** `dpSetWait(dpeNames, values)`
+
 Set value and wait for confirmation (Admin only).
+
+> Sets the value of one or more data point elements and waits for confirmation. Returns a Promise that resolves to true if successful or throws WinccoaError if not.
 
 **Request Body:**
 ```json
@@ -156,7 +176,11 @@ Set value and wait for confirmation (Admin only).
 
 **PUT** `/restapi/datapoints/:dpeName/value/timed`
 
+**WinCC OA Function:** `dpSetTimed(time, dpeNames, values)`
+
 Set value with a specific timestamp (Admin only).
+
+> Sets values of one or more data point elements with a given source time. Returns true in case of success, but the update can still fail after this method returns. Use `dpSetTimedWait` to also get informed about these errors.
 
 **Request Body:**
 ```json
@@ -170,7 +194,11 @@ Set value with a specific timestamp (Admin only).
 
 **PUT** `/restapi/datapoints/:dpeName/value/timed-wait`
 
+**WinCC OA Function:** `dpSetTimedWait(time, dpeNames, values)`
+
 Set value with timestamp and wait for confirmation (Admin only).
+
+> Sets values of one or more data point elements with a given source time and waits for confirmation. Returns a Promise that resolves to true if successful.
 
 **Request Body:**
 ```json
@@ -184,7 +212,11 @@ Set value with timestamp and wait for confirmation (Admin only).
 
 **DELETE** `/restapi/datapoints/:dpName`
 
+**WinCC OA Function:** `dpDelete(dpName)`
+
 Delete a data point (Admin only).
+
+> Deletes a data point. In case of a distributed system, the name of the data point to be deleted must contain the system name.
 
 **Response:**
 ```json
@@ -197,7 +229,11 @@ Delete a data point (Admin only).
 
 **POST** `/restapi/datapoints/:source/copy`
 
+**WinCC OA Function:** `dpCopy(source, destination, driver?)`
+
 Copy a data point (Admin only).
+
+> Copies a data point including its configuration. The destination data point must not exist yet. Optionally specify a driver number (default 1).
 
 **URL Parameters:**
 - `source`: Source data point name (URL encoded)
@@ -214,7 +250,11 @@ Copy a data point (Admin only).
 
 **GET** `/restapi/datapoints/:dpeName/exists`
 
+**WinCC OA Function:** `dpExists(dpeName)`
+
 Check if a data point exists.
+
+> Checks the existence of a valid data point identifier. Returns true if at least one part of a data point identifier can be resolved correctly.
 
 **Response:**
 ```json
@@ -227,7 +267,11 @@ Check if a data point exists.
 
 **GET** `/restapi/datapoints/:dpeName/type`
 
+**WinCC OA Function:** `dpElementType(dpeName)`
+
 Get the element type of a data point element.
+
+> Returns the data type of a data point element (e.g., FLOAT, INT32, STRING, etc.).
 
 **Response:**
 ```json
@@ -240,7 +284,11 @@ Get the element type of a data point element.
 
 **GET** `/restapi/datapoints/:dpeName/dp-type`
 
+**WinCC OA Function:** `dpTypeName(dp)`
+
 Get the data point type name.
+
+> Returns the data point type for the given data point name (e.g., "ExampleDP_Float", "ExampleDP_Arg").
 
 **Response:**
 ```json
@@ -282,7 +330,11 @@ Get value from driver if older than specified age.
 
 **GET** `/restapi/datapoints/:dpeName/history`
 
+**WinCC OA Function:** `dpGetPeriod(startTime, endTime, dpeList, count?)`
+
 Get historic values for a time period.
+
+> Queries data point attributes over a specified period of time. Returns an array of values with their corresponding timestamps.
 
 **Query Parameters:**
 - `startTime`: Start time (ISO8601)
@@ -302,7 +354,11 @@ Get historic values for a time period.
 
 **GET** `/restapi/datapoints/:dpAttributeName/attribute-type`
 
+**WinCC OA Function:** `dpAttributeType(dpAttributeName)`
+
 Get the data type of a data point attribute.
+
+> Returns the data type of a given data point attribute (e.g., `:_original.._value`, `:_online.._status`).
 
 **Response:**
 ```json
@@ -319,7 +375,11 @@ Get the data type of a data point attribute.
 
 **POST** `/restapi/query`
 
-Execute SQL-like queries on data points to retrieve attribute values. This endpoint is equivalent to the WinCC OA `dpQuery()` function.
+**WinCC OA Function:** `dpQuery(query)`
+
+Execute SQL-like queries on data points to retrieve attribute values.
+
+> Retrieves attribute values with the help of SQL statements. The query result has a table-like structure where [0][0] is empty, [0][1..n] are column headers (attribute names), [1..n][0] are line names (data point names), and [1..n][1..n] are the values.
 
 **Request Body:**
 ```json
@@ -374,7 +434,11 @@ curl -X POST http://localhost:4000/restapi/query \
 
 **GET** `/restapi/datapoint-types`
 
+**WinCC OA Function:** `dpTypes(pattern, systemId, includeEmpty)`
+
 List all data point types.
+
+> Returns all or selected data point types from the current project. Wildcards `*` and `?` can be used in the pattern to filter data point type names.
 
 **Query Parameters:**
 - `pattern` (optional): Pattern to filter types
@@ -392,7 +456,11 @@ List all data point types.
 
 **POST** `/restapi/datapoint-types`
 
+**WinCC OA Function:** `dpTypeCreate(startNode)`
+
 Create a new data point type (Admin only).
+
+> Creates a new data point type tree. The startNode parameter defines the first data point type node of the tree with its name, element type, optional reference name, and children.
 
 **Request Body:**
 ```json
@@ -418,7 +486,11 @@ Create a new data point type (Admin only).
 
 **GET** `/restapi/datapoint-types/:dpt/structure`
 
+**WinCC OA Function:** `dpTypeGet(dpt, includeSubTypes)`
+
 Get the structure of a data point type.
+
+> Returns the structure of a data point type as a tree of nodes. Optionally includes subtypes if requested.
 
 **Query Parameters:**
 - `includeSubTypes` (optional): Include subtypes (true/false)
@@ -554,7 +626,11 @@ Get historical data for multiple tags.
 
 **GET** `/restapi/alerts`
 
+**WinCC OA Function:** `alertGet(alertsTime, dpeNames, alertCount?)`
+
 Get alert attributes.
+
+> The function does the query only of the last alert attributes of a data point. Returns the requested values of the alert attributes for the specified alert times.
 
 **Query Parameters:**
 - `alertsTime`: JSON-encoded array of alert times
@@ -577,7 +653,11 @@ GET /restapi/alerts?alertsTime=[{"time":"2024-01-01T12:00:00Z","count":1,"dpe":"
 
 **GET** `/restapi/alerts/period`
 
+**WinCC OA Function:** `alertGetPeriod(startTime, endTime, names)`
+
 Get alerts for a time period.
+
+> Returns the values of the specified alert attributes of the data point elements for which alerts were triggered during the specified time period. Returns alert times and corresponding values.
 
 **Query Parameters:**
 - `startTime`: Start time (ISO8601)
@@ -598,7 +678,11 @@ Get alerts for a time period.
 
 **PUT** `/restapi/alerts`
 
+**WinCC OA Function:** `alertSet(alerts, values)`
+
 Set alert attributes (Admin only).
+
+> Allows to set data point alert attributes. The attributes that can be set are described in the `_alert_hdl` configuration.
 
 **Request Body:**
 ```json
@@ -647,7 +731,11 @@ Set alert attributes with timestamp and wait (Admin only).
 
 **GET** `/restapi/cns/views/:systemName`
 
+**WinCC OA Function:** `cnsGetViews(systemName)`
+
 Get all views for a system.
+
+> Returns the paths of all views for the given system name.
 
 **Response:**
 ```json
