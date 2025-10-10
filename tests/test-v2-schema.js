@@ -9,7 +9,7 @@ console.log('Testing GraphQL V2 Schema compilation...\n');
 
 try {
   // Load schema from modular structure
-  const schemaV2Module = require('./graphql-v2');
+  const schemaV2Module = require('./graphql');
   const schemaV2 = schemaV2Module.typeDefs;
   console.log('✅ Schema modules loaded successfully');
 

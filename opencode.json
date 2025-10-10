@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "WinCCOA Node.JS Documentation": {
+      "type": "remote",
+      "url": "https://scada.rocworks.at/winccoa-node-js-doc",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer 5b9f0e6cdf77e9b05566bac6dadd9c8de093ffc1e4e47fd68fa4529a983b7ca0"
+      }
+    }
+  }
+}

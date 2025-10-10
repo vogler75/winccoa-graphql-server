@@ -7,7 +7,7 @@ console.log('Testing dpQuery implementation...\n')
 console.log('Test 1: Verify dpQuery is in GraphQL v2 schema')
 try {
   const { readFileSync } = require('fs')
-  const methodsSchema = readFileSync('./graphql-v2/methods.gql', 'utf8')
+  const methodsSchema = readFileSync('./graphql/methods.gql', 'utf8')
 
   if (methodsSchema.includes('dpQuery')) {
     console.log('✅ dpQuery found in methods.gql schema')
@@ -24,7 +24,7 @@ try {
 console.log('\nTest 2: Verify dpQuery resolver is in common.js')
 try {
   const { readFileSync } = require('fs')
-  const commonJs = readFileSync('./graphql-v1/common.js', 'utf8')
+  const commonJs = readFileSync('./graphql/common.js', 'utf8')
 
   if (commonJs.includes('async dpQuery')) {
     console.log('✅ dpQuery resolver found in common.js')
@@ -41,7 +41,7 @@ try {
 console.log('\nTest 3: Verify dpQuery is exposed in methods-resolvers.js')
 try {
   const { readFileSync } = require('fs')
-  const methodsResolvers = readFileSync('./graphql-v2/methods-resolvers.js', 'utf8')
+  const methodsResolvers = readFileSync('./graphql/methods-resolvers.js', 'utf8')
 
   if (methodsResolvers.includes('dpQuery:')) {
     console.log('✅ dpQuery exposed in methods-resolvers.js')
@@ -76,7 +76,7 @@ try {
 console.log('\nTest 5: Verify GraphQL v2 schema compiles with dpQuery')
 try {
   const { makeExecutableSchema } = require('@graphql-tools/schema')
-  const schemaV2Module = require('./graphql-v2')
+  const schemaV2Module = require('./graphql')
   const schemaV2 = schemaV2Module.typeDefs
 
   // Create a minimal resolver that includes dpQuery

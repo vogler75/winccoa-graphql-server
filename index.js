@@ -50,15 +50,15 @@ const winccoa = new Proxy(winccoaBase, {
   }
 });
 
-// Import V1 resolver modules
-const { createCommonResolvers } = require('./graphql-v1/common');
-const { createAlertResolvers } = require('./graphql-v1/alerting');
-const { createSubscriptionResolvers } = require('./graphql-v1/subscriptions');
-const { createCnsResolvers } = require('./graphql-v1/cns');
-const { createExtrasResolvers } = require('./graphql-v1/extras');
+// Import V1 resolver modules (now in graphql)
+const { createCommonResolvers } = require('./graphql/common');
+const { createAlertResolvers } = require('./graphql/alerting');
+const { createSubscriptionResolvers } = require('./graphql/subscriptions');
+const { createCnsResolvers } = require('./graphql/cns');
+const { createExtrasResolvers } = require('./graphql/extras');
 
 // Import V2 resolvers
-const { createV2Resolvers } = require('./graphql-v2/resolvers');
+const { createV2Resolvers } = require('./graphql/resolvers');
 
 // Import REST API
 const { createRestApi } = require('./restapi/rest-api');
@@ -161,8 +161,8 @@ const logger = {
 // Create usage tracker instance
 const usageTracker = new UsageTracker(logger);
 
-// Load GraphQL V2 schema (modular structure)
-const schemaV2 = require('./graphql-v2');
+// Load GraphQL schema (now in graphql directory)
+const schemaV2 = require('./graphql');
 
 // Combine all schema modules
 const typeDefs = schemaV2.typeDefs;

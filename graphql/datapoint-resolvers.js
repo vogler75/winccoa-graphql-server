@@ -1,7 +1,7 @@
 // DataPoint and DataPointElement resolvers
 
 const { parseDataPointName } = require('./helpers')
-const { ElementTypeMap } = require('../graphql-v1/common')
+const { ElementTypeMap } = require('./common')
 const { ALERT_ATTRIBUTE_MAP } = require('./alert-resolvers')
 
 // Element status bit mapping (0-23)
