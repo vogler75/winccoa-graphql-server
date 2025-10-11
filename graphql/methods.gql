@@ -420,7 +420,7 @@ type DataPointTypeMethods {
   @throws WinccoaError when invalid argument type or dpt does not exist
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpTypeGet.html
   """
-  dpTypeGet(dpt: String!, includeSubTypes: Boolean): DpTypeNode!
+  dpTypeGet(dpt: String!, includeSubTypes: Boolean): JSON!
 
   """
   Returns all references to other DPTs in a DPT.
@@ -515,13 +515,7 @@ type WinccoaSystemVersion {
   version: String!
 }
 
-type DpTypeNode {
-  name: String!
-  type: ElementType!
-  refName: String
-  children: [DpTypeNode!]
-  newName: String
-}
+
 
 type DpTypeReferences {
   dptNames: [String!]!
