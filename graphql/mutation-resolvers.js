@@ -1,5 +1,7 @@
 // Mutation resolvers - Namespaced by domain
 
+const { createExtrasMutationResolvers } = require('./extras-mutations')
+
 function createMutationResolvers(existingResolvers) {
   return {
     // API mutations namespace
@@ -7,6 +9,7 @@ function createMutationResolvers(existingResolvers) {
       return {} // APIMutations resolvers will handle fields
     },
 
+    // Extras namespace
     extras() {
       return {} // ExtrasMutations resolvers will handle fields
     },
@@ -79,15 +82,6 @@ function createCnsMutationResolvers(existingResolvers) {
     deleteTree: existingResolvers.Mutation.deleteTree,
     deleteView: existingResolvers.Mutation.deleteView,
     setProperty: existingResolvers.Mutation.setProperty
-  }
-}
-
-// Extras mutation namespace resolvers
-function createExtrasMutationResolvers() {
-  return {
-    opcua() {
-      return {} // OpcUaMutations resolvers will handle fields
-    }
   }
 }
 

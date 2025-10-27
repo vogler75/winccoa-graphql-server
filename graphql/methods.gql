@@ -529,6 +529,16 @@ type RedundancyMethods {
   isRedundant: Boolean!
 }
 
+"""Extra WinCC OA functions"""
+type ExtrasMethods {
+  """
+  Test dummy query function for testing and development purposes.
+
+  @returns Test dummy result with success status, message, and timestamp
+  """
+  testDummy: TestDummyQueryResult!
+}
+
 # Supporting types for Methods namespace (V1 compatibility)
 type WinccoaVersionDetails {
   api: WinccoaApiVersion!
@@ -556,4 +566,15 @@ type WinccoaSystemVersion {
 type DpTypeReferences {
   dptNames: [String!]!
   dpePaths: [String!]!
+}
+
+type TestDummyQueryResult {
+  """Success status of the test query"""
+  success: Boolean!
+
+  """Message from the test query"""
+  message: String!
+
+  """Timestamp when the test was executed"""
+  timestamp: Time!
 }

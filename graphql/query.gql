@@ -6,4 +6,9 @@ type Query {
   All existing flat query functions are available here
   """
   api: API!
+
+  """
+  Extra operations
+  """
+  extras: ExtrasMethods!
 }

@@ -7,7 +7,7 @@ type Mutation {
   """WinCC OA API mutations (backward compatibility)"""
   api: APIMutations!
 
-  """Extra operations (OPC UA, etc.)"""
+  """Extra operations"""
   extras: ExtrasMutations!
 }
 
@@ -120,20 +120,18 @@ type CnsMutations {
 
 # Extras Mutations
 type ExtrasMutations {
-  """OPC UA configuration"""
-  opcua: OpcUaMutations!
+  """Test dummy mutation"""
+  testDummy: TestDummyResult!
 }
 
-# OPC UA Mutations
-type OpcUaMutations {
-  """Configure OPC UA address for a data point"""
-  setAddress(
-    datapointName: String!
-    driverNumber: Int!
-    addressDirection: Int!
-    addressDataType: Int!
-    serverName: String!
-    subscriptionName: String!
-    nodeId: String!
-  ): Boolean!
+# Test Dummy Result
+type TestDummyResult {
+  """Success status of the test mutation"""
+  success: Boolean!
+
+  """Message from the test mutation"""
+  message: String!
+
+  """Timestamp when the test was executed"""
+  timestamp: Time!
 }

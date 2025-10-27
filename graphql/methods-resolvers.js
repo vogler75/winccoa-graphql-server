@@ -1,7 +1,9 @@
 // API type resolvers - Backward compatibility layer
 // Delegates to existing V1 resolvers, grouped by category
 
-function createMethodsResolvers(existingResolvers) {
+const { createExtrasMethods } = require('./extras-methods')
+
+function createMethodsResolvers(existingResolvers, winccoa, logger) {
   return {
     API: {
       alert: () => ({}),
@@ -75,7 +77,9 @@ function createMethodsResolvers(existingResolvers) {
     RedundancyMethods: {
       isReduActive: existingResolvers.Query.isReduActive,
       isRedundant: existingResolvers.Query.isRedundant
-    }
+    },
+
+    ExtrasMethods: createExtrasMethods(winccoa, logger)
   }
 }
 

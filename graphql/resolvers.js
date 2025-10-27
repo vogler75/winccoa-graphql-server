@@ -22,7 +22,7 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
   const tagResolvers = createTagResolvers(winccoa, logger, existingResolvers)
   const alertResolvers = createAlertResolvers(winccoa, logger)
   const cnsResolvers = createCnsResolvers(winccoa, logger)
-  const methodsResolvers = createMethodsResolvers(existingResolvers)
+  const methodsResolvers = createMethodsResolvers(existingResolvers, winccoa, logger)
 
   // Mutation namespaces
   const mutationResolvers = createMutationResolvers(existingResolvers)
@@ -31,7 +31,7 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
   const dataPointTypeMutations = createDataPointTypeMutationResolvers(existingResolvers)
   const alertMutations = createAlertMutationResolvers(existingResolvers)
   const cnsMutations = createCnsMutationResolvers(existingResolvers)
-  const extrasMutations = createExtrasMutationResolvers()
+  const extrasMutations = createExtrasMutationResolvers(winccoa, logger)
 
   return {
     Query: queryResolvers,
@@ -59,6 +59,29 @@ function createV2Resolvers(winccoa, logger, existingResolvers) {
     AlertMutations: alertMutations,
     CnsMutations: cnsMutations,
     ExtrasMutations: extrasMutations,
+    TestDummyResult: {
+      success(result) {
+        return result.success
+      },
+      message(result) {
+        return result.message
+      },
+      timestamp(result) {
+        return result.timestamp
+      }
+    },
+
+    TestDummyQueryResult: {
+      success(result) {
+        return result.success
+      },
+      message(result) {
+        return result.message
+      },
+      timestamp(result) {
+        return result.timestamp
+      }
+    },
 
     // Subscriptions - keep all existing subscriptions from V1
     Subscription: existingResolvers.Subscription
