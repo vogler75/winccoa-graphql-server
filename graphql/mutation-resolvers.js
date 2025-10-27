@@ -94,7 +94,10 @@ function createExtrasMutationResolvers() {
 // OPC UA mutation namespace resolvers
 function createOpcUaMutationResolvers(existingResolvers) {
   return {
-    setAddress: existingResolvers.Mutation.setOpcUaAddress
+    setAddress: existingResolvers?.Mutation?.setOpcUaAddress || (async (_, args) => {
+      // Stub implementation for OPC UA address setting
+      throw new Error('OPC UA address configuration not yet implemented')
+    })
   }
 }
 
