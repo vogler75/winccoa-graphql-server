@@ -200,6 +200,46 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      async dpGetAlias(_, { dpeName }) {
+        try {
+          const result = await winccoa.dpGetAlias(dpeName);
+          return result;
+        } catch (error) {
+          logger.error('dpGetAlias error:', error);
+          throw new Error(`Failed to get data point alias: ${error.message}`);
+        }
+      },
+
+      async dpGetDescription(_, { dpeName }) {
+        try {
+          const result = await winccoa.dpGetDescription(dpeName);
+          return result;
+        } catch (error) {
+          logger.error('dpGetDescription error:', error);
+          throw new Error(`Failed to get data point description: ${error.message}`);
+        }
+      },
+
+      async dpGetFormat(_, { dpeName }) {
+        try {
+          const result = await winccoa.dpGetFormat(dpeName);
+          return result;
+        } catch (error) {
+          logger.error('dpGetFormat error:', error);
+          throw new Error(`Failed to get data point format: ${error.message}`);
+        }
+      },
+
+      async dpGetUnit(_, { dpeName }) {
+        try {
+          const result = await winccoa.dpGetUnit(dpeName);
+          return result;
+        } catch (error) {
+          logger.error('dpGetUnit error:', error);
+          throw new Error(`Failed to get data point unit: ${error.message}`);
+        }
+      },
+
       // Manager and System Information Functions
       isReduActive() {
         try {
@@ -485,6 +525,46 @@ function createCommonResolvers(winccoa, logger) {
         } catch (error) {
           logger.error('dpTypeDelete error:', error);
           throw new Error(`Failed to delete data point type: ${error.message}`);
+        }
+      },
+
+      async dpSetAlias(_, { dpeName, alias }) {
+        try {
+          const result = await winccoa.dpSetAlias(dpeName, alias);
+          return result;
+        } catch (error) {
+          logger.error('dpSetAlias error:', error);
+          throw new Error(`Failed to set data point alias: ${error.message}`);
+        }
+      },
+
+      async dpSetDescription(_, { dpeName, description }) {
+        try {
+          const result = await winccoa.dpSetDescription(dpeName, description);
+          return result;
+        } catch (error) {
+          logger.error('dpSetDescription error:', error);
+          throw new Error(`Failed to set data point description: ${error.message}`);
+        }
+      },
+
+      async dpSetFormat(_, { dpeName, format }) {
+        try {
+          const result = await winccoa.dpSetFormat(dpeName, format);
+          return result;
+        } catch (error) {
+          logger.error('dpSetFormat error:', error);
+          throw new Error(`Failed to set data point format: ${error.message}`);
+        }
+      },
+
+      async dpSetUnit(_, { dpeName, unit }) {
+        try {
+          const result = await winccoa.dpSetUnit(dpeName, unit);
+          return result;
+        } catch (error) {
+          logger.error('dpSetUnit error:', error);
+          throw new Error(`Failed to set data point unit: ${error.message}`);
         }
       }
      },

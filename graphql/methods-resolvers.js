@@ -6,8 +6,8 @@ function createMethodsResolvers(existingResolvers) {
     API: {
       alert: () => ({}),
       cns: () => ({}),
-      dataPoint: () => ({}),
-      dataPointType: () => ({}),
+      dp: () => ({}),
+      dpType: () => ({}),
       system: () => ({}),
       redundancy: () => ({})
     },
@@ -43,17 +43,21 @@ function createMethodsResolvers(existingResolvers) {
     },
 
     DataPointMethods: {
-      dpGet: existingResolvers.Query.dpGet,
-      dpNames: existingResolvers.Query.dpNames,
-      dpTypes: existingResolvers.Query.dpTypes,
-      dpGetMaxAge: existingResolvers.Query.dpGetMaxAge,
-      dpElementType: existingResolvers.Query.dpElementType,
-      dpAttributeType: existingResolvers.Query.dpAttributeType,
-      dpTypeName: existingResolvers.Query.dpTypeName,
-      dpTypeRefName: existingResolvers.Query.dpTypeRefName,
-      dpExists: existingResolvers.Query.dpExists,
-      dpGetPeriod: existingResolvers.Query.dpGetPeriod,
-      dpQuery: existingResolvers.Query.dpQuery
+      get: existingResolvers.Query.dpGet,
+      names: existingResolvers.Query.dpNames,
+      types: existingResolvers.Query.dpTypes,
+      getMaxAge: existingResolvers.Query.dpGetMaxAge,
+      elementType: existingResolvers.Query.dpElementType,
+      attributeType: existingResolvers.Query.dpAttributeType,
+      typeName: existingResolvers.Query.dpTypeName,
+      typeRefName: existingResolvers.Query.dpTypeRefName,
+      exists: existingResolvers.Query.dpExists,
+      getPeriod: existingResolvers.Query.dpGetPeriod,
+      query: existingResolvers.Query.dpQuery,
+      getAlias: existingResolvers.Query.dpGetAlias,
+      getDescription: existingResolvers.Query.dpGetDescription,
+      getFormat: existingResolvers.Query.dpGetFormat,
+      getUnit: existingResolvers.Query.dpGetUnit
     },
 
     DataPointTypeMethods: {

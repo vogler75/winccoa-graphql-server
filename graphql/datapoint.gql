@@ -49,6 +49,26 @@ type DataPoint {
   Get CNS nodes that link to this data point
   """
   cnsNodes: [CNSNode!]!
+
+  """
+  Data point alias/display name
+  """
+  alias: String
+
+  """
+  Data point description
+  """
+  description: String
+
+  """
+  Data point value format string
+  """
+  format: String
+
+  """
+  Data point measurement unit (e.g., "°C", "bar", "m/s")
+  """
+  unit: String
 }
 
 # Data Point Element - Represents an element within a data point

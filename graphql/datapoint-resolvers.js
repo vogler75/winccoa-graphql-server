@@ -320,6 +320,42 @@ function createDataPointResolvers(winccoa, logger) {
           logger.error('DataPoint.cnsNodes error:', error)
           return []
         }
+      },
+
+      async alias(dataPoint) {
+        try {
+          return await winccoa.dpGetAlias(dataPoint.fullName)
+        } catch (error) {
+          logger.error('DataPoint.alias error:', error)
+          return null
+        }
+      },
+
+      async description(dataPoint) {
+        try {
+          return await winccoa.dpGetDescription(dataPoint.fullName)
+        } catch (error) {
+          logger.error('DataPoint.description error:', error)
+          return null
+        }
+      },
+
+      async format(dataPoint) {
+        try {
+          return await winccoa.dpGetFormat(dataPoint.fullName)
+        } catch (error) {
+          logger.error('DataPoint.format error:', error)
+          return null
+        }
+      },
+
+      async unit(dataPoint) {
+        try {
+          return await winccoa.dpGetUnit(dataPoint.fullName)
+        } catch (error) {
+          logger.error('DataPoint.unit error:', error)
+          return null
+        }
       }
     },
 

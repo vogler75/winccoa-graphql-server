@@ -9,10 +9,10 @@ type API {
   cns: CnsMethods!
 
   """Data Point functions"""
-  dataPoint: DataPointMethods!
+  dp: DataPointMethods!
 
   """Data Point Type functions"""
-  dataPointType: DataPointTypeMethods!
+  dpType: DataPointTypeMethods!
 
   """System functions"""
   system: SystemMethods!
@@ -292,7 +292,7 @@ type DataPointMethods {
   @throws WinccoaError when DPE does not exist or current user has no read access to it
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGet.html
   """
-  dpGet(dpeNames: [String!]!): JSON!
+  get(dpeNames: [String!]!): JSON!
 
   """
   Returns all the data point names or the data point element names that match a pattern in alphabetical order.
@@ -306,7 +306,7 @@ type DataPointMethods {
   @throws WinccoaError when invalid argument type is given
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpNames.html
   """
-  dpNames(dpPattern: String, dpType: String, ignoreCase: Boolean): [String!]!
+  names(dpPattern: String, dpType: String, ignoreCase: Boolean): [String!]!
 
   """
   Returns all or selected data point types from the current project.
@@ -320,7 +320,7 @@ type DataPointMethods {
   @throws WinccoaError when invalid argument type or non-existing systemId is given
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpTypes.html
   """
-  dpTypes(pattern: String, systemId: Int, includeEmpty: Boolean): [String!]!
+  types(pattern: String, systemId: Int, includeEmpty: Boolean): [String!]!
 
   """
   Returns the value(s) of one or more data point elements from the driver if older than specified age.
@@ -332,7 +332,7 @@ type DataPointMethods {
   @throws WinccoaError when DPE does not exist or current user has no read access to it
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetMaxAge.html
   """
-  dpGetMaxAge(age: Int!, dpeNames: [String!]!): JSON!
+  getMaxAge(age: Int!, dpeNames: [String!]!): JSON!
 
   """
   Returns the data type of a specific data point element.
@@ -342,7 +342,7 @@ type DataPointMethods {
   @throws WinccoaError when data point with the given dpeName is not found or invalid argument type
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpElementType.html
   """
-  dpElementType(dpeName: String!): ElementType!
+  elementType(dpeName: String!): ElementType!
 
   """
   Returns the data type of a data point attribute.
@@ -352,7 +352,7 @@ type DataPointMethods {
   @throws WinccoaError when invalid argument type is given
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpAttributeType.html
   """
-  dpAttributeType(dpAttributeName: String!): CtrlType!
+  attributeType(dpAttributeName: String!): CtrlType!
 
   """
   Returns the data point type for a given data point name.
@@ -362,7 +362,7 @@ type DataPointMethods {
   @throws WinccoaError when invalid argument type or dp does not exist
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpTypeName.html
   """
-  dpTypeName(dp: String!): String!
+  typeName(dp: String!): String!
 
   """
   Returns the type reference of a selected data point element.
@@ -372,7 +372,7 @@ type DataPointMethods {
   @throws WinccoaError when invalid argument type or dpe does not exist
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpTypeRefName.html
   """
-  dpTypeRefName(dpe: String!): String!
+  typeRefName(dpe: String!): String!
 
   """
   Checks the existence of a valid data point identifier.
@@ -382,7 +382,7 @@ type DataPointMethods {
   @throws WinccoaError when invalid argument type is given
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpExists.html
   """
-  dpExists(dpeName: String!): Boolean!
+  exists(dpeName: String!): Boolean!
 
   """
   Queries DP attributes over a specified period of time.
@@ -394,7 +394,7 @@ type DataPointMethods {
   @throws WinccoaError when empty data point list or data point not found
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetPeriod.html
   """
-  dpGetPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
+  getPeriod(startTime: Time!, endTime: Time!, dpeNames: [String!]!): JSON!
 
   """
   Retrieves attribute values with the help of SQL statements.
@@ -406,7 +406,43 @@ type DataPointMethods {
   @throws WinccoaError when invalid parameter or query string is given
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpQuery.html
   """
-  dpQuery(query: String!): [[JSON!]!]!
+  query(query: String!): [[JSON!]!]!
+
+  """
+  Returns the alias/display name of a data point or data point element.
+
+  @param dpeName - Data point or data point element name
+  @returns Alias string or null if not set
+  @throws WinccoaError when invalid argument type or dpe does not exist
+  """
+  getAlias(dpeName: String!): String
+
+  """
+  Returns the description of a data point or data point element.
+
+  @param dpeName - Data point or data point element name
+  @returns Description string or null if not set
+  @throws WinccoaError when invalid argument type or dpe does not exist
+  """
+  getDescription(dpeName: String!): String
+
+  """
+  Returns the format string of a data point or data point element.
+
+  @param dpeName - Data point or data point element name
+  @returns Format string or null if not set
+  @throws WinccoaError when invalid argument type or dpe does not exist
+  """
+  getFormat(dpeName: String!): String
+
+  """
+  Returns the unit/measurement unit of a data point or data point element.
+
+  @param dpeName - Data point or data point element name
+  @returns Unit string or null if not set
+  @throws WinccoaError when invalid argument type or dpe does not exist
+  """
+  getUnit(dpeName: String!): String
 }
 
 """Data Point Type WinCC OA functions"""

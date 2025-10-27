@@ -53,6 +53,18 @@ type DataPointMutations {
 
   """Set data point element values at a specific time and wait"""
   setTimedWait(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+
+  """Set data point alias/display name"""
+  setAlias(dpeName: String!, alias: String!): Boolean!
+
+  """Set data point description"""
+  setDescription(dpeName: String!, description: String!): Boolean!
+
+  """Set data point value format string"""
+  setFormat(dpeName: String!, format: String!): Boolean!
+
+  """Set data point measurement unit"""
+  setUnit(dpeName: String!, unit: String!): Boolean!
 }
 
 # Data Point Type Mutations
