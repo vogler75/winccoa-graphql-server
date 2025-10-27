@@ -27,227 +27,227 @@ function createCnsResolvers(winccoa, logger) {
   return {
     Query: {
       // View Management Functions
-      async cnsGetViews(_, { systemName }) {
+      async getViews(_, { systemName }) {
         try {
           const result = await winccoa.cnsGetViews(systemName);
           return result;
         } catch (error) {
-          logger.error('cnsGetViews error:', error);
+          logger.error('getViews error:', error);
           throw new Error(`Failed to get CNS views: ${error.message}`);
         }
       },
 
-      async cnsGetTrees(_, { view }) {
+      async getTrees(_, { view }) {
         try {
           const result = await winccoa.cnsGetTrees(view);
           return result;
         } catch (error) {
-          logger.error('cnsGetTrees error:', error);
+          logger.error('getTrees error:', error);
           throw new Error(`Failed to get CNS trees: ${error.message}`);
         }
       },
 
       // Navigation Functions
-      async cnsGetChildren(_, { cnsPath }) {
+      async getChildren(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetChildren(cnsPath);
           return result;
         } catch (error) {
-          logger.error('cnsGetChildren error:', error);
+          logger.error('getChildren error:', error);
           throw new Error(`Failed to get CNS children: ${error.message}`);
         }
       },
 
-      async cnsGetParent(_, { cnsPath }) {
+      async getParent(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetParent(cnsPath);
           return result;
         } catch (error) {
-          logger.error('cnsGetParent error:', error);
+          logger.error('getParent error:', error);
           throw new Error(`Failed to get CNS parent: ${error.message}`);
         }
       },
 
-      async cnsGetRoot(_, { cnsNodePath }) {
+      async getRoot(_, { cnsNodePath }) {
         try {
           const result = await winccoa.cnsGetRoot(cnsNodePath);
           return result;
         } catch (error) {
-          logger.error('cnsGetRoot error:', error);
+          logger.error('getRoot error:', error);
           throw new Error(`Failed to get CNS root: ${error.message}`);
         }
       },
 
       // Display and ID Functions
-      async cnsGetDisplayNames(_, { cnsPath }) {
+      async getDisplayNames(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetDisplayNames(cnsPath);
           return result;
         } catch (error) {
-          logger.error('cnsGetDisplayNames error:', error);
+          logger.error('getDisplayNames error:', error);
           throw new Error(`Failed to get CNS display names: ${error.message}`);
         }
       },
 
-      async cnsGetDisplayPath(_, { cnsPath }) {
+      async getDisplayPath(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetDisplayPath(cnsPath);
           return result;
         } catch (error) {
-          logger.error('cnsGetDisplayPath error:', error);
+          logger.error('getDisplayPath error:', error);
           throw new Error(`Failed to get CNS display path: ${error.message}`);
         }
       },
 
-      async cnsGetId(_, { cnsPath }) {
+      async getId(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetId(cnsPath);
           return result || '';
         } catch (error) {
-          logger.error('cnsGetId error:', error);
+          logger.error('getId error:', error);
           throw new Error(`Failed to get CNS ID: ${error.message}`);
         }
       },
 
       // Search Functions
-      async cnsGetIdSet(_, { pattern, viewPath, searchMode, langIdx, type }) {
+      async getIdSet(_, { pattern, viewPath, searchMode, langIdx, type }) {
         try {
           const result = await winccoa.cnsGetIdSet(pattern, viewPath, searchMode, langIdx, type);
           return result;
         } catch (error) {
-          logger.error('cnsGetIdSet error:', error);
+          logger.error('getIdSet error:', error);
           throw new Error(`Failed to get CNS ID set: ${error.message}`);
         }
       },
 
-      async cnsGetNodesByName(_, { pattern, viewPath, searchMode, langIdx, type }) {
+      async getNodesByName(_, { pattern, viewPath, searchMode, langIdx, type }) {
         try {
           const result = await winccoa.cnsGetNodesByName(pattern, viewPath, searchMode, langIdx, type);
           return result;
         } catch (error) {
-          logger.error('cnsGetNodesByName error:', error);
+          logger.error('getNodesByName error:', error);
           throw new Error(`Failed to get CNS nodes by name: ${error.message}`);
         }
       },
 
-      async cnsGetNodesByData(_, { dpName, type, viewPath }) {
+      async getNodesByData(_, { dpName, type, viewPath }) {
         try {
           const result = await winccoa.cnsGetNodesByData(dpName, type, viewPath);
           return result;
         } catch (error) {
-          logger.error('cnsGetNodesByData error:', error);
+          logger.error('getNodesByData error:', error);
           throw new Error(`Failed to get CNS nodes by data: ${error.message}`);
         }
       },
 
       // Property Functions
-      async cnsGetProperty(_, { cnsPath, key }) {
+      async getProperty(_, { cnsPath, key }) {
         try {
           const result = await winccoa.cnsGetProperty(cnsPath, key);
           return result;
         } catch (error) {
-          logger.error('cnsGetProperty error:', error);
+          logger.error('getProperty error:', error);
           throw new Error(`Failed to get CNS property: ${error.message}`);
         }
       },
 
-      async cnsGetPropertyKeys(_, { cnsPath }) {
+      async getPropertyKeys(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetPropertyKeys(cnsPath);
           return result;
         } catch (error) {
-          logger.error('cnsGetPropertyKeys error:', error);
+          logger.error('getPropertyKeys error:', error);
           throw new Error(`Failed to get CNS property keys: ${error.message}`);
         }
       },
 
       // Utility Functions
-      async cnsNodeExists(_, { path }) {
+      async nodeExists(_, { path }) {
         try {
           const result = await winccoa.cns_nodeExists(path);
           return result;
         } catch (error) {
-          logger.error('cnsNodeExists error:', error);
+          logger.error('nodeExists error:', error);
           throw new Error(`Failed to check if CNS node exists: ${error.message}`);
         }
       },
 
-      async cnsTreeExists(_, { path }) {
+      async treeExists(_, { path }) {
         try {
           const result = await winccoa.cns_treeExists(path);
           return result;
         } catch (error) {
-          logger.error('cnsTreeExists error:', error);
+          logger.error('treeExists error:', error);
           throw new Error(`Failed to check if CNS tree exists: ${error.message}`);
         }
       },
 
-      async cnsViewExists(_, { path }) {
+      async viewExists(_, { path }) {
         try {
           const result = await winccoa.cns_viewExists(path);
           return result;
         } catch (error) {
-          logger.error('cnsViewExists error:', error);
+          logger.error('viewExists error:', error);
           throw new Error(`Failed to check if CNS view exists: ${error.message}`);
         }
       },
 
-      async cnsIsNode(_, { path }) {
+      async isNode(_, { path }) {
         try {
           const result = await winccoa.cns_isNode(path);
           return result;
         } catch (error) {
-          logger.error('cnsIsNode error:', error);
+          logger.error('isNode error:', error);
           throw new Error(`Failed to check if path is CNS node: ${error.message}`);
         }
       },
 
-      async cnsIsTree(_, { path }) {
+      async isTree(_, { path }) {
         try {
           const result = await winccoa.cns_isTree(path);
           return result;
         } catch (error) {
-          logger.error('cnsIsTree error:', error);
+          logger.error('isTree error:', error);
           throw new Error(`Failed to check if path is CNS tree: ${error.message}`);
         }
       },
 
-      async cnsIsView(_, { path }) {
+      async isView(_, { path }) {
         try {
           const result = await winccoa.cns_isView(path);
           return result;
         } catch (error) {
-          logger.error('cnsIsView error:', error);
+          logger.error('isView error:', error);
           throw new Error(`Failed to check if path is CNS view: ${error.message}`);
         }
       },
 
-      async cnsCheckId(_, { id }) {
+      async checkId(_, { id }) {
         try {
           const result = await winccoa.cns_checkId(id);
           return result;
         } catch (error) {
-          logger.error('cnsCheckId error:', error);
+          logger.error('checkId error:', error);
           throw new Error(`Failed to check CNS ID: ${error.message}`);
         }
       },
 
-      async cnsCheckName(_, { name }) {
+      async checkName(_, { name }) {
         try {
           const result = await winccoa.cns_checkName(name);
           return result;
         } catch (error) {
-          logger.error('cnsCheckName error:', error);
+          logger.error('checkName error:', error);
           throw new Error(`Failed to check CNS name: ${error.message}`);
         }
       },
 
-      async cnsCheckSeparator(_, { separator }) {
+      async checkSeparator(_, { separator }) {
         try {
           const result = await winccoa.cns_checkSeparator(separator);
           return result;
         } catch (error) {
-          logger.error('cnsCheckSeparator error:', error);
+          logger.error('checkSeparator error:', error);
           throw new Error(`Failed to check CNS separator: ${error.message}`);
         }
       }
@@ -255,76 +255,76 @@ function createCnsResolvers(winccoa, logger) {
 
     Mutation: {
       // Creation Functions
-      async cnsCreateView(_, { view, displayName, separator }) {
+      async createView(_, { view, displayName, separator }) {
         try {
           const result = await winccoa.cnsCreateView(view, displayName, separator);
           return result;
         } catch (error) {
-          logger.error('cnsCreateView error:', error);
+          logger.error('createView error:', error);
           throw new Error(`Failed to create CNS view: ${error.message}`);
         }
       },
 
-      async cnsAddTree(_, { cnsParentPath, tree }) {
+      async addTree(_, { cnsParentPath, tree }) {
         try {
           const winccoaTree = convertTreeNodeInput(tree);
           const result = await winccoa.cnsAddTree(cnsParentPath, winccoaTree);
           return result;
         } catch (error) {
-          logger.error('cnsAddTree error:', error);
+          logger.error('addTree error:', error);
           throw new Error(`Failed to add CNS tree: ${error.message}`);
         }
       },
 
-      async cnsAddNode(_, { cnsParentPath, name, displayName, dp }) {
+      async addNode(_, { cnsParentPath, name, displayName, dp }) {
         try {
           const result = await winccoa.cnsAddNode(cnsParentPath, name, displayName, dp);
           return result;
         } catch (error) {
-          logger.error('cnsAddNode error:', error);
+          logger.error('addNode error:', error);
           throw new Error(`Failed to add CNS node: ${error.message}`);
         }
       },
 
       // Modification Functions
-      async cnsChangeTree(_, { cnsPath, tree }) {
+      async changeTree(_, { cnsPath, tree }) {
         try {
           const winccoaTree = convertTreeNodeInput(tree);
           const result = await winccoa.cnsChangeTree(cnsPath, winccoaTree);
           return result;
         } catch (error) {
-          logger.error('cnsChangeTree error:', error);
+          logger.error('changeTree error:', error);
           throw new Error(`Failed to change CNS tree: ${error.message}`);
         }
       },
 
-      async cnsDeleteTree(_, { cnsPath }) {
+      async deleteTree(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsDeleteTree(cnsPath);
           return result;
         } catch (error) {
-          logger.error('cnsDeleteTree error:', error);
+          logger.error('deleteTree error:', error);
           throw new Error(`Failed to delete CNS tree: ${error.message}`);
         }
       },
 
-      async cnsDeleteView(_, { view }) {
+      async deleteView(_, { view }) {
         try {
           const result = await winccoa.cnsDeleteView(view);
           return result;
         } catch (error) {
-          logger.error('cnsDeleteView error:', error);
+          logger.error('deleteView error:', error);
           throw new Error(`Failed to delete CNS view: ${error.message}`);
         }
       },
 
       // Property Functions
-      async cnsSetProperty(_, { cnsPath, key, value, valueType }) {
+      async setProperty(_, { cnsPath, key, value, valueType }) {
         try {
           const result = await winccoa.cnsSetProperty(cnsPath, key, value, valueType);
           return result;
         } catch (error) {
-          logger.error('cnsSetProperty error:', error);
+          logger.error('setProperty error:', error);
           throw new Error(`Failed to set CNS property: ${error.message}`);
         }
       }

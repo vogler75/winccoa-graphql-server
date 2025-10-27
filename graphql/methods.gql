@@ -58,7 +58,7 @@ type CnsMethods {
   @throws WinccoaError when systemName does not exist
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetViews.html
   """
-  cnsGetViews(systemName: String!): [String!]!
+  getViews(systemName: String!): [String!]!
 
   """
   Returns ID paths of all trees in a view.
@@ -68,7 +68,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetTrees.html
   """
-  cnsGetTrees(view: String!): [String!]!
+  getTrees(view: String!): [String!]!
 
   """
   Returns paths of all children nodes for given path.
@@ -78,7 +78,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetChildren.html
   """
-  cnsGetChildren(cnsPath: String!): [String!]!
+  getChildren(cnsPath: String!): [String!]!
 
   """
   Returns parent node path for given path.
@@ -88,7 +88,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetParent.html
   """
-  cnsGetParent(cnsPath: String!): String!
+  getParent(cnsPath: String!): String!
 
   """
   Returns root node path of tree containing given node.
@@ -98,7 +98,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetRoot.html
   """
-  cnsGetRoot(cnsNodePath: String!): String!
+  getRoot(cnsNodePath: String!): String!
 
   """
   Returns display names for node with given path.
@@ -108,7 +108,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetDisplayNames.html
   """
-  cnsGetDisplayNames(cnsPath: String!): JSON!
+  getDisplayNames(cnsPath: String!): JSON!
 
   """
   Returns display path for node with given path.
@@ -118,7 +118,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetDisplayPath.html
   """
-  cnsGetDisplayPath(cnsPath: String!): JSON!
+  getDisplayPath(cnsPath: String!): JSON!
 
   """
   Returns data point element name linked with given path.
@@ -128,7 +128,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetId.html
   """
-  cnsGetId(cnsPath: String!): String!
+  getId(cnsPath: String!): String!
 
   """
   Returns data point element names linked to nodes matching pattern.
@@ -142,7 +142,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetIdSet.html
   """
-  cnsGetIdSet(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
+  getIdSet(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
 
   """
   Returns CNS paths matching given pattern and criteria.
@@ -156,7 +156,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetNodesByName.html
   """
-  cnsGetNodesByName(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
+  getNodesByName(pattern: String!, viewPath: String, searchMode: Int, langIdx: Int, type: Int): [String!]!
 
   """
   Returns CNS paths for nodes linked to given data point.
@@ -168,7 +168,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetNodesByData.html
   """
-  cnsGetNodesByData(dpName: String!, type: Int, viewPath: String): [String!]!
+  getNodesByData(dpName: String!, type: Int, viewPath: String): [String!]!
 
   """
   Returns property value for given key from node.
@@ -179,7 +179,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetProperty.html
   """
-  cnsGetProperty(cnsPath: String!, key: String!): JSON
+  getProperty(cnsPath: String!, key: String!): JSON
 
   """
   Returns list of property keys for node.
@@ -189,7 +189,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetPropertyKeys.html
   """
-  cnsGetPropertyKeys(cnsPath: String!): [String!]!
+  getPropertyKeys(cnsPath: String!): [String!]!
 
   """
   Checks if node with given path exists.
@@ -199,7 +199,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsNodeExists.html
   """
-  cnsNodeExists(path: String!): Boolean!
+  nodeExists(path: String!): Boolean!
 
   """
   Checks if tree with given path exists.
@@ -209,7 +209,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsTreeExists.html
   """
-  cnsTreeExists(path: String!): Boolean!
+  treeExists(path: String!): Boolean!
 
   """
   Checks if view with given path exists.
@@ -219,7 +219,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsViewExists.html
   """
-  cnsViewExists(path: String!): Boolean!
+  viewExists(path: String!): Boolean!
 
   """
   Checks if path is a node.
@@ -229,7 +229,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsIsNode.html
   """
-  cnsIsNode(path: String!): Boolean!
+  isNode(path: String!): Boolean!
 
   """
   Checks if path is a tree.
@@ -239,7 +239,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsIsTree.html
   """
-  cnsIsTree(path: String!): Boolean!
+  isTree(path: String!): Boolean!
 
   """
   Checks if path is a view.
@@ -249,7 +249,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsIsView.html
   """
-  cnsIsView(path: String!): Boolean!
+  isView(path: String!): Boolean!
 
   """
   Checks if ID is valid CNS ID.
@@ -259,7 +259,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsCheckId.html
   """
-  cnsCheckId(id: String!): Boolean!
+  checkId(id: String!): Boolean!
 
   """
   Checks if name is valid CNS display name.
@@ -269,7 +269,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsCheckName.html
   """
-  cnsCheckName(name: JSON!): Int!
+  checkName(name: JSON!): Int!
 
   """
   Checks if separator is valid CNS separator.
@@ -279,7 +279,7 @@ type CnsMethods {
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsCheckSeparator.html
   """
-  cnsCheckSeparator(separator: String!): Boolean!
+  checkSeparator(separator: String!): Boolean!
 }
 
 """Data Point WinCC OA functions"""
@@ -469,7 +469,7 @@ type SystemMethods {
   Returns information about current API and WinCC OA versions.
 
   @returns API and WinCC OA versions
-  @see WinccoaVersionDetails type
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlE_R/getVersionInfo.html
   """
   getVersionInfo: WinccoaVersionDetails!
 }

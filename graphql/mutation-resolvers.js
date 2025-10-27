@@ -72,13 +72,13 @@ function createAlertMutationResolvers(existingResolvers) {
 // CNS mutation namespace resolvers
 function createCnsMutationResolvers(existingResolvers) {
   return {
-    createView: existingResolvers.Mutation.cnsCreateView,
-    addTree: existingResolvers.Mutation.cnsAddTree,
-    addNode: existingResolvers.Mutation.cnsAddNode,
-    changeTree: existingResolvers.Mutation.cnsChangeTree,
-    deleteTree: existingResolvers.Mutation.cnsDeleteTree,
-    deleteView: existingResolvers.Mutation.cnsDeleteView,
-    setProperty: existingResolvers.Mutation.cnsSetProperty
+    createView: existingResolvers.Mutation.createView,
+    addTree: existingResolvers.Mutation.addTree,
+    addNode: existingResolvers.Mutation.addNode,
+    changeTree: existingResolvers.Mutation.changeTree,
+    deleteTree: existingResolvers.Mutation.deleteTree,
+    deleteView: existingResolvers.Mutation.deleteView,
+    setProperty: existingResolvers.Mutation.setProperty
   }
 }
 

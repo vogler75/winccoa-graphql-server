@@ -16,7 +16,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/views/:systemName', async (req, res, next) => {
     try {
       const systemName = decodeURIComponent(req.params.systemName)
-      const result = await resolvers.Query.cnsGetViews(null, { systemName })
+      const result = await resolvers.Query.getViews(null, { systemName })
       res.json({ views: result })
     } catch (error) {
       next(error)
@@ -47,7 +47,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.cnsCreateView(
+      const result = await resolvers.Mutation.createView(
         null,
         { view, displayName, separator }
       )
@@ -70,7 +70,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.delete('/views/:view', requireAdmin, async (req, res, next) => {
     try {
       const view = decodeURIComponent(req.params.view)
-      const result = await resolvers.Mutation.cnsDeleteView(null, { view })
+      const result = await resolvers.Mutation.deleteView(null, { view })
       res.json({ success: result })
     } catch (error) {
       next(error)
@@ -89,7 +89,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/views/:view/exists', async (req, res, next) => {
     try {
       const path = decodeURIComponent(req.params.view)
-      const result = await resolvers.Query.cnsViewExists(null, { path })
+      const result = await resolvers.Query.viewExists(null, { path })
       res.json({ exists: result })
     } catch (error) {
       next(error)
@@ -108,7 +108,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/trees/:view', async (req, res, next) => {
     try {
       const view = decodeURIComponent(req.params.view)
-      const result = await resolvers.Query.cnsGetTrees(null, { view })
+      const result = await resolvers.Query.getTrees(null, { view })
       res.json({ trees: result })
     } catch (error) {
       next(error)
@@ -143,7 +143,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.cnsAddTree(
+      const result = await resolvers.Mutation.addTree(
         null,
         { cnsParentPath, tree }
       )
@@ -185,7 +185,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.cnsChangeTree(
+      const result = await resolvers.Mutation.changeTree(
         null,
         { cnsPath, tree }
       )
@@ -208,7 +208,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.delete('/trees/:cnsPath', requireAdmin, async (req, res, next) => {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Mutation.cnsDeleteTree(null, { cnsPath })
+      const result = await resolvers.Mutation.deleteTree(null, { cnsPath })
       res.json({ success: result })
     } catch (error) {
       next(error)
@@ -227,7 +227,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/trees/:cnsPath/exists', async (req, res, next) => {
     try {
       const path = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsTreeExists(null, { path })
+      const result = await resolvers.Query.treeExists(null, { path })
       res.json({ exists: result })
     } catch (error) {
       next(error)
@@ -259,7 +259,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.cnsAddNode(
+      const result = await resolvers.Mutation.addNode(
         null,
         { cnsParentPath, name, displayName, dp }
       )
@@ -282,7 +282,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/children', async (req, res, next) => {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsGetChildren(null, { cnsPath })
+      const result = await resolvers.Query.getChildren(null, { cnsPath })
       res.json({ children: result })
     } catch (error) {
       next(error)
@@ -301,7 +301,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/parent', async (req, res, next) => {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsGetParent(null, { cnsPath })
+      const result = await resolvers.Query.getParent(null, { cnsPath })
       res.json({ parent: result })
     } catch (error) {
       next(error)
@@ -320,7 +320,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/root', async (req, res, next) => {
     try {
       const cnsNodePath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsGetRoot(null, { cnsNodePath })
+      const result = await resolvers.Query.getRoot(null, { cnsNodePath })
       res.json({ root: result })
     } catch (error) {
       next(error)
@@ -339,7 +339,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/display-name', async (req, res, next) => {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsGetDisplayNames(null, { cnsPath })
+      const result = await resolvers.Query.getDisplayNames(null, { cnsPath })
       res.json({ displayName: result })
     } catch (error) {
       next(error)
@@ -358,7 +358,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/display-path', async (req, res, next) => {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsGetDisplayPath(null, { cnsPath })
+      const result = await resolvers.Query.getDisplayPath(null, { cnsPath })
       res.json({ displayPath: result })
     } catch (error) {
       next(error)
@@ -377,7 +377,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/id', async (req, res, next) => {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsGetId(null, { cnsPath })
+      const result = await resolvers.Query.getId(null, { cnsPath })
       res.json({ id: result })
     } catch (error) {
       next(error)
@@ -396,7 +396,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/exists', async (req, res, next) => {
     try {
       const path = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsNodeExists(null, { path })
+      const result = await resolvers.Query.nodeExists(null, { path })
       res.json({ exists: result })
     } catch (error) {
       next(error)
@@ -427,7 +427,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.cnsGetNodesByName(
+      const result = await resolvers.Query.getNodesByName(
         null,
         {
           pattern,
@@ -466,7 +466,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.cnsGetNodesByData(
+      const result = await resolvers.Query.getNodesByData(
         null,
         {
           dpName,
@@ -505,7 +505,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.cnsGetIdSet(
+      const result = await resolvers.Query.getIdSet(
         null,
         {
           pattern,
@@ -536,7 +536,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
       const key = decodeURIComponent(req.params.key)
-      const result = await resolvers.Query.cnsGetProperty(null, { cnsPath, key })
+      const result = await resolvers.Query.getProperty(null, { cnsPath, key })
       res.json({ value: result })
     } catch (error) {
       next(error)
@@ -555,7 +555,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/nodes/:cnsPath/properties', async (req, res, next) => {
     try {
       const cnsPath = decodeURIComponent(req.params.cnsPath)
-      const result = await resolvers.Query.cnsGetPropertyKeys(null, { cnsPath })
+      const result = await resolvers.Query.getPropertyKeys(null, { cnsPath })
       res.json({ keys: result })
     } catch (error) {
       next(error)
@@ -590,7 +590,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.cnsSetProperty(
+      const result = await resolvers.Mutation.setProperty(
         null,
         { cnsPath, key, value, valueType }
       )
@@ -621,7 +621,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.cnsCheckId(null, { id })
+      const result = await resolvers.Query.checkId(null, { id })
       res.json({ valid: result })
     } catch (error) {
       next(error)
@@ -649,7 +649,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.cnsCheckName(null, { name })
+      const result = await resolvers.Query.checkName(null, { name })
       res.json({ result })
     } catch (error) {
       next(error)
@@ -676,7 +676,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.cnsCheckSeparator(null, { separator })
+      const result = await resolvers.Query.checkSeparator(null, { separator })
       res.json({ valid: result })
     } catch (error) {
       next(error)
