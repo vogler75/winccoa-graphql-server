@@ -49,7 +49,11 @@ function createDataPointMutationResolvers(existingResolvers) {
     set: existingResolvers.Mutation.dpSet,
     setWait: existingResolvers.Mutation.dpSetWait,
     setTimed: existingResolvers.Mutation.dpSetTimed,
-    setTimedWait: existingResolvers.Mutation.dpSetTimedWait
+    setTimedWait: existingResolvers.Mutation.dpSetTimedWait,
+    setAlias: existingResolvers.Mutation.dpSetAlias,
+    setDescription: existingResolvers.Mutation.dpSetDescription,
+    setFormat: existingResolvers.Mutation.dpSetFormat,
+    setUnit: existingResolvers.Mutation.dpSetUnit
   }
 }
 
