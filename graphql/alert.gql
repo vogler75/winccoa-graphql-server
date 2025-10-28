@@ -174,11 +174,15 @@ type Alert {
 
   """
   Get a specific alert attribute by name
+  Wraps WinCC OA function: alertGet(alertsTime, dpeNames, alertCount)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertGet.html
   """
   attribute(name: AlertAttributeName!): JSON
 
   """
   Common alert attributes (convenience accessors)
+  Wraps WinCC OA function: alertGet(alertsTime, dpeNames, alertCount)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertGet.html
   """
   text: String
   acknowledged: Boolean

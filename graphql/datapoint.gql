@@ -36,37 +36,51 @@ type DataPoint {
   """
   Get historical tag values with metadata
   Use either (startTime + endTime) OR lastMinutes
+  Wraps WinCC OA function: dpGetPeriod(startTime, endTime, dpeNames)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetPeriod.html
   """
   tagHistory(startTime: Time, endTime: Time, lastMinutes: Int, limit: Int, offset: Int): TagHistory
 
   """
   Get alerts associated with this data point
   Use either (startTime + endTime) OR lastMinutes
+  Wraps WinCC OA function: alertGetPeriod(startTime, endTime, names)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertGetPeriod.html
   """
   alerts(startTime: Time, endTime: Time, lastMinutes: Int, limit: Int, offset: Int): [Alert!]!
 
   """
   Get CNS nodes that link to this data point
+  Wraps WinCC OA function: cnsGetNodesByData(dpName, type, viewPath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetNodesByData.html
   """
   cnsNodes: [CNSNode!]!
 
   """
   Data point alias/display name
+  Wraps WinCC OA function: dpGetAlias(dpeName)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetAlias.html
   """
   alias: String
 
   """
   Data point description
+  Wraps WinCC OA function: dpGetDescription(dpeName)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetDescription.html
   """
   description: String
 
   """
   Data point value format string
+  Wraps WinCC OA function: dpGetFormat(dpeName)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetFormat.html
   """
   format: String
 
   """
   Data point measurement unit (e.g., "°C", "bar", "m/s")
+  Wraps WinCC OA function: dpGetUnit(dpeName)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetUnit.html
   """
   unit: String
 }
@@ -82,13 +96,25 @@ type DataPointElement {
   """Parent data point"""
   dataPoint: DataPoint!
 
-  """Current value"""
+  """
+  Current value
+  Wraps WinCC OA function: dpGet(dpeNames)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGet.html
+  """
   value: JSON
 
-  """Timestamp of last value change"""
+  """
+  Timestamp of last value change
+  Wraps WinCC OA function: dpGet() with _online.._stime attribute
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGet.html
+  """
   timestamp: Time
 
-  """Element status information"""
+  """
+  Element status information
+  Wraps WinCC OA function: dpGet() with _online.._status attribute
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGet.html
+  """
   status: ElementStatus!
 
   """Element data type"""
@@ -97,6 +123,8 @@ type DataPointElement {
   """
   Get historical values for this element
   Use either (startTime + endTime) OR lastMinutes
+  Wraps WinCC OA function: dpGetPeriod(startTime, endTime, dpeNames)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetPeriod.html
   """
   history(
     startTime: Time
@@ -106,10 +134,18 @@ type DataPointElement {
     offset: Int
   ): ElementHistory!
 
-  """Parent element (null if root)"""
+  """
+  Parent element (null if root)
+  Resolved from the data point type structure
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpTypeGet.html
+  """
   parent: DataPointElement
 
-  """Child elements (empty if leaf)"""
+  """
+  Child elements (empty if leaf)
+  Resolved from the data point type structure
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpTypeGet.html
+  """
   children: [DataPointElement!]!
 }
 
@@ -180,19 +216,39 @@ type DataPointType {
   """Type name"""
   name: String!
 
-  """Type structure/hierarchy"""
+  """
+  Type structure/hierarchy
+  Wraps WinCC OA function: dpTypeGet(dpt, includeSubTypes)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpTypeGet.html
+  """
   structure: DataPointTypeNode!
 
-  """Data point types referenced by this type"""
+  """
+  Data point types referenced by this type
+  Wraps WinCC OA function: dpGetDpTypeRefs(dpt)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetDpTypeRefs.html
+  """
   references: [DataPointType!]!
 
-  """Data point types that reference this type"""
+  """
+  Data point types that reference this type
+  Wraps WinCC OA function: dpGetRefsToDpType(reference)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetRefsToDpType.html
+  """
   usedBy: [DataPointType!]!
 
-  """Data points of this type"""
+  """
+  Data points of this type
+  Wraps WinCC OA function: dpNames(dpPattern, dpType)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpNames.html
+  """
   dataPoints(limit: Int, offset: Int): [DataPoint!]!
 
-  """Count of data points of this type"""
+  """
+  Count of data points of this type
+  Wraps WinCC OA function: dpNames(dpPattern, dpType)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpNames.html
+  """
   count: Int!
 }
 

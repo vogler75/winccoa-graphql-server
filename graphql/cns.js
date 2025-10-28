@@ -2,7 +2,13 @@
 
 const { WinccoaCnsTreeNode } = require('winccoa-manager');
 
-// Helper function to convert WinccoaCnsTreeNode input to WinCC OA object
+/**
+ * Converts GraphQL TreeNodeInput to WinccoaCnsTreeNode object.
+ * Used as input converter for CNS tree-related WinCC OA functions.
+ *
+ * @param {object} treeNodeInput - Input tree node with name, displayName, dp, and children
+ * @returns {WinccoaCnsTreeNode} WinCC OA CNS tree node object
+ */
 function convertTreeNodeInput(treeNodeInput) {
   const node = new WinccoaCnsTreeNode(
     treeNodeInput.name,
@@ -13,7 +19,12 @@ function convertTreeNodeInput(treeNodeInput) {
   return node;
 }
 
-// Helper function to convert WinCC OA tree node to GraphQL output
+/**
+ * Converts WinccoaCnsTreeNode object to GraphQL output format.
+ *
+ * @param {WinccoaCnsTreeNode} treeNode - WinCC OA CNS tree node object
+ * @returns {object} Tree node object with name, displayName, dp, and children
+ */
 function convertTreeNodeOutput(treeNode) {
   return {
     name: treeNode.name,
@@ -23,10 +34,24 @@ function convertTreeNodeOutput(treeNode) {
   };
 }
 
+/**
+ * Creates resolver functions for WinCC OA CNS (Central Navigation Service) operations.
+ * Wraps WinCC OA CNS management functions through the winccoa-manager Node.js binding.
+ *
+ * @param {WinccoaManager} winccoa - WinCC OA manager instance for API access
+ * @param {object} logger - Logger instance for error reporting
+ * @returns {object} Resolver object with Query and Mutation resolvers
+ */
 function createCnsResolvers(winccoa, logger) {
   return {
     Query: {
-      // View Management Functions
+      /**
+       * Retrieves available CNS views for a system.
+       * Wraps WinCC OA function: cnsGetViews(systemName)
+       *
+       * @param {string} systemName - WinCC OA system name
+       * @returns {Promise<Array>} Promise resolving to array of view names
+       */
       async getViews(_, { systemName }) {
         try {
           const result = await winccoa.cnsGetViews(systemName);
@@ -37,6 +62,13 @@ function createCnsResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves available CNS trees for a view.
+       * Wraps WinCC OA function: cnsGetTrees(view)
+       *
+       * @param {string} view - View name
+       * @returns {Promise<Array>} Promise resolving to array of tree names
+       */
       async getTrees(_, { view }) {
         try {
           const result = await winccoa.cnsGetTrees(view);
@@ -47,7 +79,13 @@ function createCnsResolvers(winccoa, logger) {
         }
       },
 
-      // Navigation Functions
+      /**
+       * Retrieves child nodes of a CNS path.
+       * Wraps WinCC OA function: cnsGetChildren(cnsPath)
+       *
+       * @param {string} cnsPath - CNS node path
+       * @returns {Promise<Array>} Promise resolving to array of child nodes
+       */
       async getChildren(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetChildren(cnsPath);
@@ -58,6 +96,13 @@ function createCnsResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves parent node of a CNS path.
+       * Wraps WinCC OA function: cnsGetParent(cnsPath)
+       *
+       * @param {string} cnsPath - CNS node path
+       * @returns {Promise<object>} Promise resolving to parent node
+       */
       async getParent(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetParent(cnsPath);
@@ -68,6 +113,13 @@ function createCnsResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves root node of a CNS tree.
+       * Wraps WinCC OA function: cnsGetRoot(cnsNodePath)
+       *
+       * @param {string} cnsNodePath - CNS node path
+       * @returns {Promise<object>} Promise resolving to root node
+       */
       async getRoot(_, { cnsNodePath }) {
         try {
           const result = await winccoa.cnsGetRoot(cnsNodePath);
@@ -78,7 +130,13 @@ function createCnsResolvers(winccoa, logger) {
         }
       },
 
-      // Display and ID Functions
+      /**
+       * Retrieves display names for a CNS path.
+       * Wraps WinCC OA function: cnsGetDisplayNames(cnsPath)
+       *
+       * @param {string} cnsPath - CNS node path
+       * @returns {Promise<Array>} Promise resolving to array of display names
+       */
       async getDisplayNames(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetDisplayNames(cnsPath);
@@ -89,6 +147,13 @@ function createCnsResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves display path for a CNS path.
+       * Wraps WinCC OA function: cnsGetDisplayPath(cnsPath)
+       *
+       * @param {string} cnsPath - CNS node path
+       * @returns {Promise<string>} Promise resolving to display path
+       */
       async getDisplayPath(_, { cnsPath }) {
         try {
           const result = await winccoa.cnsGetDisplayPath(cnsPath);

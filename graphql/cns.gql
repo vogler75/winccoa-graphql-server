@@ -1,14 +1,24 @@
 # CNS types - Central Navigation Service
 
 type CNS {
-  """Get a specific view by name"""
+  """
+  Get a specific view by name
+  Wraps WinCC OA function: cnsGetViews(systemName) to retrieve views, then filters by name
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetViews.html
+  """
   view(name: String!): CNSView
 
-  """List all views in the system"""
+  """
+  List all views in the system
+  Wraps WinCC OA function: cnsGetViews(systemName)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetViews.html
+  """
   views: [CNSView!]!
 
   """
   Search for nodes by name pattern
+  Wraps WinCC OA function: cnsGetNodesByName(pattern, viewPath, searchMode, langIdx, type)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetNodesByName.html
   """
   searchNodes(
     pattern: String!
@@ -20,6 +30,8 @@ type CNS {
 
   """
   Search for nodes linked to a data point
+  Wraps WinCC OA function: cnsGetNodesByData(dpName, type, viewPath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetNodesByData.html
   """
   searchByDataPoint(
     dataPoint: String!
@@ -38,13 +50,25 @@ type CNSView {
   """Path separator"""
   separator: String
 
-  """Get a specific tree by name"""
+  """
+  Get a specific tree by name
+  Wraps WinCC OA function: cnsGetTrees(view) to retrieve all trees, then filters by name
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetTrees.html
+  """
   tree(name: String!): CNSTree
 
-  """List all trees in this view"""
+  """
+  List all trees in this view
+  Wraps WinCC OA function: cnsGetTrees(view)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetTrees.html
+  """
   trees: [CNSTree!]!
 
-  """Check if view exists"""
+  """
+  Check if view exists
+  Wraps WinCC OA function: cnsViewExists(path)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsViewExists.html
+  """
   exists: Boolean!
 }
 
@@ -55,13 +79,21 @@ type CNSTree {
   """Display name (multi-language)"""
   displayName: LangString!
 
-  """Root node of this tree"""
+  """
+  Root node of this tree
+  Wraps WinCC OA function: cnsGetRoot(cnsNodePath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetRoot.html
+  """
   root: CNSNode!
 
   """Parent view"""
   view: CNSView!
 
-  """Check if tree exists"""
+  """
+  Check if tree exists
+  Wraps WinCC OA function: cnsTreeExists(path)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsTreeExists.html
+  """
   exists: Boolean!
 }
 
@@ -75,34 +107,70 @@ type CNSNode {
   """Display name (multi-language)"""
   displayName: LangString!
 
-  """Display path (multi-language)"""
+  """
+  Display path (multi-language)
+  Wraps WinCC OA function: cnsGetDisplayPath(cnsPath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetDisplayPath.html
+  """
   displayPath: LangString!
 
-  """Parent node (null if root)"""
+  """
+  Parent node (null if root)
+  Wraps WinCC OA function: cnsGetParent(cnsPath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetParent.html
+  """
   parent: CNSNode
 
-  """Child nodes"""
+  """
+  Child nodes
+  Wraps WinCC OA function: cnsGetChildren(cnsPath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetChildren.html
+  """
   children: [CNSNode!]!
 
-  """Root node of the tree"""
+  """
+  Root node of the tree
+  Wraps WinCC OA function: cnsGetRoot(cnsNodePath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetRoot.html
+  """
   root: CNSNode
 
   """Tree this node belongs to"""
   tree: CNSTree
 
-  """Linked data point (if any)"""
+  """
+  Linked data point (if any)
+  Wraps WinCC OA function: cnsGetId(cnsPath) to retrieve the data point name
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetId.html
+  """
   dp: DataPoint
 
-  """Linked data point name string"""
+  """
+  Linked data point name string
+  Wraps WinCC OA function: cnsGetId(cnsPath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetId.html
+  """
   dpName: String
 
-  """Get a specific property value"""
+  """
+  Get a specific property value
+  Wraps WinCC OA function: cnsGetProperty(cnsPath, key)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetProperty.html
+  """
   property(key: String!): JSON
 
-  """List all properties"""
+  """
+  List all properties
+  Wraps WinCC OA function: cnsGetPropertyKeys(cnsPath)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsGetPropertyKeys.html
+  """
   properties: [CNSProperty!]!
 
-  """Check if node exists"""
+  """
+  Check if node exists
+  Wraps WinCC OA function: cnsNodeExists(path)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/CNS_Ctrl/cnsNodeExists.html
+  """
   exists: Boolean!
 }
 

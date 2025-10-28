@@ -2,22 +2,42 @@
 
 const { v4: uuidv4 } = require('uuid');
 
+/**
+ * Creates subscription resolver functions for WinCC OA real-time data updates.
+ * Wraps WinCC OA connection functions (dpConnect, dpQueryConnectSingle, dpQueryConnectAll)
+ * through the winccoa-manager Node.js binding.
+ *
+ * @param {WinccoaManager} winccoa - WinCC OA manager instance for API access
+ * @param {object} logger - Logger instance for error reporting
+ * @returns {object} Resolver object with Subscription resolvers
+ */
 function createSubscriptionResolvers(winccoa, logger) {
   return {
     Subscription: {
+      /**
+       * Subscribes to real-time data point changes.
+       * Wraps WinCC OA function: dpConnect(callback, dpeNames, answer)
+       * and dpDisconnect(connectionId) for cleanup.
+       *
+       * Creates an async iterator that yields updates whenever subscribed data points change.
+       *
+       * @param {Array<string>} dpeNames - Array of data point element names to monitor
+       * @param {boolean} [answer=true] - Whether to get immediate value and then updates
+       * @yields {object} Update object with dpeNames, values, type, and error
+       */
       dpConnect: {
         subscribe: async (_, { dpeNames, answer = true }, context) => {
           logger.info(`Subscribing to data points: ${dpeNames.join(', ')}`);
-          
+
           // Create a channel for this subscription
           const channel = `dpConnect-${uuidv4()}`;
           let connectionId = null;
           let cleanup = null;
-          
+
           try {
             // Create async iterator first
             const asyncIterator = context.pubsub.asyncIterator(channel);
-            
+
             // Set up the connection
             const callback = (dpeNames, values, type, error) => {
               // Emit the update through the pubsub
@@ -31,7 +51,7 @@ function createSubscriptionResolvers(winccoa, logger) {
                 }
               });
             };
-            
+
             // Create WinCC OA connection
             connectionId = await winccoa.dpConnect(callback, dpeNames, answer);
             logger.info(`Created dpConnect subscription ${connectionId}`);
@@ -68,6 +88,19 @@ function createSubscriptionResolvers(winccoa, logger) {
         }
       },
       
+      /**
+       * Subscribes to query result updates (single result at a time).
+       * Wraps WinCC OA function: dpQueryConnectSingle(callback, answer, query, blockingTime)
+       * and dpQueryDisconnect(connectionId) for cleanup.
+       *
+       * Creates an async iterator that yields query results as updates.
+       * Returns only the most recent result set.
+       *
+       * @param {string} query - dpQuery query string
+       * @param {boolean} [answer=true] - Whether to get immediate result and then updates
+       * @param {number} [blockingTime] - Blocking time for query updates
+       * @yields {object} Update object with values (2D result table), type, and error
+       */
       dpQueryConnectSingle: {
         subscribe: async (_, { query, answer = true, blockingTime }, context) => {
           logger.info(`Subscribing to query: ${query}`);
@@ -95,7 +128,7 @@ function createSubscriptionResolvers(winccoa, logger) {
             };
 
             // Create WinCC OA query connection
-            // API signature: dpQueryConnectSingle(callback, answer, query, blockingTime)
+            // Wraps WinCC OA function: dpQueryConnectSingle(callback, answer, query, blockingTime)
             // Returns connection ID (>= 0)
             const connectionId = await winccoa.dpQueryConnectSingle(
               callback,
@@ -140,7 +173,20 @@ function createSubscriptionResolvers(winccoa, logger) {
         }
       },
       
-       dpQueryConnectAll: {
+      /**
+       * Subscribes to query result updates (all results).
+       * Wraps WinCC OA function: dpQueryConnectAll(callback, answer, query, blockingTime)
+       * and dpQueryDisconnect(connectionId) for cleanup.
+       *
+       * Creates an async iterator that yields query results as updates.
+       * Always returns the complete result set on each update.
+       *
+       * @param {string} query - dpQuery query string
+       * @param {boolean} [answer=true] - Whether to get immediate result and then updates
+       * @param {number} [blockingTime] - Blocking time for query updates
+       * @yields {object} Update object with values (2D result table), type, and error
+       */
+      dpQueryConnectAll: {
          subscribe: async (_, { query, answer = true, blockingTime }, context) => {
            logger.info(`Subscribing to all query results: ${query}`);
 
@@ -168,7 +214,7 @@ function createSubscriptionResolvers(winccoa, logger) {
              };
 
              // Create WinCC OA query connection
-             // API signature: dpQueryConnectAll(callback, answer, query, blockingTime)
+             // Wraps WinCC OA function: dpQueryConnectAll(callback, answer, query, blockingTime)
              // Returns connection ID (>= 0)
              const connectionId = await winccoa.dpQueryConnectAll(
                callback,
@@ -213,7 +259,19 @@ function createSubscriptionResolvers(winccoa, logger) {
          }
        },
 
-       tagSubscribe: {
+      /**
+       * Subscribes to real-time typed tag updates.
+       * Wraps WinCC OA function: dpConnect(callback, dpeNames, answer)
+       * and dpDisconnect(connectionId) for cleanup.
+       *
+       * Similar to dpConnect but returns complete tag information including timestamp and status.
+       * Creates an async iterator that yields updates whenever subscribed tags change.
+       *
+       * @param {Array<string>} dpeNames - Array of data point element names to monitor
+       * @param {boolean} [answer=true] - Whether to get immediate value and then updates
+       * @yields {object} Update object with tags array, type, and error
+       */
+      tagSubscribe: {
          subscribe: async (_, { dpeNames, answer = true }, context) => {
            logger.info(`Subscribing to typed tags: ${dpeNames.join(', ')}`);
 

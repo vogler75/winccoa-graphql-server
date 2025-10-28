@@ -1,7 +1,18 @@
 // REST API Router for WinCC OA GraphQL Server
 const express = require('express')
 
-// Create main REST API router
+/**
+ * Creates the main REST API router for WinCC OA operations.
+ *
+ * Provides RESTful endpoints that wrap WinCC OA functions and GraphQL resolvers.
+ * Includes authentication, authorization, and usage tracking middleware.
+ *
+ * @param {WinccoaManager} winccoa - WinCC OA manager instance for API access
+ * @param {object} logger - Logger instance for error reporting
+ * @param {object} resolvers - GraphQL resolvers for backward compatibility
+ * @param {boolean} DISABLE_AUTH - Whether to disable authentication
+ * @returns {express.Router} Express router with all REST API endpoints
+ */
 function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
   const router = express.Router()
 
@@ -16,7 +27,10 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
   const systemRoutes = require('./routes/system-routes')
   const extrasRoutes = require('./routes/extras-routes')
 
-  // Authentication middleware for REST API
+  /**
+   * Authentication middleware for REST API.
+   * Validates bearer token and attaches user information to request.
+   */
   const restAuthMiddleware = (req, res, next) => {
     // Skip authentication if disabled
     if (DISABLE_AUTH) {
@@ -46,7 +60,10 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
     next()
   }
 
-  // Middleware to check admin role
+  /**
+   * Middleware to check for admin role.
+   * Returns 403 Forbidden if user doesn't have admin privileges.
+   */
   const requireAdmin = (req, res, next) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Forbidden', message: 'Admin role required' })
@@ -54,7 +71,10 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
     next()
   }
 
-  // Usage tracking middleware - track all REST API calls
+  /**
+   * Usage tracking middleware for all REST API calls.
+   * Records endpoint name and call count in UsageTracker instance.
+   */
   router.use((req, res, next) => {
     // Track the API call
     const usageTracker = req.app.locals.usageTracker
@@ -66,7 +86,10 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
     next()
   })
 
-  // Health check endpoint (no auth required)
+  /**
+   * Health check endpoint (no auth required).
+   * Returns service status and uptime.
+   */
   router.get('/health', (req, res) => {
     res.json({
       status: 'healthy',
@@ -75,7 +98,11 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
     })
   })
 
-  // Usage stats endpoint (no auth required)
+  /**
+   * Usage statistics endpoint (no auth required).
+   * Returns API call statistics tracked by UsageTracker.
+   * Query parameter 'sortBy' can be 'name' or 'count' to control sort order.
+   */
   router.get('/stats', (req, res) => {
     const usageTracker = req.app.locals.usageTracker
     if (!usageTracker) {

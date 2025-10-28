@@ -1,37 +1,95 @@
 // Common GraphQL resolver functions for WinCC OA
 
 // Element type mapping from WinCC OA numeric values to GraphQL enum
+// Based on WinccoaElementType enum values from winccoa-manager
 const ElementTypeMap = {
-  0: 'BOOL',
-  1: 'UINT8',
-  2: 'INT32',
-  3: 'INT64',
-  4: 'FLOAT',
-  5: 'DOUBLE',
-  6: 'BIT',
-  7: 'BIT32',
-  8: 'BIT64',
-  9: 'STRING',
-  10: 'TIME',
-  11: 'DPID',
-  12: 'LANGSTRING',
-  13: 'BLOB',
-  14: 'MIXED',
-  15: 'DYN_BOOL',
-  16: 'DYN_UINT8',
-  17: 'DYN_INT32',
-  18: 'DYN_INT64',
-  19: 'DYN_FLOAT',
-  20: 'DYN_DOUBLE',
-  21: 'DYN_BIT',
-  22: 'DYN_BIT32',
-  23: 'DYN_BIT64',
-  24: 'DYN_STRING',
-  25: 'DYN_TIME',
-  26: 'DYN_DPID',
-  27: 'DYN_LANGSTRING',
-  28: 'DYN_BLOB'
+  1: 'STRUCT',
+  3: 'DYN_CHAR',
+  4: 'DYN_UINT',
+  5: 'DYN_INT',
+  6: 'DYN_FLOAT',
+  7: 'DYN_BOOL',
+  8: 'DYN_BIT32',
+  9: 'DYN_STRING',
+  10: 'DYN_TIME',
+  11: 'CHAR_STRUCT',
+  12: 'UINT_STRUCT',
+  13: 'INT_STRUCT',
+  14: 'FLOAT_STRUCT',
+  15: 'BOOL_STRUCT',
+  16: 'BIT32_STRUCT',
+  17: 'STRING_STRUCT',
+  18: 'TIME_STRUCT',
+  19: 'CHAR',
+  20: 'UINT',
+  21: 'INT',
+  22: 'FLOAT',
+  23: 'BOOL',
+  24: 'BIT32',
+  25: 'STRING',
+  26: 'TIME',
+  27: 'DPID',
+  29: 'DYN_DPID',
+  30: 'DYN_CHAR_STRUCT',
+  31: 'DYN_UINT_STRUCT',
+  32: 'DYN_INT_STRUCT',
+  33: 'DYN_FLOAT_STRUCT',
+  34: 'DYN_BOOL_STRUCT',
+  35: 'DYN_BIT32_STRUCT',
+  36: 'DYN_STRING_STRUCT',
+  37: 'DYN_TIME_STRUCT',
+  38: 'DYN_DPID_STRUCT',
+  39: 'DPID_STRUCT',
+  41: 'TYPEREF',
+  42: 'LANGSTRING',
+  43: 'LANGSTRING_STRUCT',
+  44: 'DYN_LANGSTRING',
+  45: 'DYN_LANGSTRING_STRUCT',
+  46: 'BLOB',
+  47: 'BLOB_STRUCT',
+  48: 'DYN_BLOB',
+  49: 'DYN_BLOB_STRUCT',
+  50: 'BIT64',
+  51: 'DYN_BIT64',
+  52: 'BIT64_STRUCT',
+  53: 'DYN_BIT64_STRUCT',
+  54: 'LONG',
+  55: 'DYN_LONG',
+  56: 'LONG_STRUCT',
+  57: 'DYN_LONG_STRUCT',
+  58: 'ULONG',
+  59: 'DYN_ULONG',
+  60: 'ULONG_STRUCT',
+  61: 'DYN_ULONG_STRUCT'
 };
+
+// Reverse mapping from enum names to numeric IDs for ElementType
+const ElementTypeReverseMap = Object.entries(ElementTypeMap).reduce((acc, [key, value]) => {
+  acc[value] = parseInt(key)
+  return acc
+}, {});
+
+/**
+ * Converts DpTypeNodeInput enum values to WinCC OA numeric type IDs.
+ * Used as input converter for dpTypeCreate() and dpTypeChange() WinCC OA functions.
+ *
+ * @param {object} node - The node with enum type values to convert
+ * @returns {object} Node with numeric type IDs
+ * @throws {Error} If an unknown element type is provided
+ */
+function convertDpTypeNodeInputToNumeric(node) {
+  const converted = { ...node }
+  if (converted.type && typeof converted.type === 'string') {
+    converted.type = ElementTypeReverseMap[converted.type]
+    if (converted.type === undefined) {
+      throw new Error(`Unknown element type: ${node.type}`)
+    }
+  }
+  if (converted.children && Array.isArray(converted.children)) {
+    converted.children = converted.children.map(child => convertDpTypeNodeInputToNumeric(child))
+  }
+  return converted
+}
 
 // WinCC OA Control type mapping with correct IDs from WinccoaCtrlType documentation
 const CtrlTypeMap = {
@@ -77,9 +135,26 @@ const CtrlTypeMap = {
   5111808: 'DYN_DYN_BIT64_VAR'
 };
 
+/**
+ * Creates resolver functions for WinCC OA data point and system operations.
+ *
+ * Wraps WinCC OA manager functions through the winccoa-manager Node.js binding.
+ * Each resolver corresponds to an original WinCC OA C++ function.
+ *
+ * @param {WinccoaManager} winccoa - WinCC OA manager instance for API access
+ * @param {object} logger - Logger instance for error reporting
+ * @returns {object} Resolver object with Query and Mutation resolvers
+ */
 function createCommonResolvers(winccoa, logger) {
   return {
     Query: {
+      /**
+       * Retrieves data point values.
+       * Wraps WinCC OA function: dpGet(dpeNames)
+       *
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @returns {Promise<Array>} Promise resolving to array of data point values
+       */
       async dpGet(_, { dpeNames }) {
         try {
           const result = await winccoa.dpGet(dpeNames);
@@ -90,6 +165,14 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
       
+      /**
+       * Retrieves data point names matching a pattern.
+       * Wraps WinCC OA function: dpNames(dpPattern, dpType)
+       *
+       * @param {string} dpPattern - Pattern to match data point names
+       * @param {string} [dpType] - Optional data point type filter
+       * @returns {Promise<Array<string>>} Promise resolving to array of matching data point names
+       */
       async dpNames(_, { dpPattern, dpType, ignoreCase = false }) {
         try {
           const result = await winccoa.dpNames(dpPattern, dpType);
@@ -99,7 +182,15 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to get data point names: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Retrieves data point types matching a pattern.
+       * Wraps WinCC OA function: dpTypes(pattern, systemId)
+       *
+       * @param {string} pattern - Pattern to match data point type names
+       * @param {number} [systemId] - Optional system ID filter
+       * @returns {Promise<Array>} Promise resolving to array of data point types
+       */
       async dpTypes(_, { pattern, systemId, includeEmpty = true }) {
         try {
           const result = await winccoa.dpTypes(pattern, systemId);
@@ -109,7 +200,15 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to get data point types: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Retrieves data point values not older than specified age.
+       * Wraps WinCC OA function: dpGetMaxAge(age, dpeNames)
+       *
+       * @param {number} age - Maximum age in milliseconds
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @returns {Promise<Array>} Promise resolving to array of data point values
+       */
       async dpGetMaxAge(_, { age, dpeNames }) {
         try {
           const result = await winccoa.dpGetMaxAge(age, dpeNames);
@@ -119,7 +218,14 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to get data points with max age: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Retrieves the element type of a data point.
+       * Wraps WinCC OA function: dpElementType(dpeName)
+       *
+       * @param {string} dpeName - Data point element name
+       * @returns {Promise<string>} Promise resolving to element type enum value
+       */
       async dpElementType(_, { dpeName }) {
         try {
           const result = await winccoa.dpElementType(dpeName);
@@ -134,7 +240,14 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to get element type: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Retrieves the control type of a data point attribute.
+       * Wraps WinCC OA function: dpAttributeType(dpAttributeName)
+       *
+       * @param {string} dpAttributeName - Data point attribute name
+       * @returns {Promise<string>} Promise resolving to control type enum value
+       */
       async dpAttributeType(_, { dpAttributeName }) {
         try {
           const result = await winccoa.dpAttributeType(dpAttributeName);
@@ -149,7 +262,14 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to get attribute type: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Retrieves the data point type name.
+       * Wraps WinCC OA function: dpTypeName(dp)
+       *
+       * @param {string} dp - Data point name
+       * @returns {Promise<string>} Promise resolving to data point type name
+       */
       async dpTypeName(_, { dp }) {
         try {
           const result = await winccoa.dpTypeName(dp);
@@ -159,7 +279,14 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to get type name: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Retrieves the type reference name for a data point element.
+       * Wraps WinCC OA function: dpTypeRefName(dpe)
+       *
+       * @param {string} dpe - Data point element name
+       * @returns {Promise<string>} Promise resolving to type reference name
+       */
       async dpTypeRefName(_, { dpe }) {
         try {
           const result = await winccoa.dpTypeRefName(dpe);
@@ -169,7 +296,14 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to get type reference name: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Checks if a data point exists.
+       * Wraps WinCC OA function: dpExists(dpeName)
+       *
+       * @param {string} dpeName - Data point name
+       * @returns {Promise<boolean>} Promise resolving to existence check result
+       */
       async dpExists(_, { dpeName }) {
         try {
           const result = await winccoa.dpExists(dpeName);
@@ -180,16 +314,32 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
       
-       async dpGetPeriod(_, { startTime, endTime, dpeNames }) {
-         try {
-           const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
-           return result;
-         } catch (error) {
-           logger.error('dpGetPeriod error:', error);
-           throw new Error(`Failed to get historic data point values: ${error.message}`);
-         }
-       },
+      /**
+       * Retrieves historic data point values for a time period.
+       * Wraps WinCC OA function: dpGetPeriod(startTime, endTime, dpeNames)
+       *
+       * @param {string} startTime - Start time as ISO string
+       * @param {string} endTime - End time as ISO string
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @returns {Promise<Array>} Promise resolving to historic data point values
+       */
+      async dpGetPeriod(_, { startTime, endTime, dpeNames }) {
+        try {
+          const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
+          return result;
+        } catch (error) {
+          logger.error('dpGetPeriod error:', error);
+          throw new Error(`Failed to get historic data point values: ${error.message}`);
+        }
+      },
 
+      /**
+       * Executes a dpQuery and returns the result.
+       * Wraps WinCC OA function: dpQuery(query)
+       *
+       * @param {string} query - dpQuery query string
+       * @returns {Promise<Array>} Promise resolving to query result
+       */
       async dpQuery(_, { query }) {
         try {
           const result = await winccoa.dpQuery(query);
@@ -200,6 +350,13 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves the alias of a data point.
+       * Wraps WinCC OA function: dpGetAlias(dpeName)
+       *
+       * @param {string} dpeName - Data point name
+       * @returns {Promise<string>} Promise resolving to data point alias
+       */
       async dpGetAlias(_, { dpeName }) {
         try {
           const result = await winccoa.dpGetAlias(dpeName);
@@ -210,6 +367,13 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves the description of a data point.
+       * Wraps WinCC OA function: dpGetDescription(dpeName)
+       *
+       * @param {string} dpeName - Data point name
+       * @returns {Promise<string>} Promise resolving to data point description
+       */
       async dpGetDescription(_, { dpeName }) {
         try {
           const result = await winccoa.dpGetDescription(dpeName);
@@ -220,6 +384,13 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves the format of a data point.
+       * Wraps WinCC OA function: dpGetFormat(dpeName)
+       *
+       * @param {string} dpeName - Data point name
+       * @returns {Promise<string>} Promise resolving to data point format
+       */
       async dpGetFormat(_, { dpeName }) {
         try {
           const result = await winccoa.dpGetFormat(dpeName);
@@ -230,6 +401,13 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves the unit of a data point.
+       * Wraps WinCC OA function: dpGetUnit(dpeName)
+       *
+       * @param {string} dpeName - Data point name
+       * @returns {Promise<string>} Promise resolving to data point unit
+       */
       async dpGetUnit(_, { dpeName }) {
         try {
           const result = await winccoa.dpGetUnit(dpeName);
@@ -240,7 +418,12 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
-      // Manager and System Information Functions
+      /**
+       * Checks if the local system is active in a redundancy setup.
+       * Wraps WinCC OA function: isReduActive()
+       *
+       * @returns {boolean} True if redundancy is active
+       */
       isReduActive() {
         try {
           const result = winccoa.isReduActive();
@@ -251,6 +434,12 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Checks if the system is configured for redundancy.
+       * Wraps WinCC OA function: isRedundant()
+       *
+       * @returns {boolean} True if redundancy is configured
+       */
       isRedundant() {
         try {
           const result = winccoa.isRedundant();
@@ -261,6 +450,13 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves the numeric system ID for a system name.
+       * Wraps WinCC OA function: getSystemId(systemName)
+       *
+       * @param {string} systemName - WinCC OA system name
+       * @returns {number} System ID
+       */
       getSystemId(_, { systemName }) {
         try {
           const result = winccoa.getSystemId(systemName);
@@ -271,6 +467,13 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Retrieves the system name for a numeric system ID.
+       * Wraps WinCC OA function: getSystemName(systemId)
+       *
+       * @param {number} systemId - Numeric system ID
+       * @returns {string} System name
+       */
       getSystemName(_, { systemId }) {
         try {
           const result = winccoa.getSystemName(systemId);
@@ -281,48 +484,82 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
-       getVersionInfo() {
-         try {
-           const result = winccoa.getVersionInfo();
-           return result;
-         } catch (error) {
-           logger.error('getVersionInfo error:', error);
-           throw new Error(`Failed to get version information: ${error.message}`);
-         }
-       },
+      /**
+       * Retrieves version information for WinCC OA.
+       * Wraps WinCC OA function: getVersionInfo()
+       *
+       * @returns {object} Version information object
+       */
+      getVersionInfo() {
+        try {
+          const result = winccoa.getVersionInfo();
+          return result;
+        } catch (error) {
+          logger.error('getVersionInfo error:', error);
+          throw new Error(`Failed to get version information: ${error.message}`);
+        }
+      },
 
-       // Data Point Type queries
-       async dpTypeGet(_, { dpt, includeSubTypes = false }) {
-         try {
-           const result = await winccoa.dpTypeGet(dpt, includeSubTypes);
-           return result;
-         } catch (error) {
-           logger.error('dpTypeGet error:', error);
-           throw new Error(`Failed to get data point type structure: ${error.message}`);
-         }
-       },
+      /**
+       * Retrieves the structure of a data point type.
+       * Wraps WinCC OA function: dpTypeGet(dpt, includeSubTypes)
+       *
+       * @param {string} dpt - Data point type name
+       * @param {boolean} [includeSubTypes=false] - Whether to include subtypes
+       * @returns {Promise<object>} Promise resolving to data point type structure
+       */
+      async dpTypeGet(_, { dpt, includeSubTypes = false }) {
+        try {
+          const result = await winccoa.dpTypeGet(dpt, includeSubTypes);
+          return result;
+        } catch (error) {
+          logger.error('dpTypeGet error:', error);
+          throw new Error(`Failed to get data point type structure: ${error.message}`);
+        }
+      },
 
-       async dpGetDpTypeRefs(_, { dpt }) {
-         try {
-           const result = await winccoa.dpGetDpTypeRefs(dpt);
-           return result;
-         } catch (error) {
-           logger.error('dpGetDpTypeRefs error:', error);
-           throw new Error(`Failed to get data point type references: ${error.message}`);
-         }
-       },
+      /**
+       * Retrieves references within a data point type.
+       * Wraps WinCC OA function: dpGetDpTypeRefs(dpt)
+       *
+       * @param {string} dpt - Data point type name
+       * @returns {Promise<Array>} Promise resolving to array of type references
+       */
+      async dpGetDpTypeRefs(_, { dpt }) {
+        try {
+          const result = await winccoa.dpGetDpTypeRefs(dpt);
+          return result;
+        } catch (error) {
+          logger.error('dpGetDpTypeRefs error:', error);
+          throw new Error(`Failed to get data point type references: ${error.message}`);
+        }
+      },
 
-       async dpGetRefsToDpType(_, { reference }) {
-         try {
-           const result = await winccoa.dpGetRefsToDpType(reference);
-           return result;
-         } catch (error) {
-           logger.error('dpGetRefsToDpType error:', error);
-           throw new Error(`Failed to get references to data point type: ${error.message}`);
-         }
-       },
+      /**
+       * Retrieves all data points that reference a given type.
+       * Wraps WinCC OA function: dpGetRefsToDpType(reference)
+       *
+       * @param {string} reference - Type reference name
+       * @returns {Promise<Array>} Promise resolving to array of data points referencing the type
+       */
+      async dpGetRefsToDpType(_, { reference }) {
+        try {
+          const result = await winccoa.dpGetRefsToDpType(reference);
+          return result;
+        } catch (error) {
+          logger.error('dpGetRefsToDpType error:', error);
+          throw new Error(`Failed to get references to data point type: ${error.message}`);
+        }
+      },
 
-       async tagGet(_, { dpeNames }) {
+      /**
+       * Retrieves complete tag information (value, timestamp, status).
+       * Wraps WinCC OA function: dpGet() with special attributes.
+       *
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @returns {Promise<Array<object>>} Promise resolving to array of tag objects with value, timestamp, status
+       */
+      async tagGet(_, { dpeNames }) {
          try {
            const results = [];
 
@@ -350,14 +587,25 @@ function createCommonResolvers(winccoa, logger) {
          }
        },
 
-       async tagGetHistory(_, { startTime, endTime, dpeNames, limit, offset }) {
-         try {
-           logger.info(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
+      /**
+       * Retrieves historic tag data for a time period.
+       * Wraps WinCC OA function: dpGetPeriod(startTime, endTime, dpeNames)
+       *
+       * @param {string} startTime - Start time as ISO string
+       * @param {string} endTime - End time as ISO string
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @param {number} [limit] - Maximum number of results to return
+       * @param {number} [offset] - Offset for pagination
+       * @returns {Promise<Array<object>>} Promise resolving to array of tag history objects
+       */
+      async tagGetHistory(_, { startTime, endTime, dpeNames, limit, offset }) {
+        try {
+          logger.info(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
 
-           const startDate = new Date(startTime);
-           const endDate = new Date(endTime);
+          const startDate = new Date(startTime);
+          const endDate = new Date(endTime);
 
-           const result = await winccoa.dpGetPeriod(startDate, endDate, dpeNames);
+          const result = await winccoa.dpGetPeriod(startDate, endDate, dpeNames);
 
            logger.info('tagGetHistory dpGetPeriod result:', JSON.stringify(result, null, 2));
 
@@ -427,6 +675,16 @@ function createCommonResolvers(winccoa, logger) {
      },
     
     Mutation: {
+      /**
+       * Creates a new data point.
+       * Wraps WinCC OA function: dpCreate(dpeName, dpType, systemId, dpId)
+       *
+       * @param {string} dpeName - Data point name
+       * @param {string} dpType - Data point type
+       * @param {number} [systemId] - Optional system ID
+       * @param {number} [dpId] - Optional data point ID
+       * @returns {Promise<object>} Promise resolving to creation result
+       */
       async dpCreate(_, { dpeName, dpType, systemId, dpId }) {
         try {
           const result = await winccoa.dpCreate(dpeName, dpType, systemId, dpId);
@@ -436,7 +694,14 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to create data point: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Deletes a data point.
+       * Wraps WinCC OA function: dpDelete(dpName)
+       *
+       * @param {string} dpName - Data point name to delete
+       * @returns {Promise<object>} Promise resolving to deletion result
+       */
       async dpDelete(_, { dpName }) {
         try {
           const result = await winccoa.dpDelete(dpName);
@@ -446,7 +711,16 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to delete data point: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Copies a data point.
+       * Wraps WinCC OA function: dpCopy(source, destination, driver)
+       *
+       * @param {string} source - Source data point name
+       * @param {string} destination - Destination data point name
+       * @param {number} [driver=1] - Driver ID
+       * @returns {Promise<object>} Promise resolving to copy result
+       */
       async dpCopy(_, { source, destination, driver = 1 }) {
         try {
           const result = await winccoa.dpCopy(source, destination, driver);
@@ -456,7 +730,15 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to copy data point: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Sets data point values immediately (non-blocking).
+       * Wraps WinCC OA function: dpSet(dpeNames, values)
+       *
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @param {Array} values - Values to set
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSet(_, { dpeNames, values }) {
         try {
           const result = await winccoa.dpSet(dpeNames, values);
@@ -466,7 +748,15 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to set data point values: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Sets data point values and waits for confirmation.
+       * Wraps WinCC OA function: dpSetWait(dpeNames, values)
+       *
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @param {Array} values - Values to set
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSetWait(_, { dpeNames, values }) {
         try {
           const result = await winccoa.dpSetWait(dpeNames, values);
@@ -476,7 +766,16 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to set data point values with wait: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Sets data point values at a specific future time (non-blocking).
+       * Wraps WinCC OA function: dpSetTimed(time, dpeNames, values)
+       *
+       * @param {string} time - Future time as ISO string
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @param {Array} values - Values to set
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSetTimed(_, { time, dpeNames, values }) {
         try {
           const result = await winccoa.dpSetTimed(time, dpeNames, values);
@@ -486,7 +785,16 @@ function createCommonResolvers(winccoa, logger) {
           throw new Error(`Failed to set timed data point values: ${error.message}`);
         }
       },
-      
+
+      /**
+       * Sets data point values at a specific future time and waits for confirmation.
+       * Wraps WinCC OA function: dpSetTimedWait(time, dpeNames, values)
+       *
+       * @param {string} time - Future time as ISO string
+       * @param {Array<string>} dpeNames - Array of data point element names
+       * @param {Array} values - Values to set
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSetTimedWait(_, { time, dpeNames, values }) {
         try {
           const result = await winccoa.dpSetTimedWait(time, dpeNames, values);
@@ -497,10 +805,18 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
-      // Data Point Type mutations
+      /**
+       * Creates a new data point type.
+       * Wraps WinCC OA function: dpTypeCreate(startNode)
+       *
+       * @param {object} startNode - Root node of the data point type structure
+       * @returns {Promise<object>} Promise resolving to creation result
+       */
       async dpTypeCreate(_, { startNode }) {
         try {
-          const result = await winccoa.dpTypeCreate(startNode);
+          const convertedNode = convertDpTypeNodeInputToNumeric(startNode);
+          logger.debug('dpTypeCreate converted node:', JSON.stringify(convertedNode, null, 2));
+          const result = await winccoa.dpTypeCreate(convertedNode);
           return result;
         } catch (error) {
           logger.error('dpTypeCreate error:', error);
@@ -508,9 +824,17 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Modifies an existing data point type.
+       * Wraps WinCC OA function: dpTypeChange(startNode)
+       *
+       * @param {object} startNode - Modified root node of the data point type structure
+       * @returns {Promise<object>} Promise resolving to modification result
+       */
       async dpTypeChange(_, { startNode }) {
         try {
-          const result = await winccoa.dpTypeChange(startNode);
+          const convertedNode = convertDpTypeNodeInputToNumeric(startNode);
+          const result = await winccoa.dpTypeChange(convertedNode);
           return result;
         } catch (error) {
           logger.error('dpTypeChange error:', error);
@@ -518,6 +842,13 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Deletes a data point type.
+       * Wraps WinCC OA function: dpTypeDelete(dpt)
+       *
+       * @param {string} dpt - Data point type name to delete
+       * @returns {Promise<object>} Promise resolving to deletion result
+       */
       async dpTypeDelete(_, { dpt }) {
         try {
           const result = await winccoa.dpTypeDelete(dpt);
@@ -528,6 +859,14 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Sets the alias of a data point.
+       * Wraps WinCC OA function: dpSetAlias(dpeName, alias)
+       *
+       * @param {string} dpeName - Data point name
+       * @param {string} alias - New alias value
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSetAlias(_, { dpeName, alias }) {
         try {
           const result = await winccoa.dpSetAlias(dpeName, alias);
@@ -538,6 +877,14 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Sets the description of a data point.
+       * Wraps WinCC OA function: dpSetDescription(dpeName, description)
+       *
+       * @param {string} dpeName - Data point name
+       * @param {string} description - New description value
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSetDescription(_, { dpeName, description }) {
         try {
           const result = await winccoa.dpSetDescription(dpeName, description);
@@ -548,6 +895,14 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Sets the format of a data point.
+       * Wraps WinCC OA function: dpSetFormat(dpeName, format)
+       *
+       * @param {string} dpeName - Data point name
+       * @param {string} format - New format value
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSetFormat(_, { dpeName, format }) {
         try {
           const result = await winccoa.dpSetFormat(dpeName, format);
@@ -558,6 +913,14 @@ function createCommonResolvers(winccoa, logger) {
         }
       },
 
+      /**
+       * Sets the unit of a data point.
+       * Wraps WinCC OA function: dpSetUnit(dpeName, unit)
+       *
+       * @param {string} dpeName - Data point name
+       * @param {string} unit - New unit value
+       * @returns {Promise<object>} Promise resolving to set result
+       */
       async dpSetUnit(_, { dpeName, unit }) {
         try {
           const result = await winccoa.dpSetUnit(dpeName, unit);
@@ -570,15 +933,26 @@ function createCommonResolvers(winccoa, logger) {
      },
 
      Tag: {
+        /**
+         * Retrieves historical data for a tag within a time range.
+         * Wraps WinCC OA function: dpGetPeriod(startTime, endTime, dpeNames)
+         *
+         * @param {object} tag - Tag object with name property
+         * @param {string} startTime - Start time as ISO string
+         * @param {string} endTime - End time as ISO string
+         * @param {number} [limit] - Maximum number of results to return
+         * @param {number} [offset] - Offset for pagination
+         * @returns {Promise<object>} Promise resolving to tag history object with values array
+         */
         async history(tag, { startTime, endTime, limit, offset }) {
-         try {
-           logger.info(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
+          try {
+            logger.info(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
 
-           const startDate = new Date(startTime);
-           const endDate = new Date(endTime);
+            const startDate = new Date(startTime);
+            const endDate = new Date(endTime);
 
-           // Get historical data for this specific tag
-           const result = await winccoa.dpGetPeriod(startDate, endDate, [tag.name]);
+            // Get historical data for this specific tag
+            const result = await winccoa.dpGetPeriod(startDate, endDate, [tag.name]);
 
            logger.info(`dpGetPeriod result for ${tag.name}:`, JSON.stringify(result, null, 2));
 
@@ -676,6 +1050,8 @@ function createCommonResolvers(winccoa, logger) {
 
 module.exports = {
   ElementTypeMap,
+  ElementTypeReverseMap,
   CtrlTypeMap,
-  createCommonResolvers
+  createCommonResolvers,
+  convertDpTypeNodeInputToNumeric
 };

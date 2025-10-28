@@ -92,6 +92,7 @@ const noAuthArg = args.includes('--no-auth');
 
 // Configuration
 const PORT = process.env.GRAPHQL_PORT || 4000;
+const HOST = process.env.GRAPHQL_HOST || '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const TOKEN_EXPIRY_MS = parseInt(process.env.TOKEN_EXPIRY_MS || '3600000'); // Default 1 hour
 const DISABLE_AUTH = noAuthArg || process.env.DISABLE_AUTH === 'true';
@@ -106,7 +107,7 @@ const READONLY_PASSWORD = process.env.READONLY_PASSWORD;
 const READONLY_TOKEN = process.env.READONLY_TOKEN;
 
 // Log authentication configuration
-console.log(`Starting GraphQL server on port ${PORT} with DISABLE_AUTH=${DISABLE_AUTH}`);
+console.log(`Starting GraphQL server on ${HOST}:${PORT} with DISABLE_AUTH=${DISABLE_AUTH}`);
 console.log(`🌐 CORS Configuration: ${CORS_ORIGIN}`);
 console.log('🔐 Authentication Configuration:');
 console.log(`   Admin Username: ${ADMIN_USERNAME ? '✅ Set' : '❌ Not set'}`);
@@ -168,6 +169,14 @@ const schemaV2 = require('./graphql');
 const typeDefs = schemaV2.typeDefs;
 
 // Utility functions for authentication
+
+/**
+ * Generates a JWT token for user authentication.
+ *
+ * @param {string} userId - The user identifier
+ * @param {string} [role='admin'] - The user role (admin or readonly)
+ * @returns {object} Token object with token string and expiration timestamp
+ */
 function generateToken(userId, role = 'admin') {
   const tokenId = uuidv4();
   const expiresAt = Date.now() + TOKEN_EXPIRY_MS;
@@ -194,9 +203,15 @@ function generateToken(userId, role = 'admin') {
   return { token, expiresAt };
 }
 
+/**
+ * Validates a JWT token or direct access token.
+ *
+ * @param {string} token - The token to validate
+ * @returns {object|null} Token data object if valid, null if invalid or expired
+ */
 function validateToken(token) {
   logger.debug(`Validating token: ${token ? token.substring(0, 20) + '...' : 'null'}`);
-  
+
   // First check if it's a direct access token
   if (DIRECT_ACCESS_TOKEN && token === DIRECT_ACCESS_TOKEN) {
     logger.debug('Direct access token matched');
@@ -241,7 +256,13 @@ function validateToken(token) {
   }
 }
 
-// User authentication with environment-based credentials
+/**
+ * Authenticates a user based on username and password against environment variables.
+ *
+ * @param {string} username - The username to authenticate
+ * @param {string} password - The password to verify
+ * @returns {object|null} User object if authentication successful, null otherwise
+ */
 function authenticateUser(username, password) {
   logger.debug(`Authentication attempt for username: ${username}`);
   
@@ -280,7 +301,12 @@ const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
 const cnsResolvers = createCnsResolvers(winccoa, logger);
 const extrasResolvers = createExtrasResolvers(winccoa, logger);
 
-// Merge resolvers
+/**
+ * Merges multiple GraphQL resolver objects into a single resolver.
+ *
+ * @param {...object} resolverObjects - Variable number of resolver objects to merge
+ * @returns {object} Merged resolver object
+ */
 function mergeResolvers(...resolverObjects) {
   const merged = {};
 
@@ -396,12 +422,23 @@ const wsAuthMiddleware = (ctx) => {
   return { user };
 };
 
-// Simple pub/sub implementation for subscriptions
+/**
+ * Simple pub/sub implementation for GraphQL subscriptions.
+ *
+ * Implements the async iterator protocol for streaming subscription data
+ * to connected WebSocket clients.
+ */
 class SimplePubSub {
   constructor() {
     this.subscribers = new Map();
   }
-  
+
+  /**
+   * Publishes a payload to all subscribers on a channel.
+   *
+   * @param {string} channel - The channel name to publish to
+   * @param {*} payload - The data to publish
+   */
   publish(channel, payload) {
     const subs = this.subscribers.get(channel) || [];
     subs.forEach(sub => {
@@ -413,12 +450,18 @@ class SimplePubSub {
     });
   }
   
+  /**
+   * Creates an async iterator for a channel.
+   *
+   * @param {string} channel - The channel to subscribe to
+   * @returns {AsyncIterator} An async iterator that yields payloads from the channel
+   */
   asyncIterator(channel) {
     const queue = [];
     let pushFn;
     let pullFn;
     let running = true;
-    
+
     const push = (value) => {
       if (pullFn) {
         pullFn({ value, done: false });
@@ -490,7 +533,16 @@ class SimplePubSub {
   }
 }
 
-// Main server setup
+/**
+ * Starts the GraphQL server with Express, Apollo, and WebSocket support.
+ *
+ * Sets up:
+ * - REST API endpoints
+ * - GraphQL endpoint with authentication
+ * - WebSocket subscriptions
+ * - Swagger UI documentation
+ * - Health check endpoint
+ */
 async function startServer() {
   try {
     // Create Express app
@@ -720,17 +772,19 @@ async function startServer() {
     
     // Start HTTP server
     await new Promise((resolve) => {
-      httpServer.listen(PORT, () => {
+      httpServer.listen(PORT, HOST, () => {
         logger.info(`🏭 WinCC OA API Server Started`);
         logger.info(`─────────────────────────────────────────────────`);
-        logger.info(`🏠 Landing page:        http://localhost:${PORT}/`);
-        logger.info(`🚀 GraphQL API:         http://localhost:${PORT}/graphql`);
-        logger.info(`🔌 WebSocket:           ws://localhost:${PORT}/graphql`);
-        logger.info(`🌐 REST API:            http://localhost:${PORT}/restapi`);
-        logger.info(`📚 API Documentation:   http://localhost:${PORT}/api-docs`);
-        logger.info(`📊 Usage Statistics:    http://localhost:${PORT}/stats.html`);
-        logger.info(`📄 OpenAPI Spec:        http://localhost:${PORT}/openapi.json`);
-        logger.info(`💚 Health Check:        http://localhost:${PORT}/restapi/health`);
+        // For display purposes: if listening on 0.0.0.0 (all interfaces), show the hostname; otherwise show configured host
+        const displayHost = HOST === '0.0.0.0' ? require('os').hostname() : HOST;
+        logger.info(`🏠 Landing page:        http://${displayHost}:${PORT}/`);
+        logger.info(`🚀 GraphQL API:         http://${displayHost}:${PORT}/graphql`);
+        logger.info(`🔌 WebSocket:           ws://${displayHost}:${PORT}/graphql`);
+        logger.info(`🌐 REST API:            http://${displayHost}:${PORT}/restapi`);
+        logger.info(`📚 API Documentation:   http://${displayHost}:${PORT}/api-docs`);
+        logger.info(`📊 Usage Statistics:    http://${displayHost}:${PORT}/stats.html`);
+        logger.info(`📄 OpenAPI Spec:        http://${displayHost}:${PORT}/openapi.json`);
+        logger.info(`💚 Health Check:        http://${displayHost}:${PORT}/restapi/health`);
         logger.info(`─────────────────────────────────────────────────`);
         if (DISABLE_AUTH) {
           logger.warn('⚠️  Authentication is DISABLED. Set DISABLE_AUTH=false to enable authentication.');

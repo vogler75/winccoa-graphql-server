@@ -7,6 +7,11 @@ const path = require('path')
 const USAGE_FILE = path.join(__dirname, 'usage-stats.json')
 const SAVE_INTERVAL_MS = 10000 // Save every 10 seconds
 
+/**
+ * Tracks usage statistics for GraphQL and REST API operations.
+ *
+ * Maintains statistics in memory with periodic persistence to JSON file.
+ */
 class UsageTracker {
   constructor(logger) {
     this.logger = logger
@@ -20,7 +25,9 @@ class UsageTracker {
     this.startPeriodicSave()
   }
 
-  // Load stats from file
+  /**
+   * Loads statistics from persistent JSON file.
+   */
   loadStats() {
     try {
       if (fs.existsSync(USAGE_FILE)) {
@@ -41,7 +48,9 @@ class UsageTracker {
     }
   }
 
-  // Save stats to file
+  /**
+   * Saves statistics to persistent JSON file.
+   */
   saveStats() {
     try {
       // Convert Map to object for JSON serialization
@@ -57,14 +66,18 @@ class UsageTracker {
     }
   }
 
-  // Start periodic saving
+  /**
+   * Starts periodic saving of statistics to file.
+   */
   startPeriodicSave() {
     this.saveTimer = setInterval(() => {
       this.saveStats()
     }, SAVE_INTERVAL_MS)
   }
 
-  // Stop periodic saving
+  /**
+   * Stops periodic saving of statistics.
+   */
   stopPeriodicSave() {
     if (this.saveTimer) {
       clearInterval(this.saveTimer)
@@ -72,14 +85,23 @@ class UsageTracker {
     }
   }
 
-  // Track a function call
+  /**
+   * Records a single function call to statistics.
+   *
+   * @param {string} type - The API type (graphql or rest)
+   * @param {string} name - The operation name
+   */
   track(type, name) {
     const key = `${type}/${name}`
     const current = this.stats.get(key) || 0
     this.stats.set(key, current + 1)
   }
 
-  // Get all stats
+  /**
+   * Retrieves all statistics as an array.
+   *
+   * @returns {Array} Array of stat objects with name and count properties
+   */
   getStats() {
     const result = []
 
@@ -90,17 +112,27 @@ class UsageTracker {
     return result
   }
 
-  // Get stats sorted by name
+  /**
+   * Retrieves statistics sorted alphabetically by operation name.
+   *
+   * @returns {Array} Sorted array of stat objects
+   */
   getStatsSortedByName() {
     return this.getStats().sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  // Get stats sorted by count
+  /**
+   * Retrieves statistics sorted by call count (descending).
+   *
+   * @returns {Array} Array sorted by count in descending order
+   */
   getStatsSortedByCount() {
     return this.getStats().sort((a, b) => b.count - a.count)
   }
 
-  // Shutdown - save stats and stop timer
+  /**
+   * Gracefully shuts down the tracker - stops periodic saving and persists final data.
+   */
   shutdown() {
     this.stopPeriodicSave()
     this.saveStats()

@@ -9,6 +9,7 @@ type Query {
 
   """
   Extra operations
+  This is a helper namespace for development and testing, not a WinCC OA API function.
   """
   extras: ExtrasMethods!
 }

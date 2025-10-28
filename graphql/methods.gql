@@ -414,6 +414,7 @@ type DataPointMethods {
   @param dpeName - Data point or data point element name
   @returns Alias string or null if not set
   @throws WinccoaError when invalid argument type or dpe does not exist
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetAlias.html
   """
   getAlias(dpeName: String!): String
 
@@ -423,6 +424,7 @@ type DataPointMethods {
   @param dpeName - Data point or data point element name
   @returns Description string or null if not set
   @throws WinccoaError when invalid argument type or dpe does not exist
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetDescription.html
   """
   getDescription(dpeName: String!): String
 
@@ -432,6 +434,7 @@ type DataPointMethods {
   @param dpeName - Data point or data point element name
   @returns Format string or null if not set
   @throws WinccoaError when invalid argument type or dpe does not exist
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetFormat.html
   """
   getFormat(dpeName: String!): String
 
@@ -441,6 +444,7 @@ type DataPointMethods {
   @param dpeName - Data point or data point element name
   @returns Unit string or null if not set
   @throws WinccoaError when invalid argument type or dpe does not exist
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetUnit.html
   """
   getUnit(dpeName: String!): String
 }
@@ -533,6 +537,7 @@ type RedundancyMethods {
 type ExtrasMethods {
   """
   Test dummy query function for testing and development purposes.
+  This is a helper function for development and testing, not a WinCC OA API function.
 
   @returns Test dummy result with success status, message, and timestamp
   """

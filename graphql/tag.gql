@@ -4,13 +4,25 @@ type Tag {
   """Tag name"""
   name: String!
 
-  """Current value"""
+  """
+  Current value
+  Wraps WinCC OA function: dpGet(dpeNames)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGet.html
+  """
   value: JSON!
 
-  """Timestamp of last update"""
+  """
+  Timestamp of last update
+  Wraps WinCC OA function: dpGet() with _online.._stime attribute
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGet.html
+  """
   timestamp: Time!
 
-  """Status information"""
+  """
+  Status information
+  Wraps WinCC OA function: dpGet() with _online.._status attribute
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGet.html
+  """
   status: ElementStatus!
 
   """Underlying data point element"""
@@ -18,6 +30,8 @@ type Tag {
 
   """
   Historical values for this tag
+  Wraps WinCC OA function: dpGetPeriod(startTime, endTime, dpeNames)
+  @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpGetPeriod.html
   """
   history(
     startTime: Time!
