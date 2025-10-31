@@ -11,24 +11,24 @@ const toolsRegistry = {
     name: 'dpGet',
     enabled: true,
     category: 'DP_FUNCTIONS',
-    description: 'Get the current values of one or more data point elements (DPEs)',
+    description: 'Get the current values of one or more data point elements (DPEs). Returns values directly from the database without type conversion verification.',
     inputSchema: {
       type: 'object',
       properties: {
         dpeNames: {
           type: ['string', 'array'],
-          description: 'Data point element name(s) to retrieve. Can be a single string or array of strings.',
+          description: 'Single data point element name (string) or multiple names (string[]). Examples: "ExampleDP_Arg1.", or ["ExampleDP_Arg1.", "ExampleDP_DDE.b1"]',
           items: { type: 'string' }
         }
       },
       required: ['dpeNames']
     },
     returns: 'Promise<unknown>',
-    returnDescription: 'Current value(s) of the DPE(s). Type must be cast to expected type.',
-    throws: 'WinccoaError if DPE does not exist or user has no read access',
+    returnDescription: 'Promise that resolves to current value(s) of the DPE(s). For single DPE, returns single value. For multiple DPEs, returns array of values in same order. Type must be cast to expected type before use.',
+    throws: 'WinccoaError when DPE does not exist, current user has no read access, or invalid parameter type given',
     example: {
       description: 'Get values from two data point elements',
-      code: `const values = await dpGet(['ExampleDP_Arg1.', 'ExampleDP_DDE.b1']);`
+      code: `const values = await dpGet(['ExampleDP_Arg1.', 'ExampleDP_DDE.b1']); // returns array [number, boolean]`
     }
   },
 
@@ -36,28 +36,28 @@ const toolsRegistry = {
     name: 'dpSet',
     enabled: true,
     category: 'DP_FUNCTIONS',
-    description: 'Set the value of one or more data point element(s)',
+    description: 'Set the value of one or more data point element(s). Returns immediately without waiting for database confirmation - actual update may still fail after return. Use dpSetWait() for confirmation.',
     inputSchema: {
       type: 'object',
       properties: {
         dpeNames: {
           type: ['string', 'array'],
-          description: 'Data point element name(s) to set',
+          description: 'Single DPE name (string) or multiple names (string[]). Must match size of values parameter. Examples: "ExampleDP_Arg1.", or ["ExampleDP_Arg1.", "ExampleDP_DDE.b1"]',
           items: { type: 'string' }
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Values to set. Must match the size and types of dpeNames array. For single DPE, provide single value. Can be any JSON type.'
+          description: 'Single value or array of values. Must match size and order of dpeNames. For single DPE string, pass single value (not array). For array of DPEs, pass matching array of values. Can be any JSON type.'
         }
       },
       required: ['dpeNames', 'values']
     },
     returns: 'boolean',
-    returnDescription: 'true if successful. Note: actual database update may still fail after return.',
-    throws: 'WinccoaError if DPE names do not exist, values cannot be converted, or array sizes mismatch',
+    returnDescription: 'Returns true if send is successful. IMPORTANT: This does not mean database update succeeded - actual update can still fail after this returns. Use dpSetWait() if confirmation is required.',
+    throws: 'WinccoaError when DPE names do not exist, values cannot be converted, array sizes mismatch, invalid parameter types, or user lacks write access',
     example: {
       description: 'Set values for multiple data point elements',
-      code: `dpSet(['ExampleDP_Arg1.', 'ExampleDP_DDE.b1'], [123.456, false]);`
+      code: `dpSet(['ExampleDP_Arg1.', 'ExampleDP_DDE.b1'], [123.456, false]); // two arrays of size 2\ndpSet('ExampleDP_Arg2.', 2); // single string and single value`
     }
   },
 
@@ -89,30 +89,30 @@ const toolsRegistry = {
     name: 'dpConnect',
     enabled: true,
     category: 'DP_FUNCTIONS',
-    description: 'Create a connection to receive notifications when data point element values change',
+    description: 'Creates a live connection to receive notifications whenever monitored DPE values change. Connection persists until explicitly disconnected or manager exits.',
     inputSchema: {
       type: 'object',
       properties: {
         dpeNames: {
           type: ['string', 'array'],
-          description: 'DPE name(s) to monitor',
+          description: 'Single DPE name (string) or array of names (string[]). Each update contains all elements, not just changed ones. Example: "ExampleDP_Arg1." or ["ExampleDP_Arg1.", "ExampleDP_Arg2."]',
           items: { type: 'string' }
         },
         answer: {
           type: 'boolean',
-          description: 'If true, callback is called immediately with current values. If false, only called on changes.',
+          description: 'If true (default), callback is invoked immediately with initial values. If false, callback only fires on actual value changes.',
           default: true
         }
       },
       required: ['dpeNames']
     },
     returns: 'number',
-    returnDescription: 'Connection ID (>= 0) for later disconnection',
-    throws: 'WinccoaError if parameters are invalid or DPE names are unknown',
-    remarks: 'Callback receives arrays of values even for single DPE. Use dpDisconnect with returned ID to stop monitoring.',
+    returnDescription: 'Connection ID (>= 0). Store this ID to disconnect later with dpDisconnect(). Connection auto-closes when manager exits.',
+    throws: 'WinccoaError when invalid parameter types, unknown DPE names, or no read access',
+    remarks: 'IMPORTANT: Callback always receives arrays of values, even for single DPE. Connect updates may batch multiple changes. Use dpDisconnect with returned ID to stop monitoring.',
     example: {
-      description: 'Connect to data point element changes',
-      code: `const connId = dpConnect(['ExampleDP_Arg1.', 'ExampleDP_Arg2.'], true);`
+      description: 'Connect to data point element value changes',
+      code: `const connId = dpConnect(['ExampleDP_Arg1.', 'ExampleDP_Arg2.'], true);\n// Later: dpDisconnect(connId);`
     }
   },
 
@@ -531,36 +531,36 @@ const toolsRegistry = {
     name: 'dpGetPeriod',
     enabled: true,
     category: 'DP_FUNCTIONS',
-    description: 'Retrieve data point values within a time period',
+    description: 'Queries DP attributes over a specified period of time. Returns historical values and their timestamps for the given DPEs.',
     inputSchema: {
       type: 'object',
       properties: {
         startTime: {
-          type: 'number',
-          description: 'Start timestamp (milliseconds since epoch)'
+          type: ['object', 'string', 'number'],
+          description: 'WinccoaTime object or Date: The start time of the interval from which values should be returned. Pass JavaScript Date object or WinccoaTime object.'
         },
         endTime: {
-          type: 'number',
-          description: 'End timestamp (milliseconds since epoch)'
+          type: ['object', 'string', 'number'],
+          description: 'WinccoaTime object or Date: The end time of the interval from which values should be returned. Pass JavaScript Date object or WinccoaTime object.'
         },
         dpeList: {
           type: 'array',
-          description: 'List of DPE names to retrieve',
+          description: 'Array of DPE (data point element) names as strings. Example: ["System1:ExampleDP_Trend1.", "System1:ExampleDP_Trend2."]',
           items: { type: 'string' }
         },
         count: {
           type: 'number',
-          description: 'Maximum number of values to retrieve'
+          description: 'Optional number of boundary values before startTime and after endTime to also return. Default: 0. These boundary values help with interpolation.'
         }
       },
-      required: ['startTime', 'endTime', 'dpeList', 'count']
+      required: ['startTime', 'endTime', 'dpeList']
     },
-    returns: 'Promise<unknown[][]>',
-    returnDescription: 'Array of values for each DPE in the time period',
-    throws: 'WinccoaError on error',
+    returns: 'Promise<object[]>',
+    returnDescription: 'Promise resolves to array of results (one for each DPE in same order as dpeList). Each result contains: {values: unknown[], timestamps: WinccoaTime[]} - the values array and corresponding timestamps array.',
+    throws: 'WinccoaError when empty dpeList provided, data point not found, invalid startTime/endTime, invalid requestId, or user lacks read access',
     example: {
-      description: 'Get values from a time period',
-      code: `const values = await dpGetPeriod(startTime, endTime, ['DPE1', 'DPE2'], 1000);`
+      description: 'Get historical values from a time period',
+      code: `const startTime = new Date(2023, 0, 1);\nconst endTime = new Date(2023, 11, 31);\nconst results = await dpGetPeriod(startTime, endTime, ['System1:ExampleDP_Trend1.'], 0);\n// results[0] = {values: [...], timestamps: [...]}`
     }
   },
 
@@ -664,31 +664,31 @@ const toolsRegistry = {
     name: 'dpCopy',
     enabled: true,
     category: 'DP_FUNCTIONS',
-    description: 'Copy a data point to a new location',
+    description: 'Copies a data point including its full configuration (attributes, elements, structure). Destination must not already exist.',
     inputSchema: {
       type: 'object',
       properties: {
         source: {
           type: 'string',
-          description: 'Source data point name'
+          description: 'Name of the data point to copy (source DP name). Must exist.'
         },
         destination: {
           type: 'string',
-          description: 'Destination data point name'
+          description: 'Name of the new copied data point (destination DP name). Must NOT exist yet.'
         },
         driver: {
-          type: ['string', 'null'],
-          description: 'Optional driver specification. Can be null if not specified.'
+          type: ['number', 'null'],
+          description: 'Optional driver number (default: 1). Specifies which driver to use for the copy. Pass null or omit for default.'
         }
       },
       required: ['source', 'destination']
     },
     returns: 'Promise<boolean>',
-    returnDescription: 'true if successful',
-    throws: 'WinccoaError on error',
+    returnDescription: 'Promise resolves to true if copy successful. On error, error.details contains same error code as CTRL dpCopy().',
+    throws: 'WinccoaError when source DP does not exist, destination already exists, DP copied into itself, invalid arguments, or user lacks required privileges',
     example: {
-      description: 'Copy a data point',
-      code: `await dpCopy('ExampleDP_Arg1', 'ExampleDP_Arg1_Copy');`
+      description: 'Copy a data point with its configuration',
+      code: `const success = await dpCopy('ExampleDP_Arg1', 'ExampleDP_Arg1_Copy');\nif (success) console.log('DP copied successfully');`
     }
   },
 
@@ -772,38 +772,39 @@ const toolsRegistry = {
     name: 'dpWaitForValue',
     enabled: true,
     category: 'DP_FUNCTIONS',
-    description: 'Wait for data point elements to meet specified conditions',
+    description: 'Waits for specified data points to change their values until ALL conditions are met. Once conditions satisfied, returns values of another set of data points. Rejects promise on timeout.',
     inputSchema: {
       type: 'object',
       properties: {
         dpNamesWait: {
           type: 'array',
-          description: 'DPE names to monitor',
+          description: 'Array of DPE names to monitor for value changes. Must match conditions array size. Example: ["ExampleDP_Arg1.", "ExampleDP_Arg2."]',
           items: { type: 'string' }
         },
         conditions: {
           type: 'array',
-          description: 'Conditions to check for each DPE. Can be numbers, strings, booleans, objects, or arrays.',
+          description: 'Expected values for each DPE in dpNamesWait (direct JavaScript comparison, not WinCC OA type checking). Must match dpNamesWait size. Can be numbers, strings, booleans, objects, arrays, or null. Example: [100, true]',
           items: { type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'] }
         },
         dpNamesReturn: {
           type: 'array',
-          description: 'DPE names to return when conditions are met',
+          description: 'Array of DPE names whose values will be returned when conditions are met. Can be same as dpNamesWait or different DPEs. Example: ["ExampleDP_Result."]',
           items: { type: 'string' }
         },
         timeoutMs: {
           type: 'number',
-          description: 'Timeout in milliseconds'
+          description: 'Timeout in milliseconds. Default: 0 (infinite wait). Promise rejects if conditions not met before timeout expires.'
         }
       },
-      required: ['dpNamesWait', 'conditions', 'dpNamesReturn', 'timeoutMs']
+      required: ['dpNamesWait', 'conditions', 'dpNamesReturn']
     },
-    returns: 'Promise<unknown[]>',
-    returnDescription: 'Values of dpNamesReturn when conditions are met',
-    throws: 'WinccoaError on error or timeout',
+    returns: 'Promise<unknown>',
+    returnDescription: 'Promise that resolves to array of values for all DPEs in dpNamesReturn (in same order) when all conditions are met.',
+    throws: 'WinccoaError when timeout expired, DPE names do not exist, values cannot be converted, array sizes mismatch, invalid parameter types, or user lacks read access',
+    remarks: 'NOTE: Comparison is JavaScript direct comparison (not WinCC OA strict typing). Integer 1 will match float 1.0. Use dpSetAndWaitForValue to set values and wait in single operation.',
     example: {
-      description: 'Wait for condition',
-      code: `const result = await dpWaitForValue(['DPE1'], [100], ['DPE2'], 5000);`
+      description: 'Wait for conditions then return values',
+      code: `const result = await dpWaitForValue(\n  ['ExampleDP_Arg1.', 'ExampleDP_Arg2.'],  // wait for these\n  [6, 4],                                   // until these values\n  ['ExampleDP_Result.'],                    // then return this\n  5000                                      // within 5 seconds\n);`
     }
   },
 
@@ -893,37 +894,35 @@ const toolsRegistry = {
     name: 'dpCreate',
     enabled: true,
     category: 'DP_MANAGEMENT_FUNCTIONS',
-    description: 'Create a new data point',
+    description: 'Creates a new data point of specified type. Can optionally specify target system (for distributed systems) and data point ID.',
     inputSchema: {
       type: 'object',
       properties: {
         dpeName: {
           type: 'string',
-          description: 'Name for the new data point'
+          description: 'Name for the new data point. Must be unique and follow WinCC OA naming rules. Cannot already exist.'
         },
         dpType: {
           type: 'string',
-          description: 'Type of data point to create'
+          description: 'Type of data point to create. Must be an existing and valid DP type (e.g., "ExampleDP_Float").'
         },
         systemId: {
-          type: 'number',
-          description: 'Optional system ID for distributed systems',
-          default: null
+          type: ['number', 'null'],
+          description: 'Optional system ID for distributed systems. Used to create data point on remote system. Default: local system. Pass null to omit.'
         },
         dpId: {
-          type: 'number',
-          description: 'Optional specific data point ID. If exists, random ID is used.',
-          default: null
+          type: ['number', 'null'],
+          description: 'Optional specific data point ID. If provided ID already exists, a random ID is assigned instead. Default: auto-assigned. Pass null to omit.'
         }
       },
       required: ['dpeName', 'dpType']
     },
     returns: 'Promise<boolean>',
-    returnDescription: 'true if data point was successfully created',
-    throws: 'WinccoaError if name exists, type is invalid, or user lacks permissions',
+    returnDescription: 'Promise resolves to true if data point was successfully created.',
+    throws: 'WinccoaError when invalid argument type, invalid dpeName/dpType, DP with dpeName already exists, non-existing systemId, or user lacks create privileges',
     example: {
-      description: 'Create a new data point',
-      code: `const created = await dpCreate('newDP', 'ExampleDP_Float');`
+      description: 'Create a new data point of type ExampleDP_Float',
+      code: `const created = await dpCreate('newFloatDpe', 'ExampleDP_Float');\nif (created) console.log('DP created successfully');`
     }
   },
 
@@ -931,23 +930,23 @@ const toolsRegistry = {
     name: 'dpDelete',
     enabled: true,
     category: 'DP_MANAGEMENT_FUNCTIONS',
-    description: 'Delete a data point',
+    description: 'Deletes a data point and all its configuration. In distributed systems, include system name in the DP name.',
     inputSchema: {
       type: 'object',
       properties: {
         dpName: {
           type: 'string',
-          description: 'Name of the data point to delete'
+          description: 'Name of the data point to delete. For distributed systems, use format: "SystemName:DataPointName".'
         }
       },
       required: ['dpName']
     },
     returns: 'Promise<boolean>',
-    returnDescription: 'true if data point was successfully deleted',
-    throws: 'WinccoaError if data point does not exist or user lacks permissions',
+    returnDescription: 'Promise resolves to true if data point was successfully deleted.',
+    throws: 'WinccoaError when data point with given name does not exist, or current user lacks delete privileges',
     example: {
       description: 'Delete a data point',
-      code: `const deleted = await dpDelete('newDP');`
+      code: `const deleted = await dpDelete('newDpe');\nif (deleted) console.log('DP deleted successfully');`
     }
   },
 
@@ -1084,35 +1083,36 @@ const toolsRegistry = {
     name: 'cnsAddNode',
     enabled: true,
     category: 'CNS_FUNCTIONS',
-    description: 'Add a new node to a CNS tree',
+    description: 'Adds a new node to a CNS (Central Navigation System) tree or sub-tree under specified parent node.',
     inputSchema: {
       type: 'object',
       properties: {
         cnsParentPath: {
           type: 'string',
-          description: 'Parent node path in CNS tree'
+          description: 'ID path of the parent node (must be node, not view). Format: "System.View:ParentNode" or similar. Example: "System1.View1:Node1"'
         },
         name: {
           type: 'string',
-          description: 'Name of the new node'
+          description: 'ID of the new node (must use valid characters). Example: "Temperature" or "MyNode_1"'
         },
         displayName: {
-          type: 'string',
-          description: 'Display name for the node'
+          type: ['string', 'object'],
+          description: 'Display name as multi-language string or plain string. Example: "Temperature Reading" or language object'
         },
         dp: {
-          type: 'string',
-          description: 'Associated data point name'
+          type: ['string', 'null'],
+          description: 'Optional data point (element) linked to node. Format: "System:DataPoint." or empty string for no DP link. Default: empty string (no link)'
         }
       },
-      required: ['cnsParentPath', 'name', 'displayName', 'dp']
+      required: ['cnsParentPath', 'name', 'displayName']
     },
     returns: 'Promise<boolean>',
-    returnDescription: 'true if node was successfully added',
-    throws: 'WinccoaError if parent does not exist or operation fails',
+    returnDescription: 'Promise resolves to true if node successfully added.',
+    throws: 'WinccoaError when wrong/missing parameters, defined cnsParentPath not found, illegal characters in name, or user lacks privileges',
+    remarks: 'cnsParentPath must point to node (not view). dp parameter is optional and can be empty string.',
     example: {
-      description: 'Add node to CNS tree',
-      code: `await cnsAddNode('/System/Values', 'Temperature', 'Temp', 'Temp_DP.');`
+      description: 'Add node to CNS tree with data point',
+      code: `const success = await cnsAddNode('System1.View1:Node1', 'Temperature', 'Temperature', 'System1:Temp_DP.');\nif (success) console.log('Node added');`
     }
   },
 
@@ -1148,23 +1148,24 @@ const toolsRegistry = {
     name: 'cnsGetChildren',
     enabled: true,
     category: 'CNS_FUNCTIONS',
-    description: 'Get child nodes of a CNS node',
+    description: 'Returns the paths of all child nodes for a given CNS node. Throws error if node does not exist.',
     inputSchema: {
       type: 'object',
       properties: {
         cnsPath: {
           type: 'string',
-          description: 'CNS path to parent node'
+          description: 'ID path of the node. Format: "System.View:Node" or "System.View:Node.ChildNode". Example: "System1.View1:Node1"'
         }
       },
       required: ['cnsPath']
     },
-    returns: 'Promise<WinccoaCnsTreeNode[]>',
-    returnDescription: 'Array of child node definitions',
-    throws: 'WinccoaError if path does not exist',
+    returns: 'string[]',
+    returnDescription: 'Array of child node paths (string[]). Each path is in same format as cnsPath. Empty array if no children.',
+    throws: 'WinccoaError when invalid parameters, cnsPath or child nodes do not exist, or user lacks read access',
+    remarks: 'Returns immediate children only, not recursive descendants. Use returned paths as cnsPath for cnsGetChildren to explore deeper.',
     example: {
-      description: 'Get child nodes',
-      code: `const children = await cnsGetChildren('/System/Values');`
+      description: 'Get all child nodes of a parent',
+      code: `const children = cnsGetChildren('System1.View1:Node1');\n// Returns: ['System1.View1:Node1.Child1', 'System1.View1:Node1.Child2']`
     }
   },
 
@@ -1253,35 +1254,36 @@ const toolsRegistry = {
     name: 'cnsSetProperty',
     enabled: true,
     category: 'CNS_FUNCTIONS',
-    description: 'Set a property value of a CNS node',
+    description: 'Sets a property value for a CNS node. Properties are custom key-value pairs with specified data types.',
     inputSchema: {
       type: 'object',
       properties: {
         cnsPath: {
           type: 'string',
-          description: 'CNS path'
+          description: 'ID path of the CNS node. Format: "System.View:Node" or "System.View:Node.ChildNode". Example: "System1.View1:Node1"'
         },
         key: {
           type: 'string',
-          description: 'Property key name'
+          description: 'Property key name. Custom identifier for the property being set. Example: "description" or "config_version"'
         },
         value: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'New property value. Can be any JSON type.'
+          description: 'New property value. Can be any JSON type. Value will be stored according to valueType specification.'
         },
         valueType: {
           type: 'string',
-          description: 'Data type of the value (e.g., "string", "number", "boolean", "array")'
+          description: 'Data type of value: "string", "number" (float), "int", "bool", "time", "blob", "langString", etc. Must match WinCC OA data type constants.'
         }
       },
       required: ['cnsPath', 'key', 'value', 'valueType']
     },
     returns: 'Promise<boolean>',
-    returnDescription: 'true if property was set',
-    throws: 'WinccoaError on error',
+    returnDescription: 'Promise resolves to true if property was successfully set.',
+    throws: 'WinccoaError when wrong/missing parameters, cnsPath not found, invalid valueType, conversion impossible, or user lacks write access',
+    remarks: 'valueType must be valid WinCC OA data type (string, number, bool, etc.). Properties are custom metadata stored with the node.',
     example: {
-      description: 'Set node property',
-      code: `await cnsSetProperty('/System/Values', 'description', 'Temperature sensor', 'string');`
+      description: 'Set a node property with string value',
+      code: `const success = await cnsSetProperty('System1.View1:Node1', 'description', 'Temperature sensor', 'string');\nif (success) console.log('Property set');`
     }
   },
 
@@ -1565,22 +1567,22 @@ const toolsRegistry = {
     name: 'alertGet',
     enabled: true,
     category: 'ALERT_FUNCTIONS',
-    description: 'Get the current alert attributes of a data point element',
+    description: 'Queries the last alert attributes of data point elements. Can accept single or multiple alert times and corresponding DPEs.',
     inputSchema: {
       type: 'object',
       properties: {
         alertsTime: {
           type: ['object', 'array'],
-          description: 'Alert time object(s) with time, count, and dpe properties'
+          description: 'WinccoaAlertTime object or array of WinccoaAlertTime objects. Each contains: {time: WinccoaTime, count: number, dpe: string}'
         },
         dpeNames: {
           type: ['string', 'array'],
-          description: 'DPE name(s) with alert configuration',
+          description: 'Single DPE name (string) or array of names (string[]). Can access alert configs like "DPE:_alert_hdl.._value" or "DPE:_alert_hdl.._text". Must match alertsTime size if both are arrays.',
           items: { type: 'string' }
         },
         alertCount: {
-          type: ['number', 'array'],
-          description: 'Optional serial number of alert',
+          type: ['number', 'array', 'null'],
+          description: 'Optional serial number of alert per DPE. Pass array matching dpeNames size, or null to omit.',
           items: { type: 'number' },
           default: null
         }
@@ -1588,11 +1590,12 @@ const toolsRegistry = {
       required: ['alertsTime', 'dpeNames']
     },
     returns: 'Promise<unknown>',
-    returnDescription: 'Alert attribute value(s)',
-    throws: 'WinccoaError if DPE does not exist or user lacks read access',
+    returnDescription: 'Promise resolves to requested alert attribute value(s). Must be cast to expected types. For arrays of DPEs, returns values in same order.',
+    throws: 'WinccoaError when DPE does not exist, user lacks read access, invalid alert time, or mismatched array sizes',
+    remarks: 'Can accept: 1) Single alertTime + multiple DPEs, 2) Multiple alertTimes + multiple DPEs (must match sizes), 3) Single alertTime + single DPE',
     example: {
-      description: 'Get alert values',
-      code: `const values = await alertGet(alertTime, ['DPE._alert_hdl.._value', 'DPE._alert_hdl.._text']);`
+      description: 'Get alert attribute values',
+      code: `const values = await alertGet(alertTime, ['System1:DPE:_alert_hdl.._value', 'System1:DPE:_alert_hdl.._text']);`
     }
   },
 
@@ -1600,28 +1603,28 @@ const toolsRegistry = {
     name: 'alertSet',
     enabled: true,
     category: 'ALERT_FUNCTIONS',
-    description: 'Set alert attribute values',
+    description: 'Allows setting data point alert attributes. Returns immediately without confirming database update - use alertSetWait() for confirmation.',
     inputSchema: {
       type: 'object',
       properties: {
         alerts: {
           type: ['object', 'array'],
-          description: 'Alert time object(s) to set'
+          description: 'WinccoaAlertTime object or array of objects to be set. Each contains: {time: WinccoaTime, count: number, dpe: string}'
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Attribute value(s) to set. Can be any JSON type.'
+          description: 'Single value or array of values to set. Must match size of alerts parameter. For single alert, pass single value (not array). For array of alerts, pass matching array of values. Can be any JSON type.'
         }
       },
       required: ['alerts', 'values']
     },
-    returns: 'Promise<boolean>',
-    returnDescription: 'true if alert was set',
-    throws: 'WinccoaError on error',
-    remarks: 'Settable attributes are defined in _alert_hdl configuration',
+    returns: 'boolean',
+    returnDescription: 'Returns true if send successful. NOTE: Does not confirm database update - use alertSetWait() if confirmation needed. Update can still fail after this returns.',
+    throws: 'WinccoaError when DPE does not exist, mismatch number of alerts and values, invalid argument type, user lacks write access, or invalid alert attributes',
+    remarks: 'Settable attributes are defined in WinCC OA _alert_hdl configuration. Common attributes: _comment, _act_state. Use alertSetWait() or alertSetTimed()/alertSetTimedWait() for confirmation or delayed set.',
     example: {
-      description: 'Set alert attribute',
-      code: `await alertSet(alertTime, 'Alert comment text');`
+      description: 'Set alert attribute value',
+      code: `const success = alertSet(alertTime, 'Alert comment text from winccoa node manager.');\nif (success) console.log('Alert set command sent');`
     }
   },
 
