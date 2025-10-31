@@ -1,0 +1,255 @@
+================================================================================
+                   MCP SERVER - QUICK REFERENCE CARD
+================================================================================
+
+QUICK START (3 STEPS)
+────────────────────────────────────────────────────────────────────────────
+
+1. Configure .env:
+   MCP_ENABLED=true
+   MCP_PORT=3001
+   MCP_HOST=0.0.0.0
+   MCP_BEARER_TOKEN=          # (optional)
+
+2. Start Server:
+   npm run dev
+
+3. Test:
+   curl http://localhost:3001/mcp/health
+
+================================================================================
+ENDPOINTS
+────────────────────────────────────────────────────────────────────────────
+
+Health Check (GET):
+  curl http://localhost:3001/mcp/health
+  Returns: {"status":"healthy","service":"mcp-server"}
+
+Server Info (GET):
+  curl http://localhost:3001/mcp/info
+  Returns: Server information
+
+Main MCP Endpoint (POST):
+  curl -X POST http://localhost:3001/mcp/messages \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+  Returns: SSE format - data: {...}
+
+================================================================================
+COMMON REQUESTS
+────────────────────────────────────────────────────────────────────────────
+
+List All Tools:
+  curl -X POST http://localhost:3001/mcp/messages \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+
+List Data Points:
+  curl -X POST http://localhost:3001/mcp/messages \
+    -H "Content-Type: application/json" \
+    -d '{
+      "jsonrpc":"2.0",
+      "method":"tools/call",
+      "params":{"name":"dpNames","arguments":{"dpPattern":"*"}},
+      "id":1
+    }'
+
+Get Data Point Value:
+  curl -X POST http://localhost:3001/mcp/messages \
+    -H "Content-Type: application/json" \
+    -d '{
+      "jsonrpc":"2.0",
+      "method":"tools/call",
+      "params":{"name":"dpGet","arguments":{"dpeNames":"MyDP."}},
+      "id":1
+    }'
+
+Set Data Point Value:
+  curl -X POST http://localhost:3001/mcp/messages \
+    -H "Content-Type: application/json" \
+    -d '{
+      "jsonrpc":"2.0",
+      "method":"tools/call",
+      "params":{"name":"dpSet","arguments":{"dpeNames":"MyDP.","value":42}},
+      "id":1
+    }'
+
+With Bearer Token:
+  curl -X POST http://localhost:3001/mcp/messages \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+
+================================================================================
+CONFIGURATION FILES
+────────────────────────────────────────────────────────────────────────────
+
+.env - Main configuration:
+  MCP_ENABLED=true/false
+  MCP_PORT=3001
+  MCP_HOST=0.0.0.0
+  MCP_BEARER_TOKEN=<optional>
+  LOG_LEVEL=debug/info/warn/error
+
+.env-mcp-tools - Tool access control:
+  DP_FUNCTIONS=true/false
+  DP_MANAGEMENT_FUNCTIONS=true/false
+  CNS_FUNCTIONS=true/false
+  ALERT_FUNCTIONS=true/false
+  DP_GET=true/false          (individual tools)
+  DP_SET=true/false
+  etc.
+
+================================================================================
+TESTING
+────────────────────────────────────────────────────────────────────────────
+
+Automated Test:
+  node test-mcp-streaming.js
+
+Manual Tests (in order):
+  1. curl http://localhost:3001/mcp/health
+  2. curl http://localhost:3001/mcp/info
+  3. curl -X POST http://localhost:3001/mcp/messages ... (tools/list)
+  4. curl -X POST http://localhost:3001/mcp/messages ... (tools/call)
+
+Enable Debug Logging:
+  Set LOG_LEVEL=debug in .env
+  Restart server: npm run dev
+  Look for: "🔵 MCP: POST /mcp/messages received"
+
+================================================================================
+TOOLS AVAILABLE
+────────────────────────────────────────────────────────────────────────────
+
+Data Point Functions (40+):
+  dpGet, dpSet, dpCreate, dpDelete, dpConnect, dpDisconnect, dpExists,
+  dpGetId, dpGetName, dpGetDescription, dpSetDescription, dpGetFormat,
+  dpSetFormat, dpGetUnit, dpSetUnit, dpGetAlias, dpSetAlias,
+  dpAliasToName, dpNames, dpTypes, dpQuery, dpGetPeriod, dpSetWait,
+  dpSetTimed, dpSetTimedWait, dpCopy, dpSubStr, dpWaitForValue,
+  dpSetAndWaitForValue, and more...
+
+Type Management (5):
+  dpTypeCreate, dpTypeChange, dpTypeDelete, dpTypeGet, dpTypeName
+
+CNS Functions (30+):
+  cnsAddNode, cnsAddTree, cnsDeleteNode, cnsGetChildren, cnsGetParent,
+  cnsGetProperty, cnsSetProperty, cnsGetUserData, cnsSetUserData,
+  cnsNodeExists, cnsTreeExists, cnsCreateView, cnsDeleteView,
+  cnsGetViews, cnsGetTrees, and more...
+
+Alert Functions (6):
+  alertGet, alertSet, alertSetWait, alertSetTimed, alertSetTimedWait,
+  alertGetPeriod
+
+Use tools/list to see all enabled tools
+
+================================================================================
+TROUBLESHOOTING
+────────────────────────────────────────────────────────────────────────────
+
+No response from POST /mcp/messages:
+  • Check MCP_ENABLED=true in .env
+  • Check port: grep MCP_PORT .env
+  • Check firewall: lsof -i :3001
+  • Enable logging: LOG_LEVEL=debug
+  • Restart: npm run dev
+
+Tools not loading:
+  • Check .env-mcp-tools file exists
+  • Check categories enabled: grep DP_FUNCTIONS .env-mcp-tools
+  • Check file is readable: head -10 .env-mcp-tools
+  • Restart server
+
+Authentication error:
+  • Verify token matches MCP_BEARER_TOKEN in .env
+  • Verify header: "Authorization: Bearer TOKEN"
+  • If no auth needed, ensure MCP_BEARER_TOKEN= (empty)
+
+WinCC OA error (DPE does not exist):
+  • Verify DPE name with: dpNames('*')
+  • Check user permissions in WinCC OA
+  • Ensure DPE in current project
+
+================================================================================
+DOCUMENTATION
+────────────────────────────────────────────────────────────────────────────
+
+MCP_QUICK_START.md
+  3-step setup guide
+
+MCP_HTTP_STREAMING.md
+  Complete technical documentation and API reference
+
+MCP_DEBUG.md
+  Debugging guide with detailed troubleshooting
+
+MCP_TESTING_GUIDE.md
+  7-phase testing methodology
+
+MCP_IMPLEMENTATION_SUMMARY.md
+  Implementation overview and architecture
+
+MCP_COMPLETION_REPORT.md
+  Full completion report with all details
+
+MCP_QUICK_REFERENCE.txt
+  This file
+
+================================================================================
+IMPORTANT NOTES
+────────────────────────────────────────────────────────────────────────────
+
+1. MCP runs on SEPARATE PORT from GraphQL
+   - GraphQL: typically 4000
+   - MCP: typically 3001
+   - Configure separately in .env
+
+2. Tools must be enabled in .env-mcp-tools
+   - Edit file before server starts
+   - Restart server to apply changes
+   - Use tools/list to verify
+
+3. HTTP Streaming (SSE) responses start with "data: "
+   - This is normal and correct
+   - Parse JSON after "data: " prefix
+
+4. Bearer Token is OPTIONAL
+   - Leave MCP_BEARER_TOKEN empty for no auth
+   - Set value to require authentication
+
+5. All operations are ASYNCHRONOUS
+   - Tools return promises
+   - Handle streaming responses properly
+
+================================================================================
+EXAMPLES (QUICK COPY-PASTE)
+────────────────────────────────────────────────────────────────────────────
+
+Test health:
+curl http://localhost:3001/mcp/health
+
+List tools:
+curl -X POST http://localhost:3001/mcp/messages -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+
+List DPEs:
+curl -X POST http://localhost:3001/mcp/messages -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"dpNames","arguments":{"dpPattern":"*"}},"id":1}'
+
+Get value:
+curl -X POST http://localhost:3001/mcp/messages -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"dpGet","arguments":{"dpeNames":"MyDP."}},"id":1}'
+
+Set value:
+curl -X POST http://localhost:3001/mcp/messages -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"dpSet","arguments":{"dpeNames":"MyDP.","value":42}},"id":1}'
+
+================================================================================
+SUPPORT
+────────────────────────────────────────────────────────────────────────────
+
+For detailed troubleshooting: See MCP_DEBUG.md
+For testing procedures: See MCP_TESTING_GUIDE.md
+For API details: See MCP_HTTP_STREAMING.md
+For setup issues: See MCP_QUICK_START.md
+For full overview: See MCP_COMPLETION_REPORT.md
+
+================================================================================
