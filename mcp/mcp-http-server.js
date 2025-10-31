@@ -5,6 +5,7 @@ const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const {
   ListToolsRequestSchema,
   CallToolRequestSchema,
+  InitializeRequestSchema,
 } = require('@modelcontextprotocol/sdk/types.js');
 const express = require('express');
 const http = require('http');
@@ -134,6 +135,21 @@ function createMCPServer(winccoa, logger, toolLoader) {
   );
 
   // Register handlers
+  // Initialize handler (MCP protocol handshake)
+  server.setRequestHandler(InitializeRequestSchema, async (request) => {
+    logger.info('MCP: Initialize request received');
+    return {
+      protocolVersion: '2024-11-05',
+      capabilities: {
+        tools: {}
+      },
+      serverInfo: {
+        name: 'winccoa-mcp-server',
+        version: '1.0.0'
+      }
+    };
+  });
+
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return handlers.listTools();
   });
@@ -219,7 +235,20 @@ function createHTTPTransport(mcpConfig, logger, port, host) {
 
       let result;
 
-      if (jsonrpcRequest.method === 'tools/list') {
+      if (jsonrpcRequest.method === 'initialize') {
+        logger.debug('MCP: Calling initialize handler');
+        result = {
+          protocolVersion: '2024-11-05',
+          capabilities: {
+            tools: {}
+          },
+          serverInfo: {
+            name: 'winccoa-mcp-server',
+            version: '1.0.0'
+          }
+        };
+        logger.debug('MCP: Initialize completed');
+      } else if (jsonrpcRequest.method === 'tools/list') {
         logger.debug('MCP: Calling handlers.listTools()');
         result = await handlers.listTools();
         logger.debug(`MCP: listTools completed, returning ${result.tools?.length || 0} tools`);
