@@ -6,12 +6,16 @@ const {
   ListToolsRequestSchema,
   CallToolRequestSchema,
   InitializeRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } = require('@modelcontextprotocol/sdk/types.js');
 const express = require('express');
 const http = require('http');
+const { loadResources, getResourcesList, getResourceContent } = require('./resource-loader.js');
+const path = require('path');
 
 /**
- * Creates an MCP Server instance with tool definitions
+ * Creates an MCP Server instance with tool definitions and resources
  *
  * @param {object} winccoa - WinCC OA Manager instance
  * @param {object} logger - Logger instance
@@ -20,6 +24,10 @@ const http = require('http');
  */
 function createMCPServer(winccoa, logger, toolLoader) {
   logger.info('🔧 Creating MCP Server with official SDK');
+
+  // Load resources from markdown files
+  const resourcesDir = path.join(__dirname, '..', 'resources');
+  const resources = loadResources(resourcesDir, logger);
 
   // Create handlers directly (before server initialization)
   const handlers = {
@@ -118,6 +126,36 @@ function createMCPServer(winccoa, logger, toolLoader) {
           isError: true
         };
       }
+    },
+
+    listResources: async () => {
+      logger.debug('MCP: Listing resources');
+      const resourcesList = getResourcesList(resources);
+      logger.info(`📚 Returning ${resourcesList.length} available resources`);
+      return {
+        resources: resourcesList
+      };
+    },
+
+    readResource: async (uri) => {
+      logger.debug(`MCP: Reading resource: ${uri}`);
+      const content = getResourceContent(resources, uri);
+
+      if (!content) {
+        logger.warn(`Resource not found: ${uri}`);
+        throw new Error(`Resource not found: ${uri}`);
+      }
+
+      logger.info(`✅ Resource ${uri} read successfully`);
+      return {
+        contents: [
+          {
+            uri: uri,
+            mimeType: 'text/markdown',
+            text: content
+          }
+        ]
+      };
     }
   };
 
@@ -129,7 +167,8 @@ function createMCPServer(winccoa, logger, toolLoader) {
     },
     {
       capabilities: {
-        tools: {}
+        tools: {},
+        resources: {}
       }
     }
   );
@@ -156,6 +195,14 @@ function createMCPServer(winccoa, logger, toolLoader) {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return handlers.callTool(request.params.name, request.params.arguments);
+  });
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return handlers.listResources();
+  });
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    return handlers.readResource(request.params.uri);
   });
 
   return { server, handlers };
@@ -240,7 +287,8 @@ function createHTTPTransport(mcpConfig, logger, port, host) {
         result = {
           protocolVersion: '2024-11-05',
           capabilities: {
-            tools: {}
+            tools: {},
+            resources: {}
           },
           serverInfo: {
             name: 'winccoa-mcp-server',
@@ -260,6 +308,15 @@ function createHTTPTransport(mcpConfig, logger, port, host) {
           jsonrpcRequest.params?.arguments
         );
         logger.debug(`MCP: callTool(${toolName}) completed`);
+      } else if (jsonrpcRequest.method === 'resources/list') {
+        logger.debug('MCP: Calling handlers.listResources()');
+        result = await handlers.listResources();
+        logger.debug(`MCP: listResources completed, returning ${result.resources?.length || 0} resources`);
+      } else if (jsonrpcRequest.method === 'resources/read') {
+        const resourceUri = jsonrpcRequest.params?.uri;
+        logger.info(`MCP: Reading resource: ${resourceUri}`);
+        result = await handlers.readResource(resourceUri);
+        logger.debug(`MCP: readResource(${resourceUri}) completed`);
       } else {
         logger.warn(`MCP: Unknown method: ${jsonrpcRequest.method}`);
         const errorResponse = {
