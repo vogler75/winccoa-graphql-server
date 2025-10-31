@@ -46,8 +46,8 @@ const toolsRegistry = {
           items: { type: 'string' }
         },
         values: {
-          type: 'unknown',
-          description: 'Values to set. Must match the size and types of dpeNames array. For single DPE, provide single value.'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Values to set. Must match the size and types of dpeNames array. For single DPE, provide single value. Can be any JSON type.'
         }
       },
       required: ['dpeNames', 'values']
@@ -578,8 +578,8 @@ const toolsRegistry = {
           items: { type: 'string' }
         },
         values: {
-          type: 'unknown',
-          description: 'Values to set'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Values to set. Can be any JSON type.'
         }
       },
       required: ['dpeNames', 'values']
@@ -612,8 +612,8 @@ const toolsRegistry = {
           items: { type: 'string' }
         },
         values: {
-          type: 'unknown',
-          description: 'Values to set'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Values to set. Can be any JSON type.'
         }
       },
       required: ['time', 'dpeNames', 'values']
@@ -645,8 +645,8 @@ const toolsRegistry = {
           items: { type: 'string' }
         },
         values: {
-          type: 'unknown',
-          description: 'Values to set'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Values to set. Can be any JSON type.'
         }
       },
       required: ['time', 'dpeNames', 'values']
@@ -677,9 +677,8 @@ const toolsRegistry = {
           description: 'Destination data point name'
         },
         driver: {
-          type: 'string',
-          description: 'Optional driver specification',
-          default: null
+          type: ['string', 'null'],
+          description: 'Optional driver specification. Can be null if not specified.'
         }
       },
       required: ['source', 'destination']
@@ -784,8 +783,8 @@ const toolsRegistry = {
         },
         conditions: {
           type: 'array',
-          description: 'Conditions to check for each DPE',
-          items: { type: 'unknown' }
+          description: 'Conditions to check for each DPE. Can be numbers, strings, booleans, objects, or arrays.',
+          items: { type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'] }
         },
         dpNamesReturn: {
           type: 'array',
@@ -823,8 +822,8 @@ const toolsRegistry = {
         },
         dpValuesSet: {
           type: 'array',
-          description: 'Values to set',
-          items: { type: 'unknown' }
+          description: 'Values to set. Can contain any JSON types.',
+          items: { type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'] }
         },
         dpNamesWait: {
           type: 'array',
@@ -833,8 +832,8 @@ const toolsRegistry = {
         },
         conditions: {
           type: 'array',
-          description: 'Conditions to check',
-          items: { type: 'unknown' }
+          description: 'Conditions to check. Can contain any JSON types.',
+          items: { type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'] }
         },
         dpNamesReturn: {
           type: 'array',
@@ -1267,12 +1266,12 @@ const toolsRegistry = {
           description: 'Property key name'
         },
         value: {
-          type: 'unknown',
-          description: 'New property value'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'New property value. Can be any JSON type.'
         },
         valueType: {
           type: 'string',
-          description: 'Data type of the value'
+          description: 'Data type of the value (e.g., "string", "number", "boolean", "array")'
         }
       },
       required: ['cnsPath', 'key', 'value', 'valueType']
@@ -1610,8 +1609,8 @@ const toolsRegistry = {
           description: 'Alert time object(s) to set'
         },
         values: {
-          type: 'unknown',
-          description: 'Attribute value(s) to set'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Attribute value(s) to set. Can be any JSON type.'
         }
       },
       required: ['alerts', 'values']
@@ -1639,8 +1638,8 @@ const toolsRegistry = {
           description: 'Alert time object(s)'
         },
         values: {
-          type: 'unknown',
-          description: 'Attribute value(s)'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Attribute value(s). Can be any JSON type.'
         }
       },
       required: ['alerts', 'values']
@@ -1671,8 +1670,8 @@ const toolsRegistry = {
           description: 'Alert time object(s)'
         },
         values: {
-          type: 'unknown',
-          description: 'Attribute value(s)'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Attribute value(s). Can be any JSON type.'
         }
       },
       required: ['time', 'alerts', 'values']
@@ -1703,8 +1702,8 @@ const toolsRegistry = {
           description: 'Alert time object(s)'
         },
         values: {
-          type: 'unknown',
-          description: 'Attribute value(s)'
+          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+          description: 'Attribute value(s). Can be any JSON type.'
         }
       },
       required: ['time', 'alerts', 'values']
