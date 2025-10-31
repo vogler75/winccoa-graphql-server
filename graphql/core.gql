@@ -1,6 +1,7 @@
 # Core scalars and enums used across the schema
 
 scalar JSON
+scalar Anytype
 scalar LangString
 scalar Time
 

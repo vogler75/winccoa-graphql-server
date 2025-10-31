@@ -60,6 +60,9 @@ const { createExtrasResolvers } = require('./graphql/extras');
 // Import V2 resolvers
 const { createV2Resolvers } = require('./graphql/resolvers');
 
+// Import custom scalars
+const { AnytypeScalar } = require('./graphql/scalars');
+
 // Import REST API
 const { createRestApi } = require('./restapi/rest-api');
 
@@ -338,10 +341,11 @@ const oldResolvers = mergeResolvers(
 // Create v2 resolvers with hierarchical structure
 const v2Resolvers = createV2Resolvers(winccoa, logger, oldResolvers);
 
-// GraphQL Resolvers - merge v2 with login mutation
+// GraphQL Resolvers - merge v2 with login mutation and custom scalars
 const resolvers = mergeResolvers(
   v2Resolvers,
   {
+    Anytype: AnytypeScalar,
     Mutation: {
       async login(_, { username, password }) {
         const user = authenticateUser(username, password);

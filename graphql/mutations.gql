@@ -59,28 +59,28 @@ type DataPointMutations {
   Wraps WinCC OA function: dpSet(dpeNames, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpSet.html
   """
-  set(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  set(dpeNames: [String!]!, values: [Anytype!]!): Boolean!
 
   """
   Set data point element values and wait for confirmation
   Wraps WinCC OA function: dpSetWait(dpeNames, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpSetWait.html
   """
-  setWait(dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  setWait(dpeNames: [String!]!, values: [Anytype!]!): Boolean!
 
   """
   Set data point element values at a specific time (non-blocking)
   Wraps WinCC OA function: dpSetTimed(time, dpeNames, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpSetTimed.html
   """
-  setTimed(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  setTimed(time: Time!, dpeNames: [String!]!, values: [Anytype!]!): Boolean!
 
   """
   Set data point element values at a specific time and wait for confirmation
   Wraps WinCC OA function: dpSetTimedWait(time, dpeNames, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/dpSetTimedWait.html
   """
-  setTimedWait(time: Time!, dpeNames: [String!]!, values: [JSON!]!): Boolean!
+  setTimedWait(time: Time!, dpeNames: [String!]!, values: [Anytype!]!): Boolean!
 
   """
   Set data point alias/display name
@@ -142,28 +142,28 @@ type AlertMutations {
   Wraps WinCC OA function: alertSet(alerts, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertSet.html
   """
-  set(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  set(alerts: [AlertTimeInput!]!, values: [Anytype!]!): Boolean!
 
   """
   Set alert attributes and wait for confirmation
   Wraps WinCC OA function: alertSetWait(alerts, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertSetWait.html
   """
-  setWait(alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  setWait(alerts: [AlertTimeInput!]!, values: [Anytype!]!): Boolean!
 
   """
   Set alert attributes at a specific time
   Wraps WinCC OA function: alertSetTimed(time, alerts, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertSetTimed.html
   """
-  setTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  setTimed(time: Time!, alerts: [AlertTimeInput!]!, values: [Anytype!]!): Boolean!
 
   """
   Set alert attributes at a specific time and wait for confirmation
   Wraps WinCC OA function: alertSetTimedWait(time, alerts, values)
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertSetTimedWait.html
   """
-  setTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [JSON!]!): Boolean!
+  setTimedWait(time: Time!, alerts: [AlertTimeInput!]!, values: [Anytype!]!): Boolean!
 }
 
 # CNS Mutations
