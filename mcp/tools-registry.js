@@ -16,7 +16,7 @@ const toolsRegistry = {
       type: 'object',
       properties: {
         dpeNames: {
-          type: ['string', 'array'],
+          type: 'array',
           description: 'Single data point element name (string) or multiple names (string[]). Examples: "ExampleDP_Arg1.", or ["ExampleDP_Arg1.", "ExampleDP_DDE.b1"]',
           items: { type: 'string' }
         }
@@ -41,13 +41,13 @@ const toolsRegistry = {
       type: 'object',
       properties: {
         dpeNames: {
-          type: ['string', 'array'],
+          type: 'array',
           description: 'Single DPE name (string) or multiple names (string[]). Must match size of values parameter. Examples: "ExampleDP_Arg1.", or ["ExampleDP_Arg1.", "ExampleDP_DDE.b1"]',
           items: { type: 'string' }
         },
         values: {
-          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Single value or array of values. Must match size and order of dpeNames. For single DPE string, pass single value (not array). For array of DPEs, pass matching array of values. Can be any JSON type.',
+          type: 'array',
+          description: 'Array of values to set. Must match size and order of dpeNames. Each value can be any JSON type (string, number, boolean, object, array, null).',
           items: {
             type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
             items: {}
@@ -522,13 +522,13 @@ const toolsRegistry = {
       type: 'object',
       properties: {
         dpeNames: {
-          type: ['string', 'array'],
+          type: 'array',
           description: 'DPE name(s) to set',
           items: { type: 'string' }
         },
         values: {
-          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Values to set. Can be any JSON type.',
+          type: 'array',
+          description: 'Array of values to set. Each value can be any JSON type (string, number, boolean, object, array, null).',
           items: {
             type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
             items: {}
@@ -560,13 +560,13 @@ const toolsRegistry = {
           description: 'Timestamp (milliseconds since epoch)'
         },
         dpeNames: {
-          type: ['string', 'array'],
+          type: 'array',
           description: 'DPE name(s) to set',
           items: { type: 'string' }
         },
         values: {
-          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Values to set. Can be any JSON type.',
+          type: 'array',
+          description: 'Array of values to set. Each value can be any JSON type (string, number, boolean, object, array, null).',
           items: {
             type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
             items: {}
@@ -597,13 +597,13 @@ const toolsRegistry = {
           description: 'Timestamp (milliseconds since epoch)'
         },
         dpeNames: {
-          type: ['string', 'array'],
+          type: 'array',
           description: 'DPE name(s) to set',
           items: { type: 'string' }
         },
         values: {
-          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Values to set. Can be any JSON type.',
+          type: 'array',
+          description: 'Array of values to set. Each value can be any JSON type (string, number, boolean, object, array, null).',
           items: {
             type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
             items: {}
@@ -1139,12 +1139,7 @@ const toolsRegistry = {
           description: 'Property key name. Custom identifier for the property being set. Example: "description" or "config_version"'
         },
         value: {
-          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'New property value. Can be any JSON type. Value will be stored according to valueType specification.',
-          items: {
-            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-            items: {}
-          }
+          description: 'New property value. Can be any JSON type (string, number, boolean, array, object, null). Value will be stored according to valueType specification.'
         },
         valueType: {
           type: 'string',
@@ -1448,18 +1443,18 @@ const toolsRegistry = {
       type: 'object',
       properties: {
         alertsTime: {
-          type: ['object', 'array'],
+          type: 'array',
           description: 'WinccoaAlertTime object or array of WinccoaAlertTime objects. Each contains: {time: WinccoaTime, count: number, dpe: string}',
           items: { type: 'object' }
         },
         dpeNames: {
-          type: ['string', 'array'],
+          type: 'array',
           description: 'Single DPE name (string) or array of names (string[]). Can access alert configs like "DPE:_alert_hdl.._value" or "DPE:_alert_hdl.._text". Must match alertsTime size if both are arrays.',
           items: { type: 'string' }
         },
         alertCount: {
-          type: ['number', 'array', 'null'],
-          description: 'Optional serial number of alert per DPE. Pass array matching dpeNames size, or null to omit.',
+          type: ['array', 'null'],
+          description: 'Optional array of alert serial numbers, one per DPE. Must match dpeNames size. Pass null to omit.',
           items: { type: 'number' },
           default: null
         }
@@ -1485,13 +1480,13 @@ const toolsRegistry = {
       type: 'object',
       properties: {
         alerts: {
-          type: ['object', 'array'],
-          description: 'WinccoaAlertTime object or array of objects to be set. Each contains: {time: WinccoaTime, count: number, dpe: string}',
+          type: 'array',
+          description: 'Array of WinccoaAlertTime objects to be set. Each contains: {time: WinccoaTime, count: number, dpe: string}',
           items: { type: 'object' }
         },
         values: {
-          type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Single value or array of values to set. Must match size of alerts parameter. For single alert, pass single value (not array). For array of alerts, pass matching array of values. Can be any JSON type.',
+          type: 'array',
+          description: 'Array of values to set. Must match size of alerts parameter. Each value can be any JSON type (string, number, boolean, object, array, null).',
           items: {
             type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
             items: {}
@@ -1519,8 +1514,8 @@ const toolsRegistry = {
       type: 'object',
       properties: {
         alerts: {
-          type: ['object', 'array'],
-          description: 'Alert time object(s)',
+          type: 'array',
+          description: 'Array of alert time objects',
           items: { type: 'object' }
         },
         values: {
@@ -1556,8 +1551,8 @@ const toolsRegistry = {
           description: 'Timestamp (milliseconds since epoch)'
         },
         alerts: {
-          type: ['object', 'array'],
-          description: 'Alert time object(s)',
+          type: 'array',
+          description: 'Array of alert time objects',
           items: { type: 'object' }
         },
         values: {
@@ -1593,8 +1588,8 @@ const toolsRegistry = {
           description: 'Timestamp (milliseconds since epoch)'
         },
         alerts: {
-          type: ['object', 'array'],
-          description: 'Alert time object(s)',
+          type: 'array',
+          description: 'Array of alert time objects',
           items: { type: 'object' }
         },
         values: {
