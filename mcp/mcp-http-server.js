@@ -236,13 +236,37 @@ function createHTTPTransport(mcpConfig, logger, port, host) {
     logger.info('🔵 MCP: POST /mcp received');
     logger.debug('MCP: Request body', { method: req.body?.method, jsonrpc: req.body?.jsonrpc });
 
-    // Set up SSE headers for streaming
+    const jsonrpcRequest = req.body;
+
+    // Handle notifications FIRST (before setting SSE headers)
+    // Notifications in Streamable HTTP transport should return HTTP 202 Accepted with no body
+    if (jsonrpcRequest?.method?.startsWith('notifications/')) {
+      logger.info(`📬 MCP: Received notification: ${jsonrpcRequest.method}`);
+
+      // Handle specific notification types
+      if (jsonrpcRequest.method === 'notifications/initialized') {
+        logger.info('✅ MCP: Client initialized successfully');
+      } else if (jsonrpcRequest.method === 'notifications/progress') {
+        const progressToken = jsonrpcRequest.params?.progressToken;
+        logger.debug(`📊 MCP: Progress notification (token: ${progressToken})`);
+      } else if (jsonrpcRequest.method === 'notifications/resources/list_changed') {
+        logger.debug('📚 MCP: Resources list changed notification received');
+      } else if (jsonrpcRequest.method === 'notifications/tools/list_changed') {
+        logger.debug('🔧 MCP: Tools list changed notification received');
+      } else {
+        logger.debug(`📬 MCP: Notification: ${jsonrpcRequest.method}`);
+      }
+
+      // Return HTTP 202 Accepted with no body (Streamable HTTP transport requirement)
+      res.status(202).end();
+      return;
+    }
+
+    // Set up SSE headers for streaming (for non-notification requests)
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
-
-    const jsonrpcRequest = req.body;
 
     try {
       logger.debug('MCP: Validating JSON-RPC request');
