@@ -47,7 +47,11 @@ const toolsRegistry = {
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Single value or array of values. Must match size and order of dpeNames. For single DPE string, pass single value (not array). For array of DPEs, pass matching array of values. Can be any JSON type.'
+          description: 'Single value or array of values. Must match size and order of dpeNames. For single DPE string, pass single value (not array). For array of DPEs, pass matching array of values. Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['dpeNames', 'values']
@@ -82,61 +86,6 @@ const toolsRegistry = {
     example: {
       description: 'Check if a DPE exists',
       code: `const exists = await dpExists('ExampleDP_Arg1.');`
-    }
-  },
-
-  dpConnect: {
-    name: 'dpConnect',
-    enabled: true,
-    category: 'DP_FUNCTIONS',
-    description: 'Creates a live connection to receive notifications whenever monitored DPE values change. Connection persists until explicitly disconnected or manager exits.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        dpeNames: {
-          type: ['string', 'array'],
-          description: 'Single DPE name (string) or array of names (string[]). Each update contains all elements, not just changed ones. Example: "ExampleDP_Arg1." or ["ExampleDP_Arg1.", "ExampleDP_Arg2."]',
-          items: { type: 'string' }
-        },
-        answer: {
-          type: 'boolean',
-          description: 'If true (default), callback is invoked immediately with initial values. If false, callback only fires on actual value changes.',
-          default: true
-        }
-      },
-      required: ['dpeNames']
-    },
-    returns: 'number',
-    returnDescription: 'Connection ID (>= 0). Store this ID to disconnect later with dpDisconnect(). Connection auto-closes when manager exits.',
-    throws: 'WinccoaError when invalid parameter types, unknown DPE names, or no read access',
-    remarks: 'IMPORTANT: Callback always receives arrays of values, even for single DPE. Connect updates may batch multiple changes. Use dpDisconnect with returned ID to stop monitoring.',
-    example: {
-      description: 'Connect to data point element value changes',
-      code: `const connId = dpConnect(['ExampleDP_Arg1.', 'ExampleDP_Arg2.'], true);\n// Later: dpDisconnect(connId);`
-    }
-  },
-
-  dpDisconnect: {
-    name: 'dpDisconnect',
-    enabled: true,
-    category: 'DP_FUNCTIONS',
-    description: 'Disconnect from a previously connected data point element',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'number',
-          description: 'Connection ID returned by dpConnect'
-        }
-      },
-      required: ['id']
-    },
-    returns: 'Promise<boolean>',
-    returnDescription: 'true if successful',
-    throws: 'WinccoaError if connection ID is invalid',
-    example: {
-      description: 'Disconnect from data point element',
-      code: `await dpDisconnect(connectionId);`
     }
   },
 
@@ -579,7 +528,11 @@ const toolsRegistry = {
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Values to set. Can be any JSON type.'
+          description: 'Values to set. Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['dpeNames', 'values']
@@ -613,7 +566,11 @@ const toolsRegistry = {
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Values to set. Can be any JSON type.'
+          description: 'Values to set. Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['time', 'dpeNames', 'values']
@@ -646,7 +603,11 @@ const toolsRegistry = {
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Values to set. Can be any JSON type.'
+          description: 'Values to set. Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['time', 'dpeNames', 'values']
@@ -765,95 +726,6 @@ const toolsRegistry = {
     example: {
       description: 'Get element type',
       code: `const type = await dpElementType('ExampleDP_Arg1.');`
-    }
-  },
-
-  dpWaitForValue: {
-    name: 'dpWaitForValue',
-    enabled: true,
-    category: 'DP_FUNCTIONS',
-    description: 'Waits for specified data points to change their values until ALL conditions are met. Once conditions satisfied, returns values of another set of data points. Rejects promise on timeout.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        dpNamesWait: {
-          type: 'array',
-          description: 'Array of DPE names to monitor for value changes. Must match conditions array size. Example: ["ExampleDP_Arg1.", "ExampleDP_Arg2."]',
-          items: { type: 'string' }
-        },
-        conditions: {
-          type: 'array',
-          description: 'Expected values for each DPE in dpNamesWait (direct JavaScript comparison, not WinCC OA type checking). Must match dpNamesWait size. Can be numbers, strings, booleans, objects, arrays, or null. Example: [100, true]',
-          items: { type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'] }
-        },
-        dpNamesReturn: {
-          type: 'array',
-          description: 'Array of DPE names whose values will be returned when conditions are met. Can be same as dpNamesWait or different DPEs. Example: ["ExampleDP_Result."]',
-          items: { type: 'string' }
-        },
-        timeoutMs: {
-          type: 'number',
-          description: 'Timeout in milliseconds. Default: 0 (infinite wait). Promise rejects if conditions not met before timeout expires.'
-        }
-      },
-      required: ['dpNamesWait', 'conditions', 'dpNamesReturn']
-    },
-    returns: 'Promise<unknown>',
-    returnDescription: 'Promise that resolves to array of values for all DPEs in dpNamesReturn (in same order) when all conditions are met.',
-    throws: 'WinccoaError when timeout expired, DPE names do not exist, values cannot be converted, array sizes mismatch, invalid parameter types, or user lacks read access',
-    remarks: 'NOTE: Comparison is JavaScript direct comparison (not WinCC OA strict typing). Integer 1 will match float 1.0. Use dpSetAndWaitForValue to set values and wait in single operation.',
-    example: {
-      description: 'Wait for conditions then return values',
-      code: `const result = await dpWaitForValue(\n  ['ExampleDP_Arg1.', 'ExampleDP_Arg2.'],  // wait for these\n  [6, 4],                                   // until these values\n  ['ExampleDP_Result.'],                    // then return this\n  5000                                      // within 5 seconds\n);`
-    }
-  },
-
-  dpSetAndWaitForValue: {
-    name: 'dpSetAndWaitForValue',
-    enabled: true,
-    category: 'DP_FUNCTIONS',
-    description: 'Set data point values and wait for related values to meet conditions',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        dpNamesSet: {
-          type: 'array',
-          description: 'DPE names to set',
-          items: { type: 'string' }
-        },
-        dpValuesSet: {
-          type: 'array',
-          description: 'Values to set. Can contain any JSON types.',
-          items: { type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'] }
-        },
-        dpNamesWait: {
-          type: 'array',
-          description: 'DPE names to monitor',
-          items: { type: 'string' }
-        },
-        conditions: {
-          type: 'array',
-          description: 'Conditions to check. Can contain any JSON types.',
-          items: { type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'] }
-        },
-        dpNamesReturn: {
-          type: 'array',
-          description: 'DPE names to return',
-          items: { type: 'string' }
-        },
-        timeoutMs: {
-          type: 'number',
-          description: 'Timeout in milliseconds'
-        }
-      },
-      required: ['dpNamesSet', 'dpValuesSet', 'dpNamesWait', 'conditions', 'dpNamesReturn', 'timeoutMs']
-    },
-    returns: 'Promise<unknown[]>',
-    returnDescription: 'Values of dpNamesReturn when conditions are met',
-    throws: 'WinccoaError on error',
-    example: {
-      description: 'Set and wait for value',
-      code: `const result = await dpSetAndWaitForValue(['IN'], [1], ['OUT'], [1], ['RESULT'], 5000);`
     }
   },
 
@@ -1268,7 +1140,11 @@ const toolsRegistry = {
         },
         value: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'New property value. Can be any JSON type. Value will be stored according to valueType specification.'
+          description: 'New property value. Can be any JSON type. Value will be stored according to valueType specification.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         },
         valueType: {
           type: 'string',
@@ -1573,7 +1449,8 @@ const toolsRegistry = {
       properties: {
         alertsTime: {
           type: ['object', 'array'],
-          description: 'WinccoaAlertTime object or array of WinccoaAlertTime objects. Each contains: {time: WinccoaTime, count: number, dpe: string}'
+          description: 'WinccoaAlertTime object or array of WinccoaAlertTime objects. Each contains: {time: WinccoaTime, count: number, dpe: string}',
+          items: { type: 'object' }
         },
         dpeNames: {
           type: ['string', 'array'],
@@ -1609,11 +1486,16 @@ const toolsRegistry = {
       properties: {
         alerts: {
           type: ['object', 'array'],
-          description: 'WinccoaAlertTime object or array of objects to be set. Each contains: {time: WinccoaTime, count: number, dpe: string}'
+          description: 'WinccoaAlertTime object or array of objects to be set. Each contains: {time: WinccoaTime, count: number, dpe: string}',
+          items: { type: 'object' }
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Single value or array of values to set. Must match size of alerts parameter. For single alert, pass single value (not array). For array of alerts, pass matching array of values. Can be any JSON type.'
+          description: 'Single value or array of values to set. Must match size of alerts parameter. For single alert, pass single value (not array). For array of alerts, pass matching array of values. Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['alerts', 'values']
@@ -1638,11 +1520,16 @@ const toolsRegistry = {
       properties: {
         alerts: {
           type: ['object', 'array'],
-          description: 'Alert time object(s)'
+          description: 'Alert time object(s)',
+          items: { type: 'object' }
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Attribute value(s). Can be any JSON type.'
+          description: 'Attribute value(s). Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['alerts', 'values']
@@ -1670,11 +1557,16 @@ const toolsRegistry = {
         },
         alerts: {
           type: ['object', 'array'],
-          description: 'Alert time object(s)'
+          description: 'Alert time object(s)',
+          items: { type: 'object' }
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Attribute value(s). Can be any JSON type.'
+          description: 'Attribute value(s). Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['time', 'alerts', 'values']
@@ -1702,11 +1594,16 @@ const toolsRegistry = {
         },
         alerts: {
           type: ['object', 'array'],
-          description: 'Alert time object(s)'
+          description: 'Alert time object(s)',
+          items: { type: 'object' }
         },
         values: {
           type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
-          description: 'Attribute value(s). Can be any JSON type.'
+          description: 'Attribute value(s). Can be any JSON type.',
+          items: {
+            type: ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'],
+            items: {}
+          }
         }
       },
       required: ['time', 'alerts', 'values']
