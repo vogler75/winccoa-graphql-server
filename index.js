@@ -79,7 +79,7 @@ const { initializeToolLoader } = require('./mcp/tool-loader');
 
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
-const { expressMiddleware } = require('@apollo/server/express4');
+const { expressMiddleware } = require('@as-integrations/express5');
 const { ApolloServerPluginDrainHttpServer } = require('@apollo/server/plugin/drainHttpServer');
 const { makeExecutableSchema } = require('@graphql-tools/schema');
 const { WebSocketServer } = require('ws');
@@ -91,7 +91,6 @@ const { join } = require('path');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -720,7 +719,7 @@ async function startServer() {
     
     // Apply middleware
     app.use(cors(corsOptions));
-    app.use(bodyParser.json());
+    app.use(express.json());
 
     // Make auth functions and usage tracker available to REST API
     app.locals.validateToken = validateToken;
