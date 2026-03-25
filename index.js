@@ -576,11 +576,13 @@ async function startServer() {
 
     const httpServer = http.createServer(app);
     
-    // Create WebSocket server
-    const wsServer = new WebSocketServer({
-      server: httpServer,
-      path: '/graphql'
-    });
+    // Create WebSocket server in noServer mode to prevent conflict
+    // with Express middleware on the same /graphql path.
+    // Using { server: httpServer } would cause Node.js to fire both
+    // 'request' and 'upgrade' events, letting Express process the
+    // upgrade request as HTTP and return 'Unauthorized' before the
+    // WebSocket handshake completes.
+    const wsServer = new WebSocketServer({ noServer: true });
     
     // Create pub/sub instance
     const pubsub = new SimplePubSub();
@@ -816,6 +818,18 @@ async function startServer() {
         }
       }
     }
+
+    // Handle WebSocket upgrades manually so Express doesn't intercept them
+    httpServer.on('upgrade', (request, socket, head) => {
+      const { pathname } = new URL(request.url, `http://${request.headers.host}`)
+      if (pathname === '/graphql') {
+        wsServer.handleUpgrade(request, socket, head, (ws) => {
+          wsServer.emit('connection', ws, request)
+        })
+      } else {
+        socket.destroy()
+      }
+    })
 
     // Start HTTP server
     await new Promise((resolve) => {
