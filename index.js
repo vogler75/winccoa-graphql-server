@@ -83,7 +83,7 @@ const { expressMiddleware } = require('@as-integrations/express5');
 const { ApolloServerPluginDrainHttpServer } = require('@apollo/server/plugin/drainHttpServer');
 const { makeExecutableSchema } = require('@graphql-tools/schema');
 const { WebSocketServer } = require('ws');
-const { useServer } = require('graphql-ws/lib/use/ws');
+const { makeServer, handleProtocols } = require('graphql-ws');
 const express = require('express');
 const http = require('http');
 const { readFileSync } = require('fs');
@@ -587,29 +587,104 @@ async function startServer() {
     // Create pub/sub instance
     const pubsub = new SimplePubSub();
     
-    // Set up WebSocket server with GraphQL
-    const serverCleanup = useServer(
-      {
-        schema,
-        context: async (ctx) => {
-          // Validate WebSocket connection
-          const authContext = wsAuthMiddleware(ctx);
-          
-          return {
-            ...authContext,
-            pubsub
-          };
-        },
-        onConnect: async (ctx) => {
-          logger.info('WebSocket client connected');
-          return true; // Accept the connection
-        },
-        onDisconnect: async (ctx, code, reason) => {
-          logger.info(`WebSocket client disconnected: code=${code}, reason=${reason}`);
-        }
+    const graphqlServer = makeServer({
+      schema,
+      context: async (ctx) => {
+        const authContext = wsAuthMiddleware(ctx);
+        return {
+          ...authContext,
+          pubsub
+        };
       },
-      wsServer
-    );
+      onConnect: (ctx) => {
+        logger.info('WebSocket client connected');
+        return true;
+      },
+      onDisconnect: (ctx, code, reason) => {
+        logger.info(`WebSocket client disconnected: code=${code}, reason=${reason}`);
+      }
+    });
+
+    wsServer.options.handleProtocols = handleProtocols;
+    const KEEPALIVE = 12000;
+
+    wsServer.on('connection', (socket, request) => {
+      socket.once('error', (err) => {
+        console.error('Internal error emitted on a WebSocket socket.', err);
+        socket.close(4500, 'Internal server error');
+      });
+
+      // Ping/pong keepalive
+      let pongWait = null;
+      const pingInterval = setInterval(() => {
+        if (socket.readyState === socket.OPEN) {
+          pongWait = setTimeout(() => socket.terminate(), KEEPALIVE);
+          socket.once('pong', () => {
+            if (pongWait) { clearTimeout(pongWait); pongWait = null; }
+          });
+          socket.ping();
+        }
+      }, KEEPALIVE);
+
+      // We only queue messages behind connection_init. Once it completes, we run freely!
+      let initPromise = Promise.resolve();
+
+      const closed = graphqlServer.opened(
+        {
+          protocol: socket.protocol,
+          send: (data) => new Promise((resolve, reject) => {
+            if (socket.readyState !== socket.OPEN) return resolve();
+            socket.send(data, (err) => (err ? reject(err) : resolve()));
+          }),
+          close: (code, reason) => socket.close(code, reason),
+          onMessage: (cb) => {
+            socket.on('message', (event) => {
+              const msg = String(event);
+
+              if (msg.includes('"connection_init"')) {
+                // Block new messages until connection is fully initialized (ACK sent)
+                let resolveInit;
+                initPromise = new Promise(r => resolveInit = r);
+                
+                cb(msg)
+                  .catch((err) => {
+                    console.error('Error during connection_init handling.', err);
+                    socket.close(4400, 'Internal server error');
+                  })
+                  .finally(() => resolveInit());
+              } else {
+                // Wait for the initialize block to lift, then run concurrently!
+                initPromise.then(() => {
+                  cb(msg).catch((err) => {
+                    console.error('Error during WebSocket message handling.', err);
+                    socket.close(4400, 'Internal server error');
+                  });
+                });
+              }
+            });
+          }
+        },
+        { socket, request }
+      );
+
+      socket.once('close', (code, reason) => {
+        if (pongWait) clearTimeout(pongWait);
+        clearInterval(pingInterval);
+        closed(code, String(reason));
+      });
+    });
+
+    const serverCleanup = {
+      async dispose() {
+        for (const client of wsServer.clients) {
+          client.close(1001, 'Going away');
+        }
+        wsServer.removeAllListeners();
+        await new Promise((resolve, reject) => {
+          wsServer.close((err) => (err ? reject(err) : resolve()));
+        });
+      }
+    };
     
     // Authentication plugin that checks auth AFTER parsing
     const authPlugin = {
