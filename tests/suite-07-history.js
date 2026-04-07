@@ -52,7 +52,10 @@ module.exports = {
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ["${RPT_DP}"]) } } }`
       )
       const skipReason = assertNoUnexpectedErrors(res, '7.1')
-      if (skipReason) return `No RDB backend — ${skipReason}`
+      if (skipReason) {
+        writeResult('07-01-dp-get-period-rpt1', { skipped: true, dp: RPT_DP, start, end, writtenValues, note: skipReason })
+        return `No RDB backend — ${skipReason}`
+      }
       const result = dig(res, 'data.api.dp.getPeriod')
       assertNotNull(result, 'getPeriod result')
       writeResult('07-01-dp-get-period-rpt1', { dp: RPT_DP, start, end, writtenValues, result })
@@ -75,7 +78,10 @@ module.exports = {
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ${JSON.stringify(RPT_DPS)}) } } }`
       )
       const skipReason = assertNoUnexpectedErrors(res, '7.2')
-      if (skipReason) return `No RDB backend — ${skipReason}`
+      if (skipReason) {
+        writeResult('07-02-dp-get-period-rpt-all', { skipped: true, dpes: RPT_DPS, start, end, allWritten, note: skipReason })
+        return `No RDB backend — ${skipReason}`
+      }
       const result = dig(res, 'data.api.dp.getPeriod')
       assertNotNull(result, 'getPeriod multi result')
       writeResult('07-02-dp-get-period-rpt-all', { dpes: RPT_DPS, start, end, allWritten, result })
