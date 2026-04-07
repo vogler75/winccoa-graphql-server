@@ -71,6 +71,7 @@ module.exports = {
       `)
       assertNoErrors(res, '5.3')
       assertEqual(dig(res, 'data.api.dpType.change'), true, 'dpType.change')
+      writeResult('05-03-dptype-change', { typeName: TEST_TYPE, changed: true, children: ['value (FLOAT)', 'count (INT)'] })
     })
 
     await t('5.4', `api.dpType.dpTypeGet(${TEST_TYPE}) → now has 2 children`, async () => {
