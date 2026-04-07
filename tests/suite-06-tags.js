@@ -3,7 +3,7 @@
 const {
   gql, rest,
   DP_FLOAT,
-  assertNoErrors, assertIsArray, assertNotNull, assertTypeOf, assertEqual, dig
+  assertNoErrors, assertIsArray, assertNotNull, assertTypeOf, assertEqual, dig, writeResult
 } = require('./helpers')
 
 module.exports = {
@@ -24,8 +24,13 @@ module.exports = {
       assertEqual(vals.length, 3, 'dp.get length')
       assertTypeOf(vals[0], 'number', 'value')
       assertNotNull(vals[1], 'stime')
-      // status may be 0 (number) or string
       assertNotNull(res.data, 'response.data')
+      writeResult('06-01-tag-online-attrs', {
+        dpe:    DP_FLOAT,
+        value:  vals[0],
+        stime:  vals[1],
+        status: vals[2]
+      })
     })
 
     await t('6.2', `REST GET /restapi/tags?dpeNames=${DP_FLOAT} → tags array`, async () => {
@@ -35,6 +40,7 @@ module.exports = {
       assertIsArray(body.tags, 'body.tags')
       assertEqual(body.tags.length, 1, 'tags.length')
       assertNotNull(body.tags[0].name, 'tag.name')
+      writeResult('06-02-rest-tags', { dpe: DP_FLOAT, tags: body.tags })
     })
 
     await t('6.3', 'REST GET /restapi/tags/history → empty or error without RDB', async () => {
@@ -42,14 +48,14 @@ module.exports = {
       const end   = '2025-01-01T01:00:00Z'
       const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${start}&endTime=${end}`
       const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
-      // Without RDB backend the server may return 500 with an error message.
-      // What we assert is that it returns a parseable JSON body (not a crash/hang).
       assertNotNull(body, 'response body')
-      if (status === 500 || (body.error)) {
+      if (status === 500 || body.error) {
+        writeResult('06-03-rest-tags-history', { skipped: true, status, error: body.error || body.message })
         return 'No RDB backend — history returns error (expected)'
       }
       assertEqual(status, 200, 'HTTP status')
       assertNotNull(body.history, 'body.history')
+      writeResult('06-03-rest-tags-history', { dpe: DP_FLOAT, start, end, history: body.history })
     })
   }
 }
