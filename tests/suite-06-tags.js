@@ -43,19 +43,28 @@ module.exports = {
       writeResult('06-02-rest-tags', { dpe: DP_FLOAT, tags: body.tags })
     })
 
-    await t('6.3', 'REST GET /restapi/tags/history → empty or error without RDB', async () => {
-      const start = '2025-01-01T00:00:00Z'
-      const end   = '2025-01-01T01:00:00Z'
-      const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${start}&endTime=${end}`
+    await t('6.3', 'REST GET /restapi/tags/history → write values first, then query (SKIP if no RDB)', async () => {
+      // Write a few timed values so there is data to query if RDB is available
+      const now   = Date.now()
+      const t1    = new Date(now - 4000).toISOString()
+      const t2    = new Date(now - 2000).toISOString()
+      const t3    = new Date(now - 1000).toISOString()
+      await gql(`mutation { api { dp { setTimed(time: "${t1}", dpeNames: ["${DP_FLOAT}"], values: [11.1]) } } }`)
+      await gql(`mutation { api { dp { setTimed(time: "${t2}", dpeNames: ["${DP_FLOAT}"], values: [22.2]) } } }`)
+      await gql(`mutation { api { dp { setTimed(time: "${t3}", dpeNames: ["${DP_FLOAT}"], values: [33.3]) } } }`)
+
+      const start = new Date(now - 10000).toISOString()
+      const end   = new Date(now + 1000).toISOString()
+      const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`
       const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
       assertNotNull(body, 'response body')
       if (status === 500 || body.error) {
-        writeResult('06-03-rest-tags-history', { skipped: true, status, error: body.error || body.message })
+        writeResult('06-03-rest-tags-history', { skipped: true, status, error: body.error || body.message, note: 'values were written but RDB is not available' })
         return 'No RDB backend — history returns error (expected)'
       }
       assertEqual(status, 200, 'HTTP status')
       assertNotNull(body.history, 'body.history')
-      writeResult('06-03-rest-tags-history', { dpe: DP_FLOAT, start, end, history: body.history })
+      writeResult('06-03-rest-tags-history', { dpe: DP_FLOAT, start, end, writtenValues: [11.1, 22.2, 33.3], history: body.history })
     })
   }
 }
