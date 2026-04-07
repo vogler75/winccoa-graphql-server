@@ -1,10 +1,8 @@
 // tests/suite-07-history.js — dpGetPeriod / REST history using ExampleDP_Rpt*
 //
-// ExampleDP_Rpt1–4 have archiving configured in WinCC OA.
-// dpGetPeriod requires an RDB backend — tests SKIP gracefully without one.
-//
-// Before every history query we write 10 timed values (250 ms apart) to ensure
-// there is actually data in the archive to retrieve.
+// ExampleDP_Rpt1–4 have the _archive config in WinCC OA — must be active (set in Para).
+// dpGetPeriod reads from the WinCC OA built-in archive store (no external RDB needed).
+// Tests write 100 values then wait 1s before querying to allow the archive to flush.
 
 const {
   gql, rest,
@@ -55,10 +53,12 @@ module.exports = {
       const skipReason = assertNoUnexpectedErrors(res, '7.1')
       if (skipReason) {
         writeResult('07-01-dp-get-period-rpt1', { skipped: true, dp: RPT_DP, start, end, writtenValues, note: skipReason })
-        return `No RDB backend — ${skipReason}`
+        return `No archive — ${skipReason}`
       }
       const result = dig(res, 'data.api.dp.getPeriod')
       assertNotNull(result, 'getPeriod result')
+      if (result.every(r => r.times.length === 0))
+        throw new Error(`getPeriod returned empty — archive may not be active on ${RPT_DP}`)
       writeResult('07-01-dp-get-period-rpt1', { dp: RPT_DP, start, end, writtenValues, result })
     })
 
@@ -82,10 +82,12 @@ module.exports = {
       const skipReason = assertNoUnexpectedErrors(res, '7.2')
       if (skipReason) {
         writeResult('07-02-dp-get-period-rpt-all', { skipped: true, dpes: RPT_DPS, start, end, allWritten, note: skipReason })
-        return `No RDB backend — ${skipReason}`
+        return `No archive — ${skipReason}`
       }
       const result = dig(res, 'data.api.dp.getPeriod')
       assertNotNull(result, 'getPeriod multi result')
+      if (result.every(r => r.times.length === 0))
+        throw new Error('getPeriod returned empty for all Rpt DPs — archive may not be active')
       writeResult('07-02-dp-get-period-rpt-all', { dpes: RPT_DPS, start, end, allWritten, result })
     })
 
