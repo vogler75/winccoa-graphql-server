@@ -35,6 +35,9 @@ async function writeHistoryValues(dpe) {
   }
 }
 
+// Wait for the archive to flush written values before querying
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+
 module.exports = {
   name: 'Suite 7 — History (dpGetPeriod + REST history)',
 
@@ -44,6 +47,7 @@ module.exports = {
     await t('7.1', `api.dp.getPeriod(${RPT_DP}) — write 100 values then query window (SKIP if no RDB)`, async () => {
       const { writtenValues, start, end } = await writeHistoryValues(RPT_DP)
 
+      await sleep(1000)
       const res = await gql(
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ["${RPT_DP}"]) } } }`
       )
@@ -66,6 +70,7 @@ module.exports = {
         end   = end   ? (r.end   > end   ? r.end   : end)   : r.end
       }
 
+      await sleep(1000)
       const res = await gql(
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ${JSON.stringify(RPT_DPS)}) } } }`
       )
@@ -80,6 +85,7 @@ module.exports = {
     await t('7.3', `REST GET /restapi/tags/history(${DP_FLOAT}) — write 100 values then query (SKIP if no RDB)`, async () => {
       const { writtenValues, start, end } = await writeHistoryValues(DP_FLOAT)
 
+      await sleep(1000)
       const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`
       const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
       assertNotNull(body, 'response body')
