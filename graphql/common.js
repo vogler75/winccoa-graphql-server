@@ -633,8 +633,6 @@ function createCommonResolvers(winccoa, logger) {
        */
       async tagGetHistory(_, { startTime, endTime, dpeNames, limit, offset }) {
         try {
-          logger.info(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
-
           const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
 
           return dpeNames.map((dpeName, index) => ({
