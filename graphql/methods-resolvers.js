@@ -1,7 +1,7 @@
 // API type resolvers - Backward compatibility layer
 // Delegates to existing V1 resolvers, grouped by category
 
-const { createExtrasMethods } = require('./extras-methods')
+const { createExtrasMethods } = require('./extras')
 
 function createMethodsResolvers(existingResolvers, winccoa, logger) {
   return {

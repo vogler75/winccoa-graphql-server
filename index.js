@@ -52,9 +52,9 @@ const winccoa = new Proxy(winccoaBase, {
 
 // Import V1 resolver modules (now in graphql)
 const { createCommonResolvers } = require('./graphql/common');
-const { createAlertResolvers } = require('./graphql/alerting');
+const { createAlertOperationResolvers } = require('./graphql/alerting');
 const { createSubscriptionResolvers } = require('./graphql/subscriptions');
-const { createCnsResolvers } = require('./graphql/cns');
+const { createCnsOperationResolvers } = require('./graphql/cns');
 const { createExtrasResolvers } = require('./graphql/extras');
 
 // Import V2 resolvers
@@ -77,6 +77,23 @@ const { UsageTracker } = require('./usage-tracker');
 const { createMCPServer, createHTTPTransport } = require('./mcp/mcp-http-server');
 const { initializeToolLoader } = require('./mcp/tool-loader');
 
+// Import extracted lib modules
+const { createLogger } = require('./lib/logger');
+const {
+  generateToken,
+  validateToken,
+  authenticateUser,
+  purgeExpiredTokens,
+  ADMIN_USERNAME,
+  ADMIN_PASSWORD,
+  READONLY_USERNAME,
+  DIRECT_ACCESS_TOKEN,
+  READONLY_TOKEN,
+  JWT_SECRET,
+  TOKEN_EXPIRY_MS
+} = require('./lib/auth');
+const { SimplePubSub } = require('./lib/pubsub');
+
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
 const { expressMiddleware } = require('@as-integrations/express5');
@@ -86,10 +103,7 @@ const { WebSocketServer } = require('ws');
 const { makeServer, handleProtocols } = require('graphql-ws');
 const express = require('express');
 const http = require('http');
-const { readFileSync } = require('fs');
 const { join } = require('path');
-const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 
 // Parse command line arguments
@@ -99,8 +113,6 @@ const noAuthArg = args.includes('--no-auth');
 // Configuration
 const PORT = process.env.GRAPHQL_PORT || 4000;
 const HOST = process.env.GRAPHQL_HOST || '0.0.0.0';
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const TOKEN_EXPIRY_MS = parseInt(process.env.TOKEN_EXPIRY_MS || '3600000'); // Default 1 hour
 const DISABLE_AUTH = noAuthArg || process.env.DISABLE_AUTH === 'true';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
@@ -111,15 +123,13 @@ const MCP_HOST = process.env.MCP_HOST || '0.0.0.0';
 const MCP_BEARER_TOKEN = process.env.MCP_BEARER_TOKEN || '';
 const MCP_TOOLS_PATH = require('path').join(scriptDir, '.env-mcp-tools');
 
-// Authentication credentials from environment
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const DIRECT_ACCESS_TOKEN = process.env.DIRECT_ACCESS_TOKEN;
-const READONLY_USERNAME = process.env.READONLY_USERNAME;
-const READONLY_PASSWORD = process.env.READONLY_PASSWORD;
-const READONLY_TOKEN = process.env.READONLY_TOKEN;
+// Create logger (from lib/logger.js)
+const logger = createLogger();
 
-// Log authentication configuration
+// Create usage tracker instance
+const usageTracker = new UsageTracker(logger);
+
+// Log startup configuration
 console.log(`Starting GraphQL server on ${HOST}:${PORT} with DISABLE_AUTH=${DISABLE_AUTH}`);
 console.log(`🌐 CORS Configuration: ${CORS_ORIGIN}`);
 console.log('🔐 Authentication Configuration:');
@@ -127,12 +137,10 @@ console.log(`   Admin Username: ${ADMIN_USERNAME ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Admin Password: ${ADMIN_PASSWORD ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Direct Access Token: ${DIRECT_ACCESS_TOKEN ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Readonly Username: ${READONLY_USERNAME ? '✅ Set' : '❌ Not set'}`);
-console.log(`   Readonly Password: ${READONLY_PASSWORD ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Readonly Token: ${READONLY_TOKEN ? '✅ Set' : '❌ Not set'}`);
 console.log(`   JWT Secret: ${JWT_SECRET !== 'your-secret-key-change-in-production' ? '✅ Custom' : '⚠️  Default (change in production)'}`);
 console.log(`   Token Expiry: ${TOKEN_EXPIRY_MS}ms (${Math.round(TOKEN_EXPIRY_MS / 60000)} minutes)`);
 
-// Warn about authentication mode
 if (DISABLE_AUTH) {
   console.log('⚠️  WARNING: Authentication is DISABLED! This is unsafe for production.');
 } else if (!ADMIN_USERNAME && !READONLY_USERNAME && !DIRECT_ACCESS_TOKEN && !READONLY_TOKEN) {
@@ -141,7 +149,6 @@ if (DISABLE_AUTH) {
   console.log('✅ Authentication is properly configured.');
 }
 
-// Log MCP Configuration
 console.log('🔌 MCP Server Configuration:');
 console.log(`   Enabled: ${MCP_ENABLED ? '✅ Yes' : '❌ No'}`);
 if (MCP_ENABLED) {
@@ -150,177 +157,19 @@ if (MCP_ENABLED) {
   console.log(`   Tools Config: ${MCP_TOOLS_PATH}`);
 }
 
-// In-memory token store (replace with Redis or database in production)
-const tokenStore = new Map();
-
-// Logger setup with LOG_LEVEL support
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const logLevels = { error: 0, warn: 1, info: 2, debug: 3 };
-const currentLogLevel = logLevels[LOG_LEVEL.toLowerCase()] || logLevels.info;
-
-const logger = {
-  info: (...args) => {
-    if (currentLogLevel >= logLevels.info) {
-      console.log(...args);
-    }
-  },
-  error: (...args) => {
-    if (currentLogLevel >= logLevels.error) {
-      console.error(...args);
-    }
-  },
-  warn: (...args) => {
-    if (currentLogLevel >= logLevels.warn) {
-      console.warn(...args);
-    }
-  },
-  debug: (...args) => {
-    if (currentLogLevel >= logLevels.debug) {
-      console.log(...args);
-    }
-  }
-};
-
-// Create usage tracker instance
-const usageTracker = new UsageTracker(logger);
-
-// Load GraphQL schema (now in graphql directory)
+// Load GraphQL schema
 const schemaV2 = require('./graphql');
-
-// Combine all schema modules
 const typeDefs = schemaV2.typeDefs;
 
-// Utility functions for authentication
-
-/**
- * Generates a JWT token for user authentication.
- *
- * @param {string} userId - The user identifier
- * @param {string} [role='admin'] - The user role (admin or readonly)
- * @returns {object} Token object with token string and expiration timestamp
- */
-function generateToken(userId, role = 'admin') {
-  const tokenId = uuidv4();
-  const expiresAt = Date.now() + TOKEN_EXPIRY_MS;
-  
-  const token = jwt.sign(
-    { 
-      userId, 
-      tokenId,
-      expiresAt,
-      role
-    },
-    JWT_SECRET,
-    { expiresIn: Math.floor(TOKEN_EXPIRY_MS / 1000) + 's' }
-  );
-  
-  // Store token metadata
-  tokenStore.set(tokenId, {
-    userId,
-    role,
-    expiresAt,
-    lastActivity: Date.now()
-  });
-  
-  return { token, expiresAt };
-}
-
-/**
- * Validates a JWT token or direct access token.
- *
- * @param {string} token - The token to validate
- * @returns {object|null} Token data object if valid, null if invalid or expired
- */
-function validateToken(token) {
-  logger.debug(`Validating token: ${token ? token.substring(0, 20) + '...' : 'null'}`);
-
-  // First check if it's a direct access token
-  if (DIRECT_ACCESS_TOKEN && token === DIRECT_ACCESS_TOKEN) {
-    logger.debug('Direct access token matched');
-    return { userId: 'direct-access', tokenId: 'direct', role: 'admin' };
-  }
-  
-  // Check if it's a read-only direct access token
-  if (READONLY_TOKEN && token === READONLY_TOKEN) {
-    logger.debug('Read-only direct token matched');
-    return { userId: 'readonly-direct', tokenId: 'readonly', role: 'readonly' };
-  }
-  
-  // Otherwise, validate as JWT
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    logger.debug(`JWT decoded successfully for user: ${decoded.userId}`);
-    
-    const tokenData = tokenStore.get(decoded.tokenId);
-    
-    if (!tokenData) {
-      logger.debug('Token not found in store');
-      return null;
-    }
-    
-    // Check if token is expired
-    if (Date.now() > tokenData.expiresAt) {
-      logger.debug('Token expired, removing from store');
-      tokenStore.delete(decoded.tokenId);
-      return null;
-    }
-    
-    // Extend token validity on each request
-    tokenData.lastActivity = Date.now();
-    tokenData.expiresAt = Date.now() + TOKEN_EXPIRY_MS;
-    tokenStore.set(decoded.tokenId, tokenData);
-    
-    logger.debug(`JWT token validated for user: ${tokenData.userId}, role: ${tokenData.role}`);
-    return { userId: tokenData.userId, tokenId: decoded.tokenId, role: tokenData.role || 'admin' };
-  } catch (error) {
-    logger.debug(`JWT validation failed: ${error.message}`);
-    return null;
-  }
-}
-
-/**
- * Authenticates a user based on username and password against environment variables.
- *
- * @param {string} username - The username to authenticate
- * @param {string} password - The password to verify
- * @returns {object|null} User object if authentication successful, null otherwise
- */
-function authenticateUser(username, password) {
-  logger.debug(`Authentication attempt for username: ${username}`);
-  
-  // Check admin credentials
-  if (ADMIN_USERNAME && ADMIN_PASSWORD) {
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      logger.info(`Admin user authenticated: ${username}`);
-      return { id: username, username, role: 'admin' };
-    }
-  }
-  
-  // Check read-only credentials
-  if (READONLY_USERNAME && READONLY_PASSWORD) {
-    if (username === READONLY_USERNAME && password === READONLY_PASSWORD) {
-      logger.info(`Read-only user authenticated: ${username}`);
-      return { id: username, username, role: 'readonly' };
-    }
-  }
-  
-  // If no environment credentials are set, only accept specific development credentials
-  if (!ADMIN_USERNAME && !READONLY_USERNAME) {
-    if (username === 'dev' && password === 'dev') {
-      logger.warn('Using development credentials - configure proper credentials in .env for production');
-      return { id: username, username, role: 'admin' };
-    }
-  }
-  
-  logger.debug(`Authentication failed for username: ${username}`);
-  return null;
-}
+// Wrap validateToken / authenticateUser to bind the logger (lib/auth exports take logger as param)
+const _validateToken    = (token) => validateToken(token, logger);
+const _authenticateUser = (username, password) => authenticateUser(username, password, logger);
 
 // Create resolver modules
 const commonResolvers = createCommonResolvers(winccoa, logger);
-const alertResolvers = createAlertResolvers(winccoa, logger);
+const alertResolvers = createAlertOperationResolvers(winccoa, logger);
 const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
-const cnsResolvers = createCnsResolvers(winccoa, logger);
+const cnsResolvers = createCnsOperationResolvers(winccoa, logger);
 const extrasResolvers = createExtrasResolvers(winccoa, logger);
 
 /**
@@ -367,7 +216,7 @@ const resolvers = mergeResolvers(
     Anytype: AnytypeScalar,
     Mutation: {
       async login(_, { username, password }) {
-        const user = authenticateUser(username, password);
+        const user = _authenticateUser(username, password);
 
         if (!user) {
           throw new Error('Invalid username or password');
@@ -415,7 +264,7 @@ const authMiddleware = (req) => {
   const token = authHeader.substring(7);
   logger.debug(`Extracted token from Authorization header: ${token.substring(0, 20)}...`);
   
-  const result = validateToken(token);
+  const result = _validateToken(token);
   logger.debug(`Token validation result: ${result ? 'valid' : 'invalid'}`);
   return result;
 };
@@ -435,7 +284,7 @@ const wsAuthMiddleware = (ctx) => {
     throw new Error('Missing authorization token');
   }
 
-  const user = validateToken(token.replace('Bearer ', ''));
+  const user = _validateToken(token.replace('Bearer ', ''));
 
   if (!user) {
     logger.warn('WebSocket connection has invalid or expired token');
@@ -444,117 +293,6 @@ const wsAuthMiddleware = (ctx) => {
 
   return { user };
 };
-
-/**
- * Simple pub/sub implementation for GraphQL subscriptions.
- *
- * Implements the async iterator protocol for streaming subscription data
- * to connected WebSocket clients.
- */
-class SimplePubSub {
-  constructor() {
-    this.subscribers = new Map();
-  }
-
-  /**
-   * Publishes a payload to all subscribers on a channel.
-   *
-   * @param {string} channel - The channel name to publish to
-   * @param {*} payload - The data to publish
-   */
-  publish(channel, payload) {
-    const subs = this.subscribers.get(channel) || [];
-    subs.forEach(sub => {
-      try {
-        sub(payload);
-      } catch (error) {
-        logger.error(`Error publishing to channel ${channel}:`, error);
-      }
-    });
-  }
-  
-  /**
-   * Creates an async iterator for a channel.
-   *
-   * @param {string} channel - The channel to subscribe to
-   * @returns {AsyncIterator} An async iterator that yields payloads from the channel
-   */
-  asyncIterator(channel) {
-    const queue = [];
-    let pushFn;
-    let pullFn;
-    let running = true;
-
-    const push = (value) => {
-      if (pullFn) {
-        pullFn({ value, done: false });
-        pullFn = null;
-      } else {
-        queue.push(value);
-      }
-    };
-    
-    // Subscribe to channel
-    const subs = this.subscribers.get(channel) || [];
-    subs.push(push);
-    this.subscribers.set(channel, subs);
-    
-    // Store reference to this for use in iterator methods
-    const self = this;
-    
-    // Create async iterator
-    const iterator = {
-      async next() {
-        if (!running) {
-          return { done: true, value: undefined };
-        }
-        
-        if (queue.length > 0) {
-          return { value: queue.shift(), done: false };
-        }
-        
-        return new Promise((resolve) => {
-          pullFn = resolve;
-        });
-      },
-      
-      async return() {
-        running = false;
-        
-        // Unsubscribe
-        const subs = self.subscribers.get(channel) || [];
-        const index = subs.indexOf(push);
-        if (index !== -1) {
-          subs.splice(index, 1);
-          if (subs.length === 0) {
-            self.subscribers.delete(channel);
-          } else {
-            self.subscribers.set(channel, subs);
-          }
-        }
-        
-        // Resolve any pending pull
-        if (pullFn) {
-          pullFn({ done: true, value: undefined });
-          pullFn = null;
-        }
-        
-        return { done: true, value: undefined };
-      },
-      
-      async throw(error) {
-        await iterator.return();
-        throw error;
-      },
-      
-      [Symbol.asyncIterator]() {
-        return this;
-      }
-    };
-    
-    return iterator;
-  }
-}
 
 /**
  * Starts the GraphQL server with Express, Apollo, and WebSocket support.
@@ -799,8 +537,8 @@ async function startServer() {
     app.use(express.json());
 
     // Make auth functions and usage tracker available to REST API
-    app.locals.validateToken = validateToken;
-    app.locals.authenticateUser = authenticateUser;
+    app.locals.validateToken = _validateToken;
+    app.locals.authenticateUser = _authenticateUser;
     app.locals.generateToken = generateToken;
     app.locals.usageTracker = usageTracker;
 
@@ -941,14 +679,7 @@ async function startServer() {
     });
     
     // Cleanup expired tokens periodically
-    setInterval(() => {
-      const now = Date.now();
-      for (const [tokenId, data] of tokenStore.entries()) {
-        if (now > data.expiresAt) {
-          tokenStore.delete(tokenId);
-        }
-      }
-    }, 60000); // Check every minute
+    setInterval(purgeExpiredTokens, 60000);
     
   } catch (error) {
     logger.error('Failed to start server:', error);
@@ -957,17 +688,13 @@ async function startServer() {
 }
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
+const shutdown = () => {
   logger.info('Shutting down gracefully...');
   usageTracker.shutdown();
   process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  logger.info('Shutting down gracefully...');
-  usageTracker.shutdown();
-  process.exit(0);
-});
+};
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 // Start the server
 startServer().catch((error) => {

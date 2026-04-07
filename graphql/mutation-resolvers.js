@@ -1,6 +1,6 @@
 // Mutation resolvers - Namespaced by domain
 
-const { createExtrasMutationResolvers } = require('./extras-mutations')
+const { createExtrasMutationResolvers } = require('./extras')
 
 function createMutationResolvers(existingResolvers) {
   return {
@@ -12,10 +12,8 @@ function createMutationResolvers(existingResolvers) {
     // Extras namespace
     extras() {
       return {} // ExtrasMutations resolvers will handle fields
-    },
-
-    // Login stays at top level
-    login: existingResolvers.Mutation.login
+    }
+    // login is defined at the top level in index.js via mergeResolvers
   }
 }
 

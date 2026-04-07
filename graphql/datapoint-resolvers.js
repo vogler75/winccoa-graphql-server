@@ -1,6 +1,15 @@
 // DataPoint and DataPointElement resolvers
 
-const { parseDataPointName } = require('./helpers')
+const {
+  parseDataPointName,
+  ONLINE_VALUE_ATTR,
+  ONLINE_STIME_ATTR,
+  ONLINE_STATUS_ATTR,
+  resolveTimeRange,
+  extractHistoryValues,
+  applyPagination,
+  getElementFullPath
+} = require('./helpers')
 const { ElementTypeMap } = require('./common')
 const { ALERT_ATTRIBUTE_MAP } = require('./alert-resolvers')
 
@@ -137,9 +146,9 @@ function createDataPointResolvers(winccoa, logger) {
       async tag(dataPoint) {
         try {
           // Get tag with value, timestamp, and status
-          const valueAttr = `${dataPoint.fullName}:_online.._value`
-          const timeAttr = `${dataPoint.fullName}:_online.._stime`
-          const statusAttr = `${dataPoint.fullName}:_online.._status`
+          const valueAttr = `${dataPoint.fullName}${ONLINE_VALUE_ATTR}`
+          const timeAttr  = `${dataPoint.fullName}${ONLINE_STIME_ATTR}`
+          const statusAttr = `${dataPoint.fullName}${ONLINE_STATUS_ATTR}`
 
           const results = await winccoa.dpGet([valueAttr, timeAttr, statusAttr])
 
@@ -157,69 +166,23 @@ function createDataPointResolvers(winccoa, logger) {
 
       async tagHistory(dataPoint, { startTime, endTime, lastMinutes, limit, offset }) {
         try {
-          // Calculate time range
-          let rangeStart, rangeEnd
-          if (lastMinutes) {
-            rangeEnd = new Date()
-            rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
-          } else if (startTime && endTime) {
-            rangeStart = new Date(startTime)
-            rangeEnd = new Date(endTime)
-          } else {
-            throw new Error('Either provide (startTime and endTime) or lastMinutes')
-          }
-
-          const result = await winccoa.dpGetPeriod(
-            rangeStart,
-            rangeEnd,
-            [dataPoint.fullName]
-          )
-
-          const values = []
-          if (Array.isArray(result) && result.length > 0) {
-            const entry = result[0]
-            if (entry.times && entry.values) {
-              const minLength = Math.min(entry.times.length, entry.values.length)
-              for (let i = 0; i < minLength; i++) {
-                values.push({
-                  timestamp: new Date(entry.times[i]),
-                  value: entry.values[i]
-                })
-              }
-            }
-          }
-
-          const start = offset || 0
-          const end = limit ? start + limit : values.length
-
+          const { rangeStart, rangeEnd } = resolveTimeRange(startTime, endTime, lastMinutes)
+          const result = await winccoa.dpGetPeriod(rangeStart, rangeEnd, [dataPoint.fullName])
+          const values = extractHistoryValues(result, 0)
           return {
             name: dataPoint.fullName,
-            values: values.slice(start, end)
+            values: applyPagination(values, offset, limit)
           }
         } catch (error) {
           logger.error('DataPoint.tagHistory error:', error)
-          return {
-            name: dataPoint.fullName,
-            values: []
-          }
+          return { name: dataPoint.fullName, values: [] }
         }
       },
 
       async alerts(dataPoint, { startTime, endTime, lastMinutes, limit, offset }, context, info) {
         try {
-          // Calculate time range
-          let rangeStart, rangeEnd
-          if (lastMinutes) {
-            rangeEnd = new Date()
-            rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
-          } else if (startTime && endTime) {
-            rangeStart = new Date(startTime)
-            rangeEnd = new Date(endTime)
-          } else {
-            throw new Error('Either provide (startTime and endTime) or lastMinutes')
-          }
-
-          const { convertAlertTimes } = require('../graphql-v1/alerting')
+          const { rangeStart, rangeEnd } = resolveTimeRange(startTime, endTime, lastMinutes)
+          const { convertAlertTimes } = require('./alerting')
 
           // Collect alert attributes based on requested fields
           const selections = info.fieldNodes[0].selectionSet?.selections || []
@@ -289,10 +252,7 @@ function createDataPointResolvers(winccoa, logger) {
           })
 
           const alerts = Array.from(alertMap.values())
-
-          const start = offset || 0
-          const end = limit ? start + limit : alerts.length
-          return alerts.slice(start, end)
+          return applyPagination(alerts, offset, limit)
         } catch (error) {
           logger.error('DataPoint.alerts error:', error)
           return []
@@ -368,9 +328,7 @@ function createDataPointResolvers(winccoa, logger) {
         if (element.value !== undefined) return element.value
 
         try {
-          const fullPath = element.path
-            ? `${element.dataPoint.fullName}.${element.path}`
-            : element.dataPoint.fullName
+          const fullPath = getElementFullPath(element)
           const result = await winccoa.dpGet([fullPath])
           return result[0]
         } catch (error) {
@@ -381,10 +339,8 @@ function createDataPointResolvers(winccoa, logger) {
 
       async timestamp(element) {
         try {
-          const fullPath = element.path
-            ? `${element.dataPoint.fullName}.${element.path}`
-            : element.dataPoint.fullName
-          const timeAttr = `${fullPath}:_online.._stime`
+          const fullPath = getElementFullPath(element)
+          const timeAttr = `${fullPath}${ONLINE_STIME_ATTR}`
           const result = await winccoa.dpGet([timeAttr])
           return result[0]
         } catch (error) {
@@ -395,14 +351,10 @@ function createDataPointResolvers(winccoa, logger) {
 
       async status(element) {
         try {
-          const fullPath = element.path
-            ? `${element.dataPoint.fullName}.${element.path}`
-            : element.dataPoint.fullName
-          const statusAttr = `${fullPath}:_online.._status`
+          const fullPath = getElementFullPath(element)
+          const statusAttr = `${fullPath}${ONLINE_STATUS_ATTR}`
           const result = await winccoa.dpGet([statusAttr])
-          const statusValue = result[0]
-
-          return decodeStatusBits(statusValue)
+          return decodeStatusBits(result[0])
         } catch (error) {
           logger.error('DataPointElement.status error:', error)
           return decodeStatusBits(0)
@@ -414,10 +366,7 @@ function createDataPointResolvers(winccoa, logger) {
           if (element.elementTypeValue !== undefined) {
             return ElementTypeMap[element.elementTypeValue] || 'MIXED'
           }
-
-          const fullPath = element.path
-            ? `${element.dataPoint.fullName}.${element.path}`
-            : element.dataPoint.fullName
+          const fullPath = getElementFullPath(element)
           const typeValue = await winccoa.dpElementType(fullPath)
           return ElementTypeMap[typeValue] || 'MIXED'
         } catch (error) {
@@ -428,58 +377,18 @@ function createDataPointResolvers(winccoa, logger) {
 
       async history(element, { startTime, endTime, lastMinutes, limit, offset }) {
         try {
-          const fullPath = element.path
-            ? `${element.dataPoint.fullName}.${element.path}`
-            : element.dataPoint.fullName
-
-          // Calculate time range
-          let rangeStart, rangeEnd
-          if (lastMinutes) {
-            rangeEnd = new Date()
-            rangeStart = new Date(rangeEnd.getTime() - lastMinutes * 60 * 1000)
-          } else if (startTime && endTime) {
-            rangeStart = new Date(startTime)
-            rangeEnd = new Date(endTime)
-          } else {
-            throw new Error('Either provide (startTime and endTime) or lastMinutes')
-          }
-
-          const result = await winccoa.dpGetPeriod(
-            rangeStart,
-            rangeEnd,
-            [fullPath]
-          )
-
-          const values = []
-          if (Array.isArray(result) && result.length > 0) {
-            const entry = result[0]
-            if (entry.times && entry.values) {
-              const minLength = Math.min(entry.times.length, entry.values.length)
-              for (let i = 0; i < minLength; i++) {
-                values.push({
-                  timestamp: new Date(entry.times[i]),
-                  value: entry.values[i],
-                  status: null
-                })
-              }
-            }
-          }
-
-          const start = offset || 0
-          const end = limit ? start + limit : values.length
-
+          const fullPath = getElementFullPath(element)
+          const { rangeStart, rangeEnd } = resolveTimeRange(startTime, endTime, lastMinutes)
+          const result = await winccoa.dpGetPeriod(rangeStart, rangeEnd, [fullPath])
+          const values = extractHistoryValues(result, 0)
           return {
             element,
-            values: values.slice(start, end),
+            values: applyPagination(values, offset, limit),
             totalCount: values.length
           }
         } catch (error) {
           logger.error('DataPointElement.history error:', error)
-          return {
-            element,
-            values: [],
-            totalCount: 0
-          }
+          return { element, values: [], totalCount: 0 }
         }
       },
 
@@ -560,19 +469,9 @@ function createDataPointResolvers(winccoa, logger) {
       async dataPoints(dpType, { limit, offset }) {
         try {
           const names = await winccoa.dpNames('*', dpType.name)
-
-          const start = offset || 0
-          const end = limit ? start + limit : names.length
-          const paginatedNames = names.slice(start, end)
-
-          return paginatedNames.map(name => {
+          return applyPagination(names, offset, limit).map(name => {
             const parsed = parseDataPointName(name)
-            return {
-              name: parsed.dpName,
-              fullName: name,
-              
-              typeName: dpType.name
-            }
+            return { name: parsed.dpName, fullName: name, typeName: dpType.name }
           })
         } catch (error) {
           logger.error('DataPointType.dataPoints error:', error)

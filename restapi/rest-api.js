@@ -1,6 +1,17 @@
 // REST API Router for WinCC OA GraphQL Server
 const express = require('express')
 
+// Route modules (loaded at module level, not inside the factory function)
+const authRoutes = require('./routes/auth-routes')
+const datapointRoutes = require('./routes/datapoint-routes')
+const { createQueryRouter } = datapointRoutes
+const datapointTypeRoutes = require('./routes/datapoint-type-routes')
+const tagRoutes = require('./routes/tag-routes')
+const alertRoutes = require('./routes/alert-routes')
+const cnsRoutes = require('./routes/cns-routes')
+const systemRoutes = require('./routes/system-routes')
+const extrasRoutes = require('./routes/extras-routes')
+
 /**
  * Creates the main REST API router for WinCC OA operations.
  *
@@ -15,17 +26,6 @@ const express = require('express')
  */
 function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
   const router = express.Router()
-
-  // Import route modules
-  const authRoutes = require('./routes/auth-routes')
-  const { createQueryRouter } = require('./routes/datapoint-routes')
-  const datapointRoutes = require('./routes/datapoint-routes')
-  const datapointTypeRoutes = require('./routes/datapoint-type-routes')
-  const tagRoutes = require('./routes/tag-routes')
-  const alertRoutes = require('./routes/alert-routes')
-  const cnsRoutes = require('./routes/cns-routes')
-  const systemRoutes = require('./routes/system-routes')
-  const extrasRoutes = require('./routes/extras-routes')
 
   /**
    * Authentication middleware for REST API.

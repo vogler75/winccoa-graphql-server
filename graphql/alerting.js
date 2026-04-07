@@ -61,7 +61,7 @@ function convertAlertTimes(alertTimes) {
  * @param {object} logger - Logger instance for error reporting
  * @returns {object} Resolver object with Query and Mutation resolvers
  */
-function createAlertResolvers(winccoa, logger) {
+function createAlertOperationResolvers(winccoa, logger) {
   return {
     Query: {
       /**
@@ -195,7 +195,7 @@ function createAlertResolvers(winccoa, logger) {
 }
 
 module.exports = {
-  createAlertResolvers,
+  createAlertOperationResolvers,
   convertAlertTimeInput,
   convertAlertTimeInputs,
   convertAlertTime,

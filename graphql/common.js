@@ -1,5 +1,13 @@
 // Common GraphQL resolver functions for WinCC OA
 
+const {
+  ONLINE_VALUE_ATTR,
+  ONLINE_STIME_ATTR,
+  ONLINE_STATUS_ATTR,
+  extractHistoryValues,
+  applyPagination
+} = require('./helpers')
+
 // Element type mapping from WinCC OA numeric values to GraphQL enum
 // Based on WinccoaElementType enum values from winccoa-manager
 const ElementTypeMap = {
@@ -173,7 +181,7 @@ function createCommonResolvers(winccoa, logger) {
        * @param {string} [dpType] - Optional data point type filter
        * @returns {Promise<Array<string>>} Promise resolving to array of matching data point names
        */
-      async dpNames(_, { dpPattern, dpType, ignoreCase = false }) {
+      async dpNames(_, { dpPattern, dpType }) {
         try {
           const result = await winccoa.dpNames(dpPattern, dpType);
           return result;
@@ -191,7 +199,7 @@ function createCommonResolvers(winccoa, logger) {
        * @param {number} [systemId] - Optional system ID filter
        * @returns {Promise<Array>} Promise resolving to array of data point types
        */
-      async dpTypes(_, { pattern, systemId, includeEmpty = true }) {
+      async dpTypes(_, { pattern, systemId }) {
         try {
           const result = await winccoa.dpTypes(pattern, systemId);
           return result;
@@ -564,20 +572,13 @@ function createCommonResolvers(winccoa, logger) {
            const results = [];
 
            for (const dpeName of dpeNames) {
-             // Construct the attribute names for value, timestamp, and status
-             const valueAttr = `${dpeName}:_online.._value`;
-             const timeAttr = `${dpeName}:_online.._stime`;
-             const statusAttr = `${dpeName}:_online.._status`;
+             const valueAttr  = `${dpeName}${ONLINE_VALUE_ATTR}`;
+             const timeAttr   = `${dpeName}${ONLINE_STIME_ATTR}`;
+             const statusAttr = `${dpeName}${ONLINE_STATUS_ATTR}`;
 
-             // Get all three attributes in a single dpGet call
              const [value, timestamp, status] = await winccoa.dpGet([valueAttr, timeAttr, statusAttr]);
 
-             results.push({
-               name: dpeName,
-               value: value,
-               timestamp: timestamp,
-               status: status
-             });
+             results.push({ name: dpeName, value, timestamp, status });
            }
 
            return results;
@@ -602,76 +603,17 @@ function createCommonResolvers(winccoa, logger) {
         try {
           logger.info(`Getting bulk history for tags ${dpeNames.join(', ')} from ${startTime} to ${endTime}`);
 
-          const startDate = new Date(startTime);
-          const endDate = new Date(endTime);
+          const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
 
-          const result = await winccoa.dpGetPeriod(startDate, endDate, dpeNames);
-
-           logger.info('tagGetHistory dpGetPeriod result:', JSON.stringify(result, null, 2));
-
-            // Transform the result into TagHistory format
-            const applyPagination = (arr) => {
-              const start = offset && offset > 0 ? offset : 0
-              let sliced = arr.slice(start)
-              if (limit && limit > 0) sliced = sliced.slice(0, limit)
-              return sliced
-            }
-           const historyResults = [];
-
-           for (const dpeName of dpeNames) {
-             const tagValues = [];
-
-             // Handle different possible return formats from dpGetPeriod
-             if (Array.isArray(result)) {
-               // Result is an array of entries - this is the format we saw
-               logger.info(`Result is an array with ${result.length} entries`);
-
-                // For bulk queries, each array element corresponds to one dpeName
-                const dpeIndex = dpeNames.indexOf(dpeName);
-                logger.info(`Looking for ${dpeName} at index ${dpeIndex}, result[${dpeIndex}] exists: ${!!result[dpeIndex]}`);
-                if (dpeIndex >= 0 && result[dpeIndex]) {
-                  const entry = result[dpeIndex];
-                  logger.info(`Processing entry for ${dpeName}:`, JSON.stringify(entry, null, 2));
-
-                  // Check if entry has times and values arrays
-                  logger.info(`Checking entry.times: ${!!entry.times}, entry.values: ${!!entry.values}`);
-                  logger.info(`entry.times isArray: ${Array.isArray(entry.times)}, entry.values isArray: ${Array.isArray(entry.values)}`);
-                  if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
-                    logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
-
-                    // Pair up times and values
-                    const minLength = Math.min(entry.times.length, entry.values.length);
-                    for (let i = 0; i < minLength; i++) {
-                      tagValues.push({
-                        timestamp: new Date(entry.times[i]),
-                        value: entry.values[i]
-                      });
-                    }
-                    logger.info(`Added ${minLength} historical values for ${tag.name}`);
-                  } else {
-                    logger.warn(`Entry for ${dpeName} doesn't have expected times/values format:`, entry);
-                  }
-                } else {
-                  logger.warn(`No entry found for ${dpeName} at index ${dpeIndex}`);
-                }
-              } else {
-                logger.warn(`Result is not an array, unexpected format for bulk query`);
-              }
-
-              logger.info(`Found ${tagValues.length} historical values for ${dpeName}`);
-
-              historyResults.push({
-                name: dpeName,
-                values: applyPagination(tagValues)
-              });
-           }
-
-           return historyResults;
-         } catch (error) {
-           logger.error('tagGetHistory error:', error);
-           throw new Error(`Failed to get tag history: ${error.message}`);
-         }
-       }
+          return dpeNames.map((dpeName, index) => ({
+            name: dpeName,
+            values: applyPagination(extractHistoryValues(result, index), offset, limit)
+          }));
+        } catch (error) {
+          logger.error('tagGetHistory error:', error);
+          throw new Error(`Failed to get tag history: ${error.message}`);
+        }
+      }
      },
     
     Mutation: {
@@ -936,114 +878,20 @@ function createCommonResolvers(winccoa, logger) {
         /**
          * Retrieves historical data for a tag within a time range.
          * Wraps WinCC OA function: dpGetPeriod(startTime, endTime, dpeNames)
-         *
-         * @param {object} tag - Tag object with name property
-         * @param {string} startTime - Start time as ISO string
-         * @param {string} endTime - End time as ISO string
-         * @param {number} [limit] - Maximum number of results to return
-         * @param {number} [offset] - Offset for pagination
-         * @returns {Promise<object>} Promise resolving to tag history object with values array
          */
         async history(tag, { startTime, endTime, limit, offset }) {
           try {
             logger.info(`Getting history for tag ${tag.name} from ${startTime} to ${endTime}`);
-
-            const startDate = new Date(startTime);
-            const endDate = new Date(endTime);
-
-            // Get historical data for this specific tag
-            const result = await winccoa.dpGetPeriod(startDate, endDate, [tag.name]);
-
-           logger.info(`dpGetPeriod result for ${tag.name}:`, JSON.stringify(result, null, 2));
-
-           const tagValues = [];
-
-            // Handle different possible return formats from dpGetPeriod
-            if (result) {
-              // Check if result is an array (common format for historical data)
-              if (Array.isArray(result)) {
-                logger.info(`Result is an array with ${result.length} entries`);
-
-                logger.info(`Result length: ${result.length}, processing first entry`);
-                if (result.length > 0) {
-                  const entry = result[0]; // First (and likely only) entry for single tag
-                  logger.info(`Processing entry for ${tag.name}:`, JSON.stringify(entry, null, 2));
-
-                  // Check if entry has times and values arrays
-                  logger.info(`Checking entry.times: ${!!entry.times}, entry.values: ${!!entry.values}`);
-                  logger.info(`entry.times isArray: ${Array.isArray(entry.times)}, entry.values isArray: ${Array.isArray(entry.values)}`);
-                  if (entry.times && entry.values && Array.isArray(entry.times) && Array.isArray(entry.values)) {
-                    logger.info(`Found times and values arrays: times=${entry.times.length}, values=${entry.values.length}`);
-
-                    // Check if entry has additional fields like status
-                    logger.info(`Entry keys:`, Object.keys(entry));
-
-                    // Pair up times and values
-                    const minLength = Math.min(entry.times.length, entry.values.length);
-                    for (let i = 0; i < minLength; i++) {
-                      tagValues.push({
-                        timestamp: new Date(entry.times[i]),
-                        value: entry.values[i]
-                      });
-                    }
-                    logger.info(`Added ${minLength} historical values for ${tag.name}`);
-                  } else {
-                    logger.warn(`Entry for ${tag.name} doesn't have expected times/values format:`, entry);
-                  }
-                } else {
-                  logger.warn(`Result array is empty for ${tag.name}`);
-                }
-              } else if (typeof result === 'object' && result[tag.name]) {
-               // Format: { dpeName: data }
-               const dpeData = result[tag.name];
-               logger.info(`Found data for ${tag.name}:`, dpeData);
-
-               if (Array.isArray(dpeData)) {
-                 for (const entry of dpeData) {
-                   if (entry.timestamp && entry.value !== undefined) {
-                     tagValues.push({
-                       timestamp: new Date(entry.timestamp),
-                       value: entry.value,
-                       status: entry.status || null
-                     });
-                   }
-                 }
-               } else if (typeof dpeData === 'object') {
-                 // Object with timestamp keys
-                 for (const [timestamp, valueData] of Object.entries(dpeData)) {
-                   tagValues.push({
-                     timestamp: new Date(parseInt(timestamp)),
-                     value: valueData.value || valueData,
-                     status: valueData.status || null
-                   });
-                 }
-               }
-             } else {
-               logger.warn(`Unexpected result format for ${tag.name}:`, result);
-             }
-           } else {
-             logger.warn(`No result returned from dpGetPeriod for ${tag.name}`);
-           }
-
-           logger.info(`Returning ${tagValues.length} historical values for ${tag.name}`);
-
-            const start = offset && offset > 0 ? offset : 0
-            let sliced = tagValues.slice(start)
-            if (limit && limit > 0) sliced = sliced.slice(0, limit)
-            return {
-              name: tag.name,
-              values: sliced
-            };
-         } catch (error) {
-           logger.error('Tag.history error:', error);
-           // Return empty history instead of throwing to avoid null errors
-           logger.warn(`Returning empty history for ${tag.name} due to error: ${error.message}`);
-           return {
-             name: tag.name,
-             values: []
-           };
-         }
-       }
+            const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), [tag.name]);
+            const values = extractHistoryValues(result, 0);
+            logger.info(`Returning ${values.length} historical values for ${tag.name}`);
+            return { name: tag.name, values: applyPagination(values, offset, limit) };
+          } catch (error) {
+            logger.error('Tag.history error:', error);
+            logger.warn(`Returning empty history for ${tag.name} due to error: ${error.message}`);
+            return { name: tag.name, values: [] };
+          }
+        }
      }
    };
  }

@@ -42,7 +42,7 @@ function convertTreeNodeOutput(treeNode) {
  * @param {object} logger - Logger instance for error reporting
  * @returns {object} Resolver object with Query and Mutation resolvers
  */
-function createCnsResolvers(winccoa, logger) {
+function createCnsOperationResolvers(winccoa, logger) {
   return {
     Query: {
       /**
@@ -398,7 +398,7 @@ function createCnsResolvers(winccoa, logger) {
 }
 
 module.exports = {
-  createCnsResolvers,
+  createCnsOperationResolvers,
   convertTreeNodeInput,
   convertTreeNodeOutput
 };
