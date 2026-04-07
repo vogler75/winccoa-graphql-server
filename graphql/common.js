@@ -8,6 +8,27 @@ const {
   applyPagination
 } = require('./helpers')
 
+// WinCC OA error codes that are "not found" / expected client errors.
+// These are logged at debug level only — the GraphQL error response already
+// carries the information, so a SEVERE server log entry is unnecessary noise.
+const EXPECTED_NOT_FOUND_CODES = new Set([
+  57,   // Datapoint type does not exist
+  71,   // DP does not exist
+  248,  // DP type has invalid references (primitive type, no refs)
+])
+
+/**
+ * Log a resolver error at the appropriate level.
+ * "Not found" errors are debug-only; everything else is error.
+ */
+function logResolverError(logger, label, error) {
+  if (EXPECTED_NOT_FOUND_CODES.has(error.code)) {
+    logger.debug(`${label} (expected): ${error.message}`)
+  } else {
+    logger.error(`${label}:`, error)
+  }
+}
+
 // Element type mapping from WinCC OA numeric values to GraphQL enum
 // Based on WinccoaElementType enum values from winccoa-manager
 const ElementTypeMap = {
@@ -168,7 +189,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpGet(dpeNames);
           return result;
         } catch (error) {
-          logger.error('dpGet error:', error);
+          logResolverError(logger, 'dpGet error:', error);
           throw new Error(`Failed to get data points: ${error.message}`);
         }
       },
@@ -186,7 +207,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpNames(dpPattern, dpType);
           return result;
         } catch (error) {
-          logger.error('dpNames error:', error);
+          logResolverError(logger, 'dpNames error:', error);
           throw new Error(`Failed to get data point names: ${error.message}`);
         }
       },
@@ -204,7 +225,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpTypes(pattern, systemId);
           return result;
         } catch (error) {
-          logger.error('dpTypes error:', error);
+          logResolverError(logger, 'dpTypes error:', error);
           throw new Error(`Failed to get data point types: ${error.message}`);
         }
       },
@@ -222,7 +243,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpGetMaxAge(age, dpeNames);
           return result;
         } catch (error) {
-          logger.error('dpGetMaxAge error:', error);
+          logResolverError(logger, 'dpGetMaxAge error:', error);
           throw new Error(`Failed to get data points with max age: ${error.message}`);
         }
       },
@@ -244,7 +265,7 @@ function createCommonResolvers(winccoa, logger) {
           }
           return enumValue;
         } catch (error) {
-          logger.error('dpElementType error:', error);
+          logResolverError(logger, 'dpElementType error:', error);
           throw new Error(`Failed to get element type: ${error.message}`);
         }
       },
@@ -266,7 +287,7 @@ function createCommonResolvers(winccoa, logger) {
           }
           return ctrlType;
         } catch (error) {
-          logger.error('dpAttributeType error:', error);
+          logResolverError(logger, 'dpAttributeType error:', error);
           throw new Error(`Failed to get attribute type: ${error.message}`);
         }
       },
@@ -283,7 +304,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpTypeName(dp);
           return result;
         } catch (error) {
-          logger.error('dpTypeName error:', error);
+          logResolverError(logger, 'dpTypeName error:', error);
           throw new Error(`Failed to get type name: ${error.message}`);
         }
       },
@@ -303,7 +324,7 @@ function createCommonResolvers(winccoa, logger) {
           // WinCC OA error 248: DP type has no valid references (e.g. simple/primitive types like FLOAT).
           // This is expected for leaf DPs — return empty string instead of throwing.
           if (error.code === 248) return '';
-          logger.error('dpTypeRefName error:', error);
+          logResolverError(logger, 'dpTypeRefName error:', error);
           throw new Error(`Failed to get type reference name: ${error.message}`);
         }
       },
@@ -320,7 +341,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpExists(dpeName);
           return result;
         } catch (error) {
-          logger.error('dpExists error:', error);
+          logResolverError(logger, 'dpExists error:', error);
           throw new Error(`Failed to check if data point exists: ${error.message}`);
         }
       },
@@ -339,7 +360,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpGetPeriod(new Date(startTime), new Date(endTime), dpeNames);
           return result;
         } catch (error) {
-          logger.error('dpGetPeriod error:', error);
+          logResolverError(logger, 'dpGetPeriod error:', error);
           throw new Error(`Failed to get historic data point values: ${error.message}`);
         }
       },
@@ -356,7 +377,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpQuery(query);
           return result;
         } catch (error) {
-          logger.error('dpQuery error:', error);
+          logResolverError(logger, 'dpQuery error:', error);
           throw new Error(`Failed to execute dpQuery: ${error.message}`);
         }
       },
@@ -373,7 +394,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpGetAlias(dpeName);
           return result;
         } catch (error) {
-          logger.error('dpGetAlias error:', error);
+          logResolverError(logger, 'dpGetAlias error:', error);
           throw new Error(`Failed to get data point alias: ${error.message}`);
         }
       },
@@ -390,7 +411,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpGetDescription(dpeName);
           return result;
         } catch (error) {
-          logger.error('dpGetDescription error:', error);
+          logResolverError(logger, 'dpGetDescription error:', error);
           throw new Error(`Failed to get data point description: ${error.message}`);
         }
       },
@@ -407,7 +428,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpGetFormat(dpeName);
           return result;
         } catch (error) {
-          logger.error('dpGetFormat error:', error);
+          logResolverError(logger, 'dpGetFormat error:', error);
           throw new Error(`Failed to get data point format: ${error.message}`);
         }
       },
@@ -424,7 +445,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpGetUnit(dpeName);
           return result;
         } catch (error) {
-          logger.error('dpGetUnit error:', error);
+          logResolverError(logger, 'dpGetUnit error:', error);
           throw new Error(`Failed to get data point unit: ${error.message}`);
         }
       },
@@ -440,7 +461,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = winccoa.isReduActive();
           return result;
         } catch (error) {
-          logger.error('isReduActive error:', error);
+          logResolverError(logger, 'isReduActive error:', error);
           throw new Error(`Failed to check redundancy active status: ${error.message}`);
         }
       },
@@ -456,7 +477,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = winccoa.isRedundant();
           return result;
         } catch (error) {
-          logger.error('isRedundant error:', error);
+          logResolverError(logger, 'isRedundant error:', error);
           throw new Error(`Failed to check redundancy configuration: ${error.message}`);
         }
       },
@@ -473,7 +494,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = winccoa.getSystemId(systemName);
           return result;
         } catch (error) {
-          logger.error('getSystemId error:', error);
+          logResolverError(logger, 'getSystemId error:', error);
           throw new Error(`Failed to get system ID: ${error.message}`);
         }
       },
@@ -490,7 +511,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = winccoa.getSystemName(systemId);
           return result;
         } catch (error) {
-          logger.error('getSystemName error:', error);
+          logResolverError(logger, 'getSystemName error:', error);
           throw new Error(`Failed to get system name: ${error.message}`);
         }
       },
@@ -506,7 +527,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = winccoa.getVersionInfo();
           return result;
         } catch (error) {
-          logger.error('getVersionInfo error:', error);
+          logResolverError(logger, 'getVersionInfo error:', error);
           throw new Error(`Failed to get version information: ${error.message}`);
         }
       },
@@ -524,7 +545,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpTypeGet(dpt, includeSubTypes);
           return result;
         } catch (error) {
-          logger.error('dpTypeGet error:', error);
+          logResolverError(logger, 'dpTypeGet error:', error);
           throw new Error(`Failed to get data point type structure: ${error.message}`);
         }
       },
@@ -545,7 +566,7 @@ function createCommonResolvers(winccoa, logger) {
           }
           return result;
         } catch (error) {
-          logger.error('dpGetDpTypeRefs error:', error);
+          logResolverError(logger, 'dpGetDpTypeRefs error:', error);
           throw new Error(`Failed to get data point type references: ${error.message}`);
         }
       },
@@ -566,7 +587,7 @@ function createCommonResolvers(winccoa, logger) {
           }
           return result;
         } catch (error) {
-          logger.error('dpGetRefsToDpType error:', error);
+          logResolverError(logger, 'dpGetRefsToDpType error:', error);
           throw new Error(`Failed to get references to data point type: ${error.message}`);
         }
       },
@@ -594,7 +615,7 @@ function createCommonResolvers(winccoa, logger) {
 
            return results;
          } catch (error) {
-           logger.error('tagGet error:', error);
+           logResolverError(logger, 'tagGet error:', error);
            throw new Error(`Failed to get typed tags: ${error.message}`);
          }
        },
@@ -621,7 +642,7 @@ function createCommonResolvers(winccoa, logger) {
             values: applyPagination(extractHistoryValues(result, index), offset, limit)
           }));
         } catch (error) {
-          logger.error('tagGetHistory error:', error);
+          logResolverError(logger, 'tagGetHistory error:', error);
           throw new Error(`Failed to get tag history: ${error.message}`);
         }
       }
@@ -643,7 +664,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpCreate(dpeName, dpType, systemId, dpId);
           return result;
         } catch (error) {
-          logger.error('dpCreate error:', error);
+          logResolverError(logger, 'dpCreate error:', error);
           throw new Error(`Failed to create data point: ${error.message}`);
         }
       },
@@ -660,7 +681,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpDelete(dpName);
           return result;
         } catch (error) {
-          logger.error('dpDelete error:', error);
+          logResolverError(logger, 'dpDelete error:', error);
           throw new Error(`Failed to delete data point: ${error.message}`);
         }
       },
@@ -679,7 +700,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpCopy(source, destination, driver);
           return result;
         } catch (error) {
-          logger.error('dpCopy error:', error);
+          logResolverError(logger, 'dpCopy error:', error);
           throw new Error(`Failed to copy data point: ${error.message}`);
         }
       },
@@ -697,7 +718,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSet(dpeNames, values);
           return result;
         } catch (error) {
-          logger.error('dpSet error:', error);
+          logResolverError(logger, 'dpSet error:', error);
           throw new Error(`Failed to set data point values: ${error.message}`);
         }
       },
@@ -715,7 +736,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSetWait(dpeNames, values);
           return result;
         } catch (error) {
-          logger.error('dpSetWait error:', error);
+          logResolverError(logger, 'dpSetWait error:', error);
           throw new Error(`Failed to set data point values with wait: ${error.message}`);
         }
       },
@@ -734,7 +755,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSetTimed(new Date(time), dpeNames, values);
           return result;
         } catch (error) {
-          logger.error('dpSetTimed error:', error);
+          logResolverError(logger, 'dpSetTimed error:', error);
           throw new Error(`Failed to set timed data point values: ${error.message}`);
         }
       },
@@ -753,7 +774,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSetTimedWait(new Date(time), dpeNames, values);
           return result;
         } catch (error) {
-          logger.error('dpSetTimedWait error:', error);
+          logResolverError(logger, 'dpSetTimedWait error:', error);
           throw new Error(`Failed to set timed data point values with wait: ${error.message}`);
         }
       },
@@ -772,7 +793,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpTypeCreate(convertedNode);
           return result;
         } catch (error) {
-          logger.error('dpTypeCreate error:', error);
+          logResolverError(logger, 'dpTypeCreate error:', error);
           throw new Error(`Failed to create data point type: ${error.message}`);
         }
       },
@@ -790,7 +811,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpTypeChange(convertedNode);
           return result;
         } catch (error) {
-          logger.error('dpTypeChange error:', error);
+          logResolverError(logger, 'dpTypeChange error:', error);
           throw new Error(`Failed to change data point type: ${error.message}`);
         }
       },
@@ -807,7 +828,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpTypeDelete(dpt);
           return result;
         } catch (error) {
-          logger.error('dpTypeDelete error:', error);
+          logResolverError(logger, 'dpTypeDelete error:', error);
           throw new Error(`Failed to delete data point type: ${error.message}`);
         }
       },
@@ -825,7 +846,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSetAlias(dpeName, alias);
           return result;
         } catch (error) {
-          logger.error('dpSetAlias error:', error);
+          logResolverError(logger, 'dpSetAlias error:', error);
           throw new Error(`Failed to set data point alias: ${error.message}`);
         }
       },
@@ -843,7 +864,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSetDescription(dpeName, description);
           return result;
         } catch (error) {
-          logger.error('dpSetDescription error:', error);
+          logResolverError(logger, 'dpSetDescription error:', error);
           throw new Error(`Failed to set data point description: ${error.message}`);
         }
       },
@@ -861,7 +882,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSetFormat(dpeName, format);
           return result;
         } catch (error) {
-          logger.error('dpSetFormat error:', error);
+          logResolverError(logger, 'dpSetFormat error:', error);
           throw new Error(`Failed to set data point format: ${error.message}`);
         }
       },
@@ -879,7 +900,7 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpSetUnit(dpeName, unit);
           return result;
         } catch (error) {
-          logger.error('dpSetUnit error:', error);
+          logResolverError(logger, 'dpSetUnit error:', error);
           throw new Error(`Failed to set data point unit: ${error.message}`);
         }
       }
@@ -898,7 +919,7 @@ function createCommonResolvers(winccoa, logger) {
             logger.info(`Returning ${values.length} historical values for ${tag.name}`);
             return { name: tag.name, values: applyPagination(values, offset, limit) };
           } catch (error) {
-            logger.error('Tag.history error:', error);
+            logResolverError(logger, 'Tag.history error:', error);
             logger.warn(`Returning empty history for ${tag.name} due to error: ${error.message}`);
             return { name: tag.name, values: [] };
           }
