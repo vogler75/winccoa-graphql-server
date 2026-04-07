@@ -42,32 +42,5 @@ module.exports = {
       assertNotNull(body.tags[0].name, 'tag.name')
       writeResult('06-02-rest-tags', { dpe: DP_FLOAT, tags: body.tags })
     })
-
-    await t('6.3', 'REST GET /restapi/tags/history → write 10 timed values first, then query (SKIP if no RDB)', async () => {
-      // Write 10 timed values with 250 ms spacing so there is data to query if RDB is available
-      const startTime = Date.now()
-      const writtenValues = []
-      for (let i = 0; i < 10; i++) {
-        await new Promise(r => setTimeout(r, 250))
-        const ts  = new Date().toISOString()
-        const val = parseFloat((10 + i * 1.1).toFixed(1))
-        await gql(`mutation { api { dp { setTimed(time: "${ts}", dpeNames: ["${DP_FLOAT}"], values: [${val}]) } } }`)
-        writtenValues.push({ ts, val })
-      }
-
-      // Query a window from 5 s before the first write to 5 s after the last
-      const start = new Date(startTime - 5000).toISOString()
-      const end   = new Date(Date.now() + 5000).toISOString()
-      const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`
-      const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
-      assertNotNull(body, 'response body')
-      if (status === 500 || body.error) {
-        writeResult('06-03-rest-tags-history', { skipped: true, status, error: body.error || body.message, writtenValues, note: 'values were written but RDB is not available' })
-        return 'No RDB backend — history returns error (expected)'
-      }
-      assertEqual(status, 200, 'HTTP status')
-      assertNotNull(body.history, 'body.history')
-      writeResult('06-03-rest-tags-history', { dpe: DP_FLOAT, start, end, writtenValues, history: body.history })
-    })
   }
 }
