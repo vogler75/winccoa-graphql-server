@@ -17,13 +17,12 @@ const {
 const RPT_DPS = ['ExampleDP_Rpt1.', 'ExampleDP_Rpt2.', 'ExampleDP_Rpt3.', 'ExampleDP_Rpt4.']
 const RPT_DP  = RPT_DPS[0]
 
-// Write 100 timed values to a DPE with 10 ms spacing.
+// Write 100 timed values to a DPE as fast as possible (no artificial delay).
 // Returns { writtenValues, start, end } where start/end bracket the writes with ±2 s margin.
 async function writeHistoryValues(dpe) {
   const startMs = Date.now()
   const writtenValues = []
   for (let i = 0; i < 100; i++) {
-    await new Promise(r => setTimeout(r, 10))
     const ts  = new Date().toISOString()
     const val = parseFloat((i * 0.1).toFixed(1))
     await gql(`mutation { api { dp { setTimed(time: "${ts}", dpeNames: ["${dpe}"], values: [${val}]) } } }`)
