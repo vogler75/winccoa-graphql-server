@@ -17,22 +17,22 @@ const {
 const RPT_DPS = ['ExampleDP_Rpt1.', 'ExampleDP_Rpt2.', 'ExampleDP_Rpt3.', 'ExampleDP_Rpt4.']
 const RPT_DP  = RPT_DPS[0]
 
-// Write 10 timed values to a DPE with 250 ms spacing.
-// Returns { writtenValues, start, end } where start/end bracket the writes with ±5 s margin.
+// Write 100 timed values to a DPE with 10 ms spacing.
+// Returns { writtenValues, start, end } where start/end bracket the writes with ±2 s margin.
 async function writeHistoryValues(dpe) {
   const startMs = Date.now()
   const writtenValues = []
-  for (let i = 0; i < 10; i++) {
-    await new Promise(r => setTimeout(r, 250))
+  for (let i = 0; i < 100; i++) {
+    await new Promise(r => setTimeout(r, 10))
     const ts  = new Date().toISOString()
-    const val = parseFloat((10 + i * 1.1).toFixed(1))
+    const val = parseFloat((i * 0.1).toFixed(1))
     await gql(`mutation { api { dp { setTimed(time: "${ts}", dpeNames: ["${dpe}"], values: [${val}]) } } }`)
     writtenValues.push({ ts, val })
   }
   return {
     writtenValues,
-    start: new Date(startMs - 5000).toISOString(),
-    end:   new Date(Date.now() + 5000).toISOString()
+    start: new Date(startMs - 2000).toISOString(),
+    end:   new Date(Date.now() + 2000).toISOString()
   }
 }
 
@@ -42,11 +42,9 @@ module.exports = {
   async run(t) {
 
     // ── GraphQL: single DP history ────────────────────────────────────────────
-    await t('7.1', `api.dp.getPeriod(${RPT_DP}) — write 10 values then query last 24 h (SKIP if no RDB)`, async () => {
-      await writeHistoryValues(RPT_DP)
+    await t('7.1', `api.dp.getPeriod(${RPT_DP}) — write 100 values then query window (SKIP if no RDB)`, async () => {
+      const { writtenValues, start, end } = await writeHistoryValues(RPT_DP)
 
-      const end   = new Date().toISOString()
-      const start = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const res = await gql(
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ["${RPT_DP}"]) } } }`
       )
@@ -54,16 +52,21 @@ module.exports = {
       if (skipReason) return `No RDB backend — ${skipReason}`
       const result = dig(res, 'data.api.dp.getPeriod')
       assertNotNull(result, 'getPeriod result')
-      writeResult('07-01-dp-get-period-rpt1', { dp: RPT_DP, start, end, result })
+      writeResult('07-01-dp-get-period-rpt1', { dp: RPT_DP, start, end, writtenValues, result })
     })
 
     // ── GraphQL: all four Rpt DPs in one call ─────────────────────────────────
-    await t('7.2', 'api.dp.getPeriod(ExampleDP_Rpt1–4) — write values then query last 24 h (SKIP if no RDB)', async () => {
-      // Write values to all four Rpt DPs
-      for (const dp of RPT_DPS) await writeHistoryValues(dp)
+    await t('7.2', 'api.dp.getPeriod(ExampleDP_Rpt1–4) — write values then query window (SKIP if no RDB)', async () => {
+      // Write values to all four Rpt DPs and use the widest bracketing window
+      let start, end
+      const allWritten = {}
+      for (const dp of RPT_DPS) {
+        const r = await writeHistoryValues(dp)
+        allWritten[dp] = r.writtenValues
+        start = start ? (r.start < start ? r.start : start) : r.start
+        end   = end   ? (r.end   > end   ? r.end   : end)   : r.end
+      }
 
-      const end   = new Date().toISOString()
-      const start = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const res = await gql(
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ${JSON.stringify(RPT_DPS)}) } } }`
       )
@@ -71,7 +74,7 @@ module.exports = {
       if (skipReason) return `No RDB backend — ${skipReason}`
       const result = dig(res, 'data.api.dp.getPeriod')
       assertNotNull(result, 'getPeriod multi result')
-      writeResult('07-02-dp-get-period-rpt-all', { dpes: RPT_DPS, start, end, result })
+      writeResult('07-02-dp-get-period-rpt-all', { dpes: RPT_DPS, start, end, allWritten, result })
     })
 
     // ── GraphQL: tight 1-minute window ───────────────────────────────────────
