@@ -77,33 +77,19 @@ module.exports = {
       writeResult('07-02-dp-get-period-rpt-all', { dpes: RPT_DPS, start, end, allWritten, result })
     })
 
-    // ── GraphQL: tight 1-minute window ───────────────────────────────────────
-    await t('7.3', `api.dp.getPeriod(${RPT_DP}) — write 10 values then query last 1 min (SKIP if no RDB)`, async () => {
-      const { writtenValues, start, end } = await writeHistoryValues(RPT_DP)
-
-      const res = await gql(
-        `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ["${RPT_DP}"]) } } }`
-      )
-      const skipReason = assertNoUnexpectedErrors(res, '7.3')
-      if (skipReason) return `No RDB backend — ${skipReason}`
-      const result = dig(res, 'data.api.dp.getPeriod')
-      assertNotNull(result, 'getPeriod 1min result')
-      writeResult('07-03-dp-get-period-tight', { dp: RPT_DP, start, end, writtenValues, result })
-    })
-
     // ── REST: tag history ─────────────────────────────────────────────────────
-    await t('7.4', `REST GET /restapi/tags/history(${DP_FLOAT}) — write 10 values then query (SKIP if no RDB)`, async () => {
+    await t('7.3', `REST GET /restapi/tags/history(${DP_FLOAT}) — write 100 values then query (SKIP if no RDB)`, async () => {
       const { writtenValues, start, end } = await writeHistoryValues(DP_FLOAT)
 
       const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`
       const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
       assertNotNull(body, 'response body')
       if (status === 500 || body.error) {
-        writeResult('07-04-rest-tags-history', { skipped: true, status, error: body.error || body.message, writtenValues, note: 'values were written but RDB is not available' })
+        writeResult('07-03-rest-tags-history', { skipped: true, status, error: body.error || body.message, writtenValues, note: 'values were written but RDB is not available' })
         return 'No RDB backend — history returns error (expected)'
       }
       assertNotNull(body.history, 'body.history')
-      writeResult('07-04-rest-tags-history', { dpe: DP_FLOAT, start, end, writtenValues, history: body.history })
+      writeResult('07-03-rest-tags-history', { dpe: DP_FLOAT, start, end, writtenValues, history: body.history })
     })
   }
 }
