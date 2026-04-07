@@ -3,21 +3,21 @@
 // ExampleDP_AlertHdl1 is a BOOL DP with _alert_hdl active (priority=60, text="Value to 1").
 // Writing true triggers the alert (came), writing false resets it (went).
 //
-// Alert history is queried via:
-//   SELECT ALERT '_alert_hdl.._value', '_alert_hdl.._text'
-//   FROM 'ExampleDP_AlertHdl1.'
-//   TIMERANGE("<start>","<end>",1,0)
+// alertGetPeriod names parameter must be alert attribute names with leading colon:
+//   ':_alert_hdl.._value'  — the DP value that triggered the alert (bool here)
+//   ':_alert_hdl.._text'   — the configured alert text
+// NOT the DP name or config path (e.g. 'ExampleDP_AlertHdl1.:_alert_hdl' returns empty).
 //
-// This uses the standard dp.query path — no separate alert archive group needed.
-// The TIMERANGE mode 1 = include all events; mode 0 = no limit on count.
+// The REST /restapi/alerts/period endpoint accepts names as comma-separated query param.
 
 const {
   gql, rest,
-  DP_BIT, DP_BIT_DP,
+  DP_BIT,
   assertNoErrors, assertNotNull, assertEqual, assertIsArray, dig, writeResult
 } = require('./helpers')
 
-const ALERT_DP = DP_BIT   // 'ExampleDP_AlertHdl1.'
+const ALERT_DP    = DP_BIT                           // 'ExampleDP_AlertHdl1.'
+const ALERT_NAMES = [':_alert_hdl.._value', ':_alert_hdl.._text']
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
@@ -37,36 +37,37 @@ async function triggerAlerts() {
   }
 }
 
-// Build SELECT ALERT query string for the given time window.
-function alertQuery(start, end) {
-  return `SELECT ALERT '_alert_hdl.._value', '_alert_hdl.._text' FROM '${ALERT_DP}' TIMERANGE("${start}","${end}",1,0)`
-}
-
 module.exports = {
   name: 'Suite 8 — Alert Queries',
 
   async run(t) {
 
-    // ── 8.1 GraphQL dp.query — SELECT ALERT ───────────────────────────────────
-    await t('8.1', 'api.dp.query SELECT ALERT → trigger 3x then query window', async () => {
+    // ── 8.1 GraphQL alertGetPeriod ─────────────────────────────────────────────
+    await t('8.1', 'api.alert.alertGetPeriod → trigger 3x then query window', async () => {
       const { start, end } = await triggerAlerts()
       await sleep(300)
 
-      const q = alertQuery(start, end)
-      const res = await gql(`{ api { dp { query(query: ${JSON.stringify(q)}) } } }`)
+      const res = await gql(`
+        { api { alert {
+          alertGetPeriod(
+            startTime: "${start}",
+            endTime:   "${end}",
+            names:     ${JSON.stringify(ALERT_NAMES)}
+          ) { alertTimes { time count dpe } values }
+        } } }
+      `)
       assertNoErrors(res, '8.1')
-      const rows = dig(res, 'data.api.dp.query')
-      assertIsArray(rows, 'dp.query result')
-      // row 0 = headers, rows 1+ = alert events
-      if (rows.length < 2) throw new Error(`Expected at least 1 alert event row, got ${rows.length - 1}`)
-      // Each data row: [dpName, alertTime{time,count,dpe}, _value(bool), _text(string)]
-      const dataRow = rows[1]
-      assertNotNull(dataRow[0], 'row[0] dpName')
-      assertNotNull(dataRow[1], 'row[1] alertTime')
-      assertNotNull(dataRow[1].time, 'alertTime.time')
-      assertEqual(typeof dataRow[2], 'boolean', 'row[2] _value is boolean')
-      assertEqual(typeof dataRow[3], 'string',  'row[3] _text is string')
-      writeResult('08-01-alert-query', { start, end, alertDp: ALERT_DP, query: q, rows })
+      const result = dig(res, 'data.api.alert.alertGetPeriod')
+      assertNotNull(result, 'alertGetPeriod result')
+      assertIsArray(result.alertTimes, 'alertTimes')
+      assertIsArray(result.values, 'values')
+      if (result.alertTimes.length === 0)
+        throw new Error('Expected alert events but got empty alertTimes array')
+      assertEqual(result.alertTimes.length, result.values.length, 'alertTimes/values length match')
+      // Each alertTime has time, count, dpe
+      assertNotNull(result.alertTimes[0].time, 'alertTimes[0].time')
+      assertNotNull(result.alertTimes[0].dpe,  'alertTimes[0].dpe')
+      writeResult('08-01-alert-get-period', { start, end, alertDp: ALERT_DP, names: ALERT_NAMES, result })
     })
 
     // ── 8.2 REST missing params → 400 ─────────────────────────────────────────
@@ -77,18 +78,21 @@ module.exports = {
       writeResult('08-02-rest-alerts-missing-params', { status, body })
     })
 
-    // ── 8.3 REST POST /restapi/query — SELECT ALERT ────────────────────────────
-    await t('8.3', 'REST POST /restapi/query SELECT ALERT → trigger 3x then query', async () => {
+    // ── 8.3 REST /restapi/alerts/period ───────────────────────────────────────
+    await t('8.3', 'REST GET /restapi/alerts/period → trigger 3x then query', async () => {
       const { start, end } = await triggerAlerts()
       await sleep(300)
 
-      const q = alertQuery(start, end)
-      const { status, body } = await rest('POST', '/restapi/query', { query: q })
+      // names passed as comma-separated query param
+      const namesParam = ALERT_NAMES.join(',')
+      const params = `startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}&names=${encodeURIComponent(namesParam)}`
+      const { status, body } = await rest('GET', `/restapi/alerts/period?${params}`)
       assertEqual(status, 200, 'HTTP status')
-      assertNotNull(body.result, 'body.result')
-      assertIsArray(body.result, 'result rows')
-      if (body.result.length < 2) throw new Error(`Expected at least 1 alert event row, got ${body.result.length - 1}`)
-      writeResult('08-03-rest-alert-query', { start, end, alertDp: ALERT_DP, query: q, result: body.result })
+      assertNotNull(body.alertTimes, 'body.alertTimes')
+      assertIsArray(body.alertTimes, 'alertTimes')
+      if (body.alertTimes.length === 0)
+        throw new Error('Expected alert events but got empty alertTimes array')
+      writeResult('08-03-rest-alert-period', { start, end, alertDp: ALERT_DP, names: ALERT_NAMES, result: body })
     })
   }
 }
