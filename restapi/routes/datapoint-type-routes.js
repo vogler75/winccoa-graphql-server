@@ -4,6 +4,11 @@ const express = require('express')
 module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   const router = express.Router()
 
+  // ── Resolver shorthands ──────────────────────────────────────────────────
+  // oldResolvers (passed as `resolvers`) has flat Query and Mutation namespaces
+  const Q = resolvers.Query
+  const M = resolvers.Mutation
+
   /**
    * GET /restapi/datapoint-types
    * List all data point types
@@ -18,7 +23,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/', async (req, res, next) => {
     try {
       const { pattern, systemId, includeEmpty } = req.query
-      const result = await resolvers.Query.dpTypes(
+      const result = await Q.dpTypes(
         null,
         {
           pattern,
@@ -36,17 +41,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
    * POST /restapi/datapoint-types
    * Create a new data point type
    *
-   * Body:
-   * {
-   *   "startNode": {
-   *     "name": "string",
-   *     "type": "ElementType",
-   *     "refName": "string" (optional),
-   *     "children": [...] (optional),
-   *     "newName": "string" (optional)
-   *   }
-   * }
-   *
+   * Body: { startNode: DpTypeNodeInput }
    * Response: { success: boolean }
    */
   router.post('/', requireAdmin, async (req, res, next) => {
@@ -60,12 +55,8 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.DataPointTypeMutation.dpTypeCreate(
-        null,
-        { startNode }
-      )
-
-      res.json({ success: result })
+      const result = await M.dpTypeCreate(null, { startNode })
+      res.status(201).json({ success: result })
     } catch (error) {
       next(error)
     }
@@ -75,12 +66,8 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
    * GET /restapi/datapoint-types/:dpt/structure
    * Get structure of a data point type
    *
-   * URL params:
-   *   dpt: string - Name of the data point type (URL encoded)
-   *
-   * Query params:
-   *   includeSubTypes: boolean (optional) - Include subtypes in structure
-   *
+   * URL params:  dpt - Data point type name (URL encoded)
+   * Query params: includeSubTypes: boolean (optional)
    * Response: { structure: DpTypeNode }
    */
   router.get('/:dpt/structure', async (req, res, next) => {
@@ -88,13 +75,10 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
       const dpt = decodeURIComponent(req.params.dpt)
       const { includeSubTypes } = req.query
 
-      const result = await resolvers.DataPointTypeMutation.dpTypeGet(
-        null,
-        {
-          dpt,
-          includeSubTypes: includeSubTypes === 'true'
-        }
-      )
+      const result = await Q.dpTypeGet(null, {
+        dpt,
+        includeSubTypes: includeSubTypes === 'true'
+      })
 
       res.json({ structure: result })
     } catch (error) {
@@ -106,20 +90,8 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
    * PUT /restapi/datapoint-types/:dpt
    * Change an existing data point type
    *
-   * URL params:
-   *   dpt: string - Name of the data point type (URL encoded)
-   *
-   * Body:
-   * {
-   *   "startNode": {
-   *     "name": "string",
-   *     "type": "ElementType",
-   *     "refName": "string" (optional),
-   *     "children": [...] (optional),
-   *     "newName": "string" (optional)
-   *   }
-   * }
-   *
+   * URL params:  dpt - Data point type name (URL encoded)
+   * Body: { startNode: DpTypeNodeInput }
    * Response: { success: boolean }
    */
   router.put('/:dpt', requireAdmin, async (req, res, next) => {
@@ -133,11 +105,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.DataPointTypeMutation.dpTypeChange(
-        null,
-        { startNode }
-      )
-
+      const result = await M.dpTypeChange(null, { startNode })
       res.json({ success: result })
     } catch (error) {
       next(error)
@@ -148,18 +116,13 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
    * DELETE /restapi/datapoint-types/:dpt
    * Delete a data point type
    *
-   * URL params:
-   *   dpt: string - Name of the data point type to delete (URL encoded)
-   *
+   * URL params:  dpt - Data point type name (URL encoded)
    * Response: { success: boolean }
    */
   router.delete('/:dpt', requireAdmin, async (req, res, next) => {
     try {
       const dpt = decodeURIComponent(req.params.dpt)
-      const result = await resolvers.DataPointTypeMutation.dpTypeDelete(
-        null,
-        { dpt }
-      )
+      const result = await M.dpTypeDelete(null, { dpt })
       res.json({ success: result })
     } catch (error) {
       next(error)
@@ -168,20 +131,15 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
 
   /**
    * GET /restapi/datapoint-types/:dpt/references
-   * Get references to other DPTs in a DPT
+   * Get references to other DPTs contained in a DPT
    *
-   * URL params:
-   *   dpt: string - Name of the data point type (URL encoded)
-   *
+   * URL params:  dpt - Data point type name (URL encoded)
    * Response: { dptNames: string[], dpePaths: string[] }
    */
   router.get('/:dpt/references', async (req, res, next) => {
     try {
       const dpt = decodeURIComponent(req.params.dpt)
-      const result = await resolvers.DataPointTypeMutation.dpGetDpTypeRefs(
-        null,
-        { dpt }
-      )
+      const result = await Q.dpGetDpTypeRefs(null, { dpt })
       res.json(result)
     } catch (error) {
       next(error)
@@ -192,18 +150,13 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
    * GET /restapi/datapoint-types/:reference/usages
    * Get all DPTs and DPs that contain a specific DPT as a reference
    *
-   * URL params:
-   *   reference: string - Name of the DPT reference (URL encoded)
-   *
+   * URL params:  reference - DPT reference name (URL encoded)
    * Response: { dptNames: string[], dpePaths: string[] }
    */
   router.get('/:reference/usages', async (req, res, next) => {
     try {
       const reference = decodeURIComponent(req.params.reference)
-      const result = await resolvers.DataPointTypeMutation.dpGetRefsToDpType(
-        null,
-        { reference }
-      )
+      const result = await Q.dpGetRefsToDpType(null, { reference })
       res.json(result)
     } catch (error) {
       next(error)

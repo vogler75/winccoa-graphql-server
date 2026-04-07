@@ -66,17 +66,22 @@ function createAlertOperationResolvers(winccoa, logger) {
     Query: {
       /**
        * Retrieves alert attributes.
-       * Wraps WinCC OA function: alertGet(alertsTime, dpeNames, alertCount)
+       * Wraps WinCC OA function: alertGet(alertsTime, dpeNames, alertAttributeNames)
        *
        * @param {Array<object>} alertsTime - Array of alert time objects
        * @param {Array<string>} dpeNames - Array of data point element names
-       * @param {number} alertCount - Number of alerts to retrieve
+       * @param {Array<string>|null} alertAttributeNames - Alert attribute names to retrieve;
+       *        WinCC OA expects an array (e.g. ["ACK_STATE", "VALUE"]).
+       *        Pass null/omit to retrieve all configured attributes (empty array []).
        * @returns {Promise} Promise resolving to alert data
        */
-      async alertGet(_, { alertsTime, dpeNames, alertCount }) {
+      async alertGet(_, { alertsTime, dpeNames, alertAttributeNames }) {
         try {
           const winccoaAlertTimes = convertAlertTimeInputs(alertsTime);
-          const result = await winccoa.alertGet(winccoaAlertTimes, dpeNames, alertCount);
+          // WinCC OA alertGet 3rd arg must be an array of attribute name strings,
+          // never a number. Default to [] (all attributes) when not supplied.
+          const attrNames = Array.isArray(alertAttributeNames) ? alertAttributeNames : [];
+          const result = await winccoa.alertGet(winccoaAlertTimes, dpeNames, attrNames);
           return result;
         } catch (error) {
           logger.error('alertGet error:', error);
@@ -117,7 +122,7 @@ function createAlertOperationResolvers(winccoa, logger) {
        *
        * @param {Array<object>} alerts - Array of alert objects
        * @param {Array} values - Values to set for the alerts
-       * @returns {Promise} Promise resolving to result of alert set operation
+       * @returns {Promise<boolean>} Promise resolving to true on success
        */
       async alertSet(_, { alerts, values }) {
         try {

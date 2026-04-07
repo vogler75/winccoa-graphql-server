@@ -2,6 +2,33 @@
 
 const { WinccoaCnsTreeNode } = require('winccoa-manager');
 
+// Maps GraphQL CtrlType enum string → WinccoaCtrlType numeric value
+// (matches CtrlTypeMap in common.js and WinccoaCtrlType in ctrl-types.js)
+const CTRL_TYPE_TO_NUMBER = {
+  TIME_VAR:           196608,
+  BOOL_VAR:           262144,
+  INT_VAR:            327680,
+  UINT_VAR:           393216,
+  FLOAT_VAR:          458752,
+  STRING_VAR:         524288,
+  BIT32_VAR:          589824,
+  CHAR_VAR:           655360,
+  DYN_TIME_VAR:       851968,
+  DYN_BOOL_VAR:       917504,
+  DYN_INT_VAR:        983040,
+  DYN_UINT_VAR:      1048576,
+  DYN_FLOAT_VAR:     1114112,
+  DYN_STRING_VAR:    1179648,
+  DYN_BIT32_VAR:     1245184,
+  DYN_CHAR_VAR:      1310720,
+  ATIME_VAR:         2424832,
+  LANGSTRING_VAR:    2621440,
+  BLOB_VAR:          3014656,
+  LONG_VAR:          4587520,
+  ULONG_VAR:         4784128,
+  BIT64_VAR:         5242880,
+};
+
 /**
  * Converts GraphQL TreeNodeInput to WinccoaCnsTreeNode object.
  * Used as input converter for CNS tree-related WinCC OA functions.
@@ -386,7 +413,11 @@ function createCnsOperationResolvers(winccoa, logger) {
       // Property Functions
       async setProperty(_, { cnsPath, key, value, valueType }) {
         try {
-          const result = await winccoa.cnsSetProperty(cnsPath, key, value, valueType);
+          // WinCC OA cnsSetProperty expects a numeric WinccoaCtrlType, not a string
+          const typeNum = CTRL_TYPE_TO_NUMBER[valueType];
+          if (typeNum === undefined)
+            throw new Error(`Unknown CtrlType: ${valueType}`);
+          const result = await winccoa.cnsSetProperty(cnsPath, key, value, typeNum);
           return result;
         } catch (error) {
           logger.error('setProperty error:', error);

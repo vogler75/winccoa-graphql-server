@@ -300,6 +300,9 @@ function createCommonResolvers(winccoa, logger) {
           const result = await winccoa.dpTypeRefName(dpe);
           return result || '';
         } catch (error) {
+          // WinCC OA error 248: DP type has no valid references (e.g. simple/primitive types like FLOAT).
+          // This is expected for leaf DPs — return empty string instead of throwing.
+          if (error.code === 248) return '';
           logger.error('dpTypeRefName error:', error);
           throw new Error(`Failed to get type reference name: ${error.message}`);
         }
@@ -536,6 +539,10 @@ function createCommonResolvers(winccoa, logger) {
       async dpGetDpTypeRefs(_, { dpt }) {
         try {
           const result = await winccoa.dpGetDpTypeRefs(dpt);
+          // WinCC OA returns null when a type has no references — normalise to empty arrays
+          if (!result || !result.dptNames) {
+            return { dptNames: [], dpePaths: [] };
+          }
           return result;
         } catch (error) {
           logger.error('dpGetDpTypeRefs error:', error);
@@ -553,6 +560,10 @@ function createCommonResolvers(winccoa, logger) {
       async dpGetRefsToDpType(_, { reference }) {
         try {
           const result = await winccoa.dpGetRefsToDpType(reference);
+          // WinCC OA returns null when no references exist — normalise to empty arrays
+          if (!result || !result.dptNames) {
+            return { dptNames: [], dpePaths: [] };
+          }
           return result;
         } catch (error) {
           logger.error('dpGetRefsToDpType error:', error);
@@ -720,7 +731,7 @@ function createCommonResolvers(winccoa, logger) {
        */
       async dpSetTimed(_, { time, dpeNames, values }) {
         try {
-          const result = await winccoa.dpSetTimed(time, dpeNames, values);
+          const result = await winccoa.dpSetTimed(new Date(time), dpeNames, values);
           return result;
         } catch (error) {
           logger.error('dpSetTimed error:', error);
@@ -739,7 +750,7 @@ function createCommonResolvers(winccoa, logger) {
        */
       async dpSetTimedWait(_, { time, dpeNames, values }) {
         try {
-          const result = await winccoa.dpSetTimedWait(time, dpeNames, values);
+          const result = await winccoa.dpSetTimedWait(new Date(time), dpeNames, values);
           return result;
         } catch (error) {
           logger.error('dpSetTimedWait error:', error);

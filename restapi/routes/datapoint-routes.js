@@ -62,7 +62,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         { dpeName, dpType, systemId, dpId }
       )
 
-      res.json({ success: result })
+      res.status(201).json({ success: result })
     } catch (error) {
       next(error)
     }

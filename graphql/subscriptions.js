@@ -285,38 +285,44 @@ function createSubscriptionResolvers(winccoa, logger) {
              const asyncIterator = context.pubsub.asyncIterator(channel);
 
              // Set up the connection
-             const callback = async (dpeNames, values, type, error) => {
-               try {
-                 // For typed connections, we need to get the complete information for each tag
-                 const tags = [];
+              const callback = async (dpeNames, values, type, error) => {
+                try {
+                  // For typed connections, we need to get the complete information for each tag
+                  const tags = [];
 
-                 for (let i = 0; i < dpeNames.length; i++) {
-                   const dpeName = dpeNames[i];
-                   const value = values[i];
+                  for (let i = 0; i < dpeNames.length; i++) {
+                    const dpeName = dpeNames[i];
+                    const value = values[i];
 
-                   // Get timestamp and status for this tag
-                   const timeAttr = `${dpeName}:_online.._stime`;
-                   const statusAttr = `${dpeName}:_online.._status`;
+                    // WinCC OA returns the fully-qualified config address in the callback
+                    // e.g. "System1:ExampleDP_Trend1.:_online.._value" even if we subscribed
+                    // with just "ExampleDP_Trend1.".  Strip any ":_..." config suffix to get
+                    // the bare DPE, then build the stime/status addresses from that.
+                    const bareIdx = dpeName.lastIndexOf(':_');
+                    const bareDpe = bareIdx !== -1 ? dpeName.slice(0, bareIdx + 1) : dpeName;
+                    // bareDpe ends with '.', add the config without repeating the colon
+                    const timeAttr   = `${bareDpe}:_online.._stime`;
+                    const statusAttr = `${bareDpe}:_online.._status`;
 
-                   try {
-                     const [timestamp, status] = await winccoa.dpGet([timeAttr, statusAttr]);
+                    try {
+                      const [timestamp, status] = await winccoa.dpGet([timeAttr, statusAttr]);
 
-                     tags.push({
-                       name: dpeName,
-                       value: value,
-                       timestamp: timestamp,
-                       status: status
-                     });
-                   } catch (attrError) {
-                     logger.warn(`Failed to get attributes for ${dpeName}:`, attrError);
-                     // Still include the tag with available data
-                     tags.push({
-                       name: dpeName,
-                       value: value,
-                       timestamp: null,
-                       status: null
-                     });
-                   }
+                      tags.push({
+                        name: bareDpe,
+                        value: value,
+                        timestamp: timestamp,
+                        status: status
+                      });
+                    } catch (attrError) {
+                      logger.warn(`Failed to get attributes for ${bareDpe}:`, attrError);
+                      // Still include the tag with available data
+                      tags.push({
+                        name: bareDpe,
+                        value: value,
+                        timestamp: null,
+                        status: null
+                      });
+                    }
                  }
 
                  // Emit the update through the pubsub
