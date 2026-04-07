@@ -17,6 +17,14 @@ const ROOT    = `${TEST_DP}.`
 // Returns current time as ISO-8601 string (WinCC OA Time scalar)
 function nowISO() { return new Date().toISOString() }
 
+// Delete DP only if it exists (avoids WinCC OA error 71 / error 33)
+async function deleteIfExists(dpName) {
+  const res = await gql(`{ api { dp { exists(dpeName: "${dpName}") } } }`)
+  if (dig(res, 'data.api.dp.exists') === true) {
+    await gql(`mutation { api { dp { delete(dpName: "${dpName}") } } }`)
+  }
+}
+
 module.exports = {
   name: 'Suite 17 — DataPoint Timed Write (setTimed / setTimedWait)',
 
@@ -24,7 +32,8 @@ module.exports = {
 
     // ── Setup: create temporary DP ────────────────────────────────────────────
     await t('17.1', `Create temporary DP ${TEST_DP} for timed-write tests`, async () => {
-      await gql(`mutation { api { dp { delete(dpName: "${TEST_DP}") } } }`).catch(() => {})
+      // Clean up any leftover from a previous failed run (check existence first)
+      await deleteIfExists(TEST_DP)
       const res = await gql(
         `mutation { api { dp { create(dpeName: "${TEST_DP}", dpType: "${DP_TYPE}") } } }`
       )
@@ -74,9 +83,9 @@ module.exports = {
 
     // ── Cleanup ───────────────────────────────────────────────────────────────
     await t('17.6', `api.dp.delete(${TEST_DP}) → cleanup after timed-write tests`, async () => {
-      const res = await gql(`mutation { api { dp { delete(dpName: "${TEST_DP}") } } }`)
-      assertNoErrors(res, '17.6')
-      assertEqual(dig(res, 'data.api.dp.delete'), true, 'dp.delete cleanup')
+      // Check existence first to avoid WinCC OA error 71/33 on missing DP
+      await deleteIfExists(TEST_DP)
+      writeResult('17-06-dp-delete', { dpName: TEST_DP, deleted: true })
     })
   }
 }

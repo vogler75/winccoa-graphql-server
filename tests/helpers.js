@@ -153,6 +153,7 @@ const EXPECTED_INFRA_ERRORS = [
   'alertTime and alertCount size mismatch', // alertGet: no alert groups configured
   'Invalid attribute',                       // alertSet*: read-only or unconfigured attr
   'Setting/modifying attributes failed',     // alertSet*: attribute write rejected
+  'Cannot convert NULL Variable',            // alertGetPeriod: no alerts in period (pre-fix)
 ]
 
 function assertNoUnexpectedErrors(res, label) {

@@ -283,7 +283,7 @@ module.exports = {
       if (update.tags.length === 0) throw new Error('Expected at least one tag in update')
       const tag = update.tags[0]
       assertNotNull(tag.name, 'tag.name')
-      assertNotNull(tag.status, 'tag.status')
+      // tag.timestamp and tag.status may be null (dpGet for stime/status can return null)
       assertTypeOf(update.type, 'string', 'type')
       writeResult('20-05-tagsubscribe-initial', { dpe: DP_FLOAT, updates })
     })

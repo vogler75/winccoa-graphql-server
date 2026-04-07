@@ -3,14 +3,15 @@
 // Full create → read → change → delete cycle for CNS views, trees, nodes and
 // properties.  All read results are written to tests/results/ for manual review.
 //
-// WinCC OA CNS path format:
+// WinCC OA CNS path format (confirmed by live testing):
 //   createView / deleteView / addTree / getTrees:  "System1.VIEW:"
 //   addNode / getChildren / changeTree / deleteTree / getProperty / setProperty:
 //                                                   "System1.VIEW:TREE"
 //   getParent / nested nodes:                       "System1.VIEW:TREE.NODE"
-//   viewExists:  "System1.VIEW::"  (double colon)
-//   treeExists:  "System1.VIEW::TREE"
-//   nodeExists:  "System1.VIEW::TREE.NODE"
+//   viewExists / treeExists / nodeExists:           same single-colon format as above
+//     viewExists:  "System1.VIEW:"
+//     treeExists:  "System1.VIEW:TREE"
+//     nodeExists:  "System1.VIEW:TREE.NODE"
 
 const {
   gql, rest,
@@ -24,12 +25,12 @@ const TREE_NAME = 'AutotestTree'
 const NODE_NAME = 'AutotestNode'
 
 // Path helpers matching WinCC OA CNS conventions
-const VIEW_ARG       = `${SYSTEM}.${VIEW_NAME}:`           // for create/delete/addTree/getTrees
-const VIEW_EXISTS    = `${SYSTEM}.${VIEW_NAME}::`          // for viewExists (double colon)
-const TREE_ARG       = `${SYSTEM}.${VIEW_NAME}:${TREE_NAME}`   // for addNode/delete/change/children
-const TREE_EXISTS    = `${SYSTEM}.${VIEW_NAME}::${TREE_NAME}`  // for treeExists
-const NODE_ARG       = `${SYSTEM}.${VIEW_NAME}:${TREE_NAME}.${NODE_NAME}`  // for setProperty/getProperty/getChildren/getParent
-const NODE_EXISTS    = `${SYSTEM}.${VIEW_NAME}::${TREE_NAME}.${NODE_NAME}` // for nodeExists
+const VIEW_ARG       = `${SYSTEM}.${VIEW_NAME}:`           // for create/delete/addTree/getTrees/viewExists
+const VIEW_EXISTS    = `${SYSTEM}.${VIEW_NAME}:`           // same format — single colon
+const TREE_ARG       = `${SYSTEM}.${VIEW_NAME}:${TREE_NAME}`   // for addNode/delete/change/children/treeExists
+const TREE_EXISTS    = `${SYSTEM}.${VIEW_NAME}:${TREE_NAME}`   // same format — single colon
+const NODE_ARG       = `${SYSTEM}.${VIEW_NAME}:${TREE_NAME}.${NODE_NAME}`  // for setProperty/getProperty/getChildren/getParent/nodeExists
+const NODE_EXISTS    = `${SYSTEM}.${VIEW_NAME}:${TREE_NAME}.${NODE_NAME}`  // same format — single colon
 
 module.exports = {
   name: 'Suite 19 — CNS Mutations (createView / addTree / addNode / setProperty / delete)',

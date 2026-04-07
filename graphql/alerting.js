@@ -2,6 +2,20 @@
 
 const { WinccoaAlertTime } = require('winccoa-manager');
 
+// Expected WinCC OA error codes that should not produce SEVERE log entries.
+// The GraphQL response already carries the error — logging is just noise.
+const EXPECTED_ALERT_CODES = new Set([
+  9302,  // Cannot convert NULL Variable — no alerts in period
+])
+
+function logAlertError(logger, label, error) {
+  if (EXPECTED_ALERT_CODES.has(error.code)) {
+    logger.debug(`${label} (expected): ${error.message}`)
+  } else {
+    logger.error(`${label}:`, error)
+  }
+}
+
 /**
  * Converts GraphQL AlertTimeInput to WinccoaAlertTime object.
  * Used as input converter for alertGet(), alertSet(), and related WinCC OA functions.
@@ -84,7 +98,7 @@ function createAlertOperationResolvers(winccoa, logger) {
           const result = await winccoa.alertGet(winccoaAlertTimes, dpeNames, attrNames);
           return result;
         } catch (error) {
-          logger.error('alertGet error:', error);
+          logAlertError(logger, 'alertGet error:', error);
           throw new Error(`Failed to get alert attributes: ${error.message}`);
         }
       },
@@ -103,13 +117,17 @@ function createAlertOperationResolvers(winccoa, logger) {
           const start = new Date(startTime);
           const end = new Date(endTime);
           const result = await winccoa.alertGetPeriod(start, end, names);
-          
+          // WinCC OA returns null when no alerts exist in the period — normalise
+          if (!result || !result.alertTimes) return { alertTimes: [], values: [] }
           return {
             alertTimes: convertAlertTimes(result.alertTimes),
-            values: result.values
+            values: result.values || []
           };
         } catch (error) {
-          logger.error('alertGetPeriod error:', error);
+          // 9302 = "Cannot convert NULL Variable" — WinCC OA throws this when
+          // no alerts exist in the requested period. Return empty result silently.
+          if (error.code === 9302) return { alertTimes: [], values: [] }
+          logAlertError(logger, 'alertGetPeriod error:', error);
           throw new Error(`Failed to get alert period data: ${error.message}`);
         }
       }
@@ -130,7 +148,7 @@ function createAlertOperationResolvers(winccoa, logger) {
           const result = await winccoa.alertSet(winccoaAlertTimes, values);
           return result;
         } catch (error) {
-          logger.error('alertSet error:', error);
+          logAlertError(logger, 'alertSet error:', error);
           throw new Error(`Failed to set alert attributes: ${error.message}`);
         }
       },
@@ -149,7 +167,7 @@ function createAlertOperationResolvers(winccoa, logger) {
           const result = await winccoa.alertSetWait(winccoaAlertTimes, values);
           return result;
         } catch (error) {
-          logger.error('alertSetWait error:', error);
+          logAlertError(logger, 'alertSetWait error:', error);
           throw new Error(`Failed to set alert attributes with wait: ${error.message}`);
         }
       },
@@ -170,7 +188,7 @@ function createAlertOperationResolvers(winccoa, logger) {
           const result = await winccoa.alertSetTimed(winccoaTime, winccoaAlertTimes, values);
           return result;
         } catch (error) {
-          logger.error('alertSetTimed error:', error);
+          logAlertError(logger, 'alertSetTimed error:', error);
           throw new Error(`Failed to set timed alert attributes: ${error.message}`);
         }
       },
@@ -191,7 +209,7 @@ function createAlertOperationResolvers(winccoa, logger) {
           const result = await winccoa.alertSetTimedWait(winccoaTime, winccoaAlertTimes, values);
           return result;
         } catch (error) {
-          logger.error('alertSetTimedWait error:', error);
+          logAlertError(logger, 'alertSetTimedWait error:', error);
           throw new Error(`Failed to set timed alert attributes with wait: ${error.message}`);
         }
       }
