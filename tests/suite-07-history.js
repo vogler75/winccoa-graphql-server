@@ -48,6 +48,7 @@ module.exports = {
       const { writtenValues, start, end } = await writeHistoryValues(RPT_DP)
 
       await sleep(1000)
+      console.log(`       window: ${start} → ${end}`)
       const res = await gql(
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ["${RPT_DP}"]) } } }`
       )
@@ -74,6 +75,7 @@ module.exports = {
       }
 
       await sleep(1000)
+      console.log(`       window: ${start} → ${end}`)
       const res = await gql(
         `{ api { dp { getPeriod(startTime: "${start}", endTime: "${end}", dpeNames: ${JSON.stringify(RPT_DPS)}) } } }`
       )
@@ -92,6 +94,7 @@ module.exports = {
       const { writtenValues, start, end } = await writeHistoryValues(DP_FLOAT)
 
       await sleep(1000)
+      console.log(`       window: ${start} → ${end}`)
       const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`
       const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
       assertNotNull(body, 'response body')
