@@ -3,7 +3,8 @@
 const {
   rest,
   TEST_TYPE_REST,
-  assertNotNull, assertEqual, assertIsArray, assertTypeOf, dig
+  assertNotNull, assertEqual, assertIsArray, assertTypeOf, dig,
+  writeResult
 } = require('./helpers')
 
 function enc(name) { return encodeURIComponent(name) }
@@ -21,6 +22,7 @@ module.exports = {
       // body may be { api: {...}, winccoa: {...} } or flat
       const api = body.api || body
       assertNotNull(api, 'api version info')
+      writeResult('13-01-rest-system-version', { status, body })
     })
 
     await t('13.2', 'GET /restapi/system/id → systemId', async () => {
@@ -30,6 +32,7 @@ module.exports = {
       assertTypeOf(typeof id === 'number' ? id : 0, 'number', 'systemId')
       // Actually just check it is truthy non-zero (system id is 1)
       if (!id && id !== 0) throw new Error(`Expected numeric systemId, got ${JSON.stringify(body)}`)
+      writeResult('13-02-rest-system-id', { status, body })
     })
 
     await t('13.3', 'GET /restapi/system/name → systemName', async () => {
@@ -38,6 +41,7 @@ module.exports = {
       const name = body.systemName || body.name || body
       if (typeof name !== 'string')
         throw new Error(`Expected string systemName, got ${JSON.stringify(body)}`)
+      writeResult('13-03-rest-system-name', { status, body })
     })
 
     await t('13.4', 'GET /restapi/system/redundancy/active → Boolean', async () => {
@@ -47,6 +51,7 @@ module.exports = {
       assertTypeOf(typeof active === 'boolean' ? active : false, 'boolean', 'active')
       if (typeof active !== 'boolean')
         throw new Error(`Expected boolean, got ${JSON.stringify(body)}`)
+      writeResult('13-04-rest-system-redundancy', { status, body })
     })
 
     // ── DatapointType routes ─────────────────────────────────────────────────
@@ -57,6 +62,7 @@ module.exports = {
       const list = body.dpTypes || body.types || body.dataPointTypes || body
       assertIsArray(list, 'datapoint-types list')
       if (list.length === 0) throw new Error('Expected at least one data point type')
+      writeResult('13-05-rest-dptype-list', { status, count: list.length, types: list })
     })
 
     await t('13.6', 'GET /restapi/datapoint-types/ExampleDP_Float/structure → type structure', async () => {
@@ -65,6 +71,7 @@ module.exports = {
       assertNotNull(body, 'body')
       const name = body.name || (body.structure && body.structure.name)
       if (!name) throw new Error(`Expected type name in response: ${JSON.stringify(body)}`)
+      writeResult('13-06-rest-dptype-structure', { status, body })
     })
 
     // ── Create + delete lifecycle ────────────────────────────────────────────
@@ -80,11 +87,13 @@ module.exports = {
         }
       })
       assertEqual(status, 201, 'HTTP status')
+      writeResult('13-07-rest-dptype-create', { typeName: TEST_TYPE_REST, status, body })
     })
 
     await t('13.8', `DELETE /restapi/datapoint-types/${TEST_TYPE_REST} → 200`, async () => {
       const { status, body } = await rest('DELETE', `/restapi/datapoint-types/${enc(TEST_TYPE_REST)}`)
       assertEqual(status, 200, 'HTTP status')
+      writeResult('13-08-rest-dptype-delete', { typeName: TEST_TYPE_REST, status, body })
     })
   }
 }

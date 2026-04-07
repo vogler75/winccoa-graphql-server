@@ -2,7 +2,8 @@
 
 const {
   gql, rest,
-  assertNotNull, assertEqual, assertTypeOf, dig
+  assertNotNull, assertEqual, assertTypeOf, dig,
+  writeResult
 } = require('./helpers')
 
 module.exports = {
@@ -18,6 +19,7 @@ module.exports = {
       const msg = res.errors[0].message
       if (!msg.toLowerCase().includes('invalid'))
         throw new Error(`Expected "Invalid ..." error, got: ${msg}`)
+      writeResult('11-01-login-wrong-creds', { errors: res.errors.map(e => e.message) })
     })
 
     await t('11.2', 'REST POST /restapi/auth/login with wrong creds → 401', async () => {
@@ -26,12 +28,14 @@ module.exports = {
         password: 'wrong'
       })
       assertEqual(status, 401, 'HTTP status')
+      writeResult('11-02-rest-login-wrong-creds', { status, body })
     })
 
     await t('11.3', 'login with correct creds → { token, expiresAt } (skipped if not configured)', async () => {
       const username = process.env.ADMIN_USERNAME
       const password = process.env.ADMIN_PASSWORD
       if (!username || !password) {
+        writeResult('11-03-login-correct-creds', { skipped: true, note: 'ADMIN_USERNAME/ADMIN_PASSWORD env vars not set' })
         return 'ADMIN_USERNAME/ADMIN_PASSWORD env vars not set — skipping'
       }
       const res = await gql(
@@ -42,6 +46,7 @@ module.exports = {
       assertNotNull(payload, 'login payload')
       assertTypeOf(payload.token, 'string', 'token')
       assertNotNull(payload.expiresAt, 'expiresAt')
+      writeResult('11-03-login-correct-creds', { expiresAt: payload.expiresAt })
     })
   }
 }

@@ -2,7 +2,8 @@
 
 const {
   gql,
-  assertNoErrors, assertEqual, assertTypeOf, assertNotNull, dig
+  assertNoErrors, assertEqual, assertTypeOf, assertNotNull, dig,
+  writeResult
 } = require('./helpers')
 
 module.exports = {
@@ -18,6 +19,7 @@ module.exports = {
       assertEqual(result.success, true, 'success')
       assertTypeOf(result.message, 'string', 'message')
       assertNotNull(result.timestamp, 'timestamp')
+      writeResult('10-01-extras-testdummy-query', result)
     })
 
     await t('10.2', 'extras.testDummy mutation → success: true', async () => {
@@ -28,6 +30,7 @@ module.exports = {
       assertEqual(result.success, true, 'success')
       assertTypeOf(result.message, 'string', 'message')
       assertNotNull(result.timestamp, 'timestamp')
+      writeResult('10-02-extras-testdummy-mutation', result)
     })
   }
 }

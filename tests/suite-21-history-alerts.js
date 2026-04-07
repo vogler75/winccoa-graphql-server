@@ -190,14 +190,20 @@ module.exports = {
     // ── 21.9  alertGet: read current alarm attributes ─────────────────────────
     await t('21.9', 'api.alert.alertGet: read current alarm state for ExampleDP_Rpt1', async () => {
       const alarmDpe = ALARM_DPS[0]
+      // alertsTime: use epoch + count 0 to reference the latest alert.
+      // dpeNames: pass multiple configs to read different attributes in one call.
+      const dpeNames = [
+        `${RPT_DPS[0]}:_alert_hdl.._value`,
+        `${RPT_DPS[0]}:_alert_hdl.._text`,
+        `${RPT_DPS[0]}:_alert_hdl.._active`
+      ]
       const res = await gql(`
         {
           api {
             alert {
               alertGet(
                 alertsTime: [${alertInput(alarmDpe)}],
-                dpeNames: [${JSON.stringify(alarmDpe)}],
-                alertAttributeNames: ["ACK_STATE", "VALUE", "TEXT", "PRIORITY"]
+                dpeNames: ${JSON.stringify(dpeNames)}
               )
             }
           }
@@ -208,7 +214,7 @@ module.exports = {
       if (skipReason) return `alertGet not available — ${skipReason}`
       const result = dig(res, 'data.api.alert.alertGet')
       assertNotNull(result, 'alertGet result')
-      writeResult('21-09-alert-get-current', { alarmDpe, result })
+      writeResult('21-09-alert-get-current', { alarmDpe, dpeNames, result })
     })
 
     // ── 21.10 Acknowledge alarms via alert.setWait ────────────────────────────

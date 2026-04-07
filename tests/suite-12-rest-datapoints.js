@@ -4,7 +4,8 @@ const {
   rest,
   DP_FLOAT, DP_FLOAT_DP,
   TEST_DP_REST,
-  assertNotNull, assertEqual, assertIsArray, assertTypeOf, dig
+  assertNotNull, assertEqual, assertIsArray, assertTypeOf, dig,
+  writeResult
 } = require('./helpers')
 
 // Encode a DP name with trailing dot for use in URL paths
@@ -22,6 +23,7 @@ module.exports = {
       assertNotNull(body.datapoints, 'body.datapoints')
       assertIsArray(body.datapoints, 'datapoints')
       if (body.datapoints.length === 0) throw new Error('Expected at least one ExampleDP datapoint')
+      writeResult('12-01-rest-dp-search', { pattern: 'ExampleDP*', count: body.datapoints.length, datapoints: body.datapoints })
     })
 
     await t('12.2', `GET /restapi/datapoints/${DP_FLOAT}/value → { value: number }`, async () => {
@@ -29,6 +31,7 @@ module.exports = {
       assertEqual(status, 200, 'HTTP status')
       assertNotNull(body, 'body')
       assertTypeOf(body.value, 'number', 'body.value')
+      writeResult('12-02-rest-dp-get-value', { dpe: DP_FLOAT, status, value: body.value })
     })
 
     // ── Write + round-trip ───────────────────────────────────────────────────
@@ -37,12 +40,14 @@ module.exports = {
       assertEqual(status, 200, 'HTTP status')
       // server returns { success: true } or { value: 77 }
       assertNotNull(body, 'body')
+      writeResult('12-03-rest-dp-put-value', { dpe: DP_FLOAT, written: 77, status, body })
     })
 
     await t('12.4', `GET /restapi/datapoints/${DP_FLOAT}/value → 77 (round-trip)`, async () => {
       const { status, body } = await rest('GET', `/restapi/datapoints/${enc(DP_FLOAT)}/value`)
       assertEqual(status, 200, 'HTTP status')
       assertEqual(body.value, 77, 'body.value after PUT')
+      writeResult('12-04-rest-dp-roundtrip', { dpe: DP_FLOAT, expected: 77, actual: body.value })
     })
 
     // ── Metadata reads ───────────────────────────────────────────────────────
@@ -50,6 +55,7 @@ module.exports = {
       const { status, body } = await rest('GET', `/restapi/datapoints/${enc(DP_FLOAT)}/exists`)
       assertEqual(status, 200, 'HTTP status')
       assertEqual(body.exists, true, 'body.exists')
+      writeResult('12-05-rest-dp-exists', { dpe: DP_FLOAT, status, body })
     })
 
     await t('12.6', `GET /restapi/datapoints/${DP_FLOAT}/type → element type`, async () => {
@@ -59,6 +65,7 @@ module.exports = {
       // body may be { elementType: "FLOAT" } or { type: "FLOAT" }
       const typeVal = body.elementType || body.type || body
       assertNotNull(typeVal, 'element type value')
+      writeResult('12-06-rest-dp-type', { dpe: DP_FLOAT, status, body })
     })
 
     await t('12.7', `GET /restapi/datapoints/${DP_FLOAT}/dp-type → dp type name`, async () => {
@@ -67,6 +74,7 @@ module.exports = {
       assertNotNull(body, 'body')
       const typeName = body.typeName || body.dpType || body
       assertNotNull(typeName, 'dp type name')
+      writeResult('12-07-rest-dp-dptype', { dp: DP_FLOAT_DP, status, body })
     })
 
     // ── Create + delete lifecycle ────────────────────────────────────────────
@@ -79,11 +87,13 @@ module.exports = {
         dpType: 'ExampleDP_Float'
       })
       assertEqual(status, 201, 'HTTP status')
+      writeResult('12-08-rest-dp-create', { dpeName: TEST_DP_REST, status, body })
     })
 
     await t('12.9', `DELETE /restapi/datapoints/${TEST_DP_REST} → 200`, async () => {
       const { status, body } = await rest('DELETE', `/restapi/datapoints/${enc(TEST_DP_REST)}`)
       assertEqual(status, 200, 'HTTP status')
+      writeResult('12-09-rest-dp-delete', { dpeName: TEST_DP_REST, status, body })
     })
 
     // ── dpQuery via REST ─────────────────────────────────────────────────────
@@ -95,6 +105,7 @@ module.exports = {
       const table = body.result || body
       assertIsArray(table, 'query result')
       assertIsArray(table[0], 'header row')
+      writeResult('12-10-rest-query', { query, status, rowCount: table.length, table })
     })
   }
 }
