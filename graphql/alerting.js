@@ -89,13 +89,15 @@ function createAlertOperationResolvers(winccoa, logger) {
        *        Pass null/omit to retrieve all configured attributes (empty array []).
        * @returns {Promise} Promise resolving to alert data
        */
-      async alertGet(_, { alertsTime, dpeNames, alertAttributeNames }) {
+      async alertGet(_, { alertsTime, dpeNames }) {
         try {
           const winccoaAlertTimes = convertAlertTimeInputs(alertsTime);
-          // WinCC OA alertGet 3rd arg must be an array of attribute name strings,
-          // never a number. Default to [] (all attributes) when not supplied.
-          const attrNames = Array.isArray(alertAttributeNames) ? alertAttributeNames : [];
-          const result = await winccoa.alertGet(winccoaAlertTimes, dpeNames, attrNames);
+          // winccoa.alertGet(alertsTime, dpeNames, alertCount?)
+          // dpeNames must include full config path e.g. 'Dp.:_alert_hdl.._value'
+          // For a single alertTime with multiple configs on the same DP, pass
+          // one alertTime and multiple dpeNames (same DP, different configs).
+          // For multiple alertTimes + multiple DPs, arrays must be same length.
+          const result = await winccoa.alertGet(winccoaAlertTimes, dpeNames);
           return result;
         } catch (error) {
           logAlertError(logger, 'alertGet error:', error);

@@ -26,16 +26,17 @@ type AlertMethods {
   """
   Retrieves the last alert attributes of a data point.
 
-  @param alertsTime - Alert time(s) to retrieve (use time="1970-01-01T00:00:00Z", count=0 for
-                      the latest alert)
-  @param dpeNames - Data point element names with alert config (e.g. "Dp.:_alert_hdl.._active")
-  @param alertAttributeNames - Alert attribute names to retrieve (e.g. ["ACK_STATE","VALUE"]).
-                                When omitted all configured attributes are returned.
-  @returns Retrieved alert attribute values as JSON
+  @param alertsTime - Alert time(s) identifying the specific alert instance(s).
+                      Obtain from dpQuery SELECT ALERT (column 1 of each result row).
+  @param dpeNames   - Full DPE names including config, e.g. "Dp.:_alert_hdl.._value".
+                      For a single alertTime with multiple configs on the same DP,
+                      pass one alertTime and N dpeNames (same DP, different configs).
+                      For multiple DPs, alertsTime and dpeNames must be the same length.
+  @returns Retrieved alert attribute value(s) as JSON
   @throws WinccoaError when invalid parameters
   @see https://www.winccoa.com/documentation/WinCCOA/latest/en_US/ControlA_D/alertGet.html
   """
-  alertGet(alertsTime: [AlertTimeInput!]!, dpeNames: [String!]!, alertAttributeNames: [String!]): JSON!
+  alertGet(alertsTime: [AlertTimeInput!]!, dpeNames: [String!]!): JSON!
 
   """
   Retrieves alert values for a specific time period.
