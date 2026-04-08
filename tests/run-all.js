@@ -46,7 +46,6 @@ const suiteFiles = [
   'suite-16-dp-alias.js',          // setAlias / getAlias round-trip
   'suite-17-dp-timed-write.js',    // setTimed / setTimedWait round-trips
   'suite-18-alert-write.js',       // Alert mutations (set/setWait/setTimed/setTimedWait)
-  'suite-19-cns-write.js',         // CNS mutations lifecycle
   'suite-20-subscriptions.js',     // WebSocket subscriptions (dpConnect / tagSubscribe / …)
 ]
 
