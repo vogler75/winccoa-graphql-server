@@ -65,3 +65,15 @@
 - Use descriptive resolver function names
 - Handle GraphQL errors appropriately
 - Implement proper type checking and validation
+
+## Testing Requirements
+
+**Every new REST endpoint and every new GraphQL query/mutation must have at least one test case.**
+
+- REST endpoint tests belong in `tests/suite-NN-rest-<domain>.js`
+- GraphQL tests belong in `tests/suite-NN-gql-<domain>.js`
+- Add the new test to the appropriate existing suite file when the domain matches,
+  or create a new numbered suite file and register it in `tests/run-all.js`
+- Tests must cover the happy path at minimum; also add a negative/validation test
+  (e.g. missing params → 400, non-existent resource → expected error) where applicable
+- Run the relevant suite with `node tests/run-all.js --suite <NN>` to verify before committing
