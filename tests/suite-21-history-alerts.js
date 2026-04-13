@@ -40,41 +40,6 @@ function alertInput(dpe) {
   return `{ time: "1970-01-01T00:00:00Z", count: 0, dpe: ${JSON.stringify(dpe)} }`
 }
 
-// Build AlertTimeInput literal from a real {time, count, dpe} object
-function alertInputFromLive({ time, count, dpe }) {
-  const t = time instanceof Date ? time.toISOString() : time
-  return `{ time: "${t}", count: ${count}, dpe: ${JSON.stringify(dpe)} }`
-}
-
-/**
- * Query alertGetPeriod on _came_time for a DP to find its current active alert.
- * Returns { time, count, dpe } with the _ack_state DPE substituted in, or null.
- */
-async function getLiveAckAlert(dpName) {
-  const cameDpe = `${dpName}:_alert_hdl.._came_time`
-  const end   = new Date()
-  const start = new Date(end.getTime() - 10000) // last 10 s
-  const res = await gql(`
-    {
-      api {
-        alert {
-          alertGetPeriod(
-            startTime: "${start.toISOString()}",
-            endTime:   "${end.toISOString()}",
-            names:     ${JSON.stringify([cameDpe])}
-          ) { alertTimes { time count dpe } }
-        }
-      }
-    }
-  `)
-  const result = dig(res, 'data.api.alert.alertGetPeriod')
-  if (!result || !result.alertTimes || result.alertTimes.length === 0) return null
-  // Take the most recent entry
-  const at = result.alertTimes[result.alertTimes.length - 1]
-  // Replace _came_time with _ack_state to target the acknowledgement attribute
-  const ackDpe = at.dpe.replace('_came_time', '_ack_state')
-  return { time: at.time, count: at.count, dpe: ackDpe }
-}
 
 // Read _alert_hdl.._active for all Rpt DPs via dpQuery
 async function readAlarmStates() {
@@ -255,55 +220,42 @@ module.exports = {
       writeResult('21-09-alert-get-current', { alarmDpe, dpeNames, result })
     })
 
-    // ── 21.10 Acknowledge alarms via alert.setWait ────────────────────────────
-    await t('21.10', 'alert.setWait: acknowledge alarm on ExampleDP_Rpt1', async () => {
-      // Acknowledgement requires the real alert time+count (not epoch+0) and the
-      // _ack_state attribute (not _active which is read-only).
-      const liveAlert = await getLiveAckAlert(RPT_DPS[0])
-      if (!liveAlert) return 'No active alarm found for ExampleDP_Rpt1 — skipping ack'
+    // ── 21.10 Acknowledge alarm on ExampleDP_Rpt1 via dp.setWait ────────────
+    await t('21.10', 'dp.setWait: acknowledge alarm on ExampleDP_Rpt1 via _ack_state', async () => {
+      // _ack_state is a regular DP config attribute written via dpSet (not alertSet).
+      // Setting it to 1 acknowledges the current active alarm. No alert time needed.
+      const ackDpe = `${RPT_DPS[0]}:_alert_hdl.._ack_state`
       const res = await gql(`
         mutation {
           api {
-            alert {
-              setWait(
-                alerts: [${alertInputFromLive(liveAlert)}],
-                values: [1]
-              )
+            dp {
+              setWait(dpeNames: ${JSON.stringify([ackDpe])}, values: [1])
             }
           }
         }
       `)
-      const skipReason = assertNoUnexpectedErrors(res, '21.10')
-      if (skipReason) return `alertSetWait not available — ${skipReason}`
-      assertEqual(dig(res, 'data.api.alert.setWait'), true, 'alert.setWait ack')
-      writeResult('21-10-alert-ack', { liveAlert, ackValue: 1 })
+      assertNoErrors(res, '21.10')
+      assertEqual(dig(res, 'data.api.dp.setWait'), true, 'dp.setWait ack')
+      writeResult('21-10-alert-ack', { ackDpe, ackValue: 1 })
       await sleep(ALARM_SETTLE_MS)
     })
 
-    // ── 21.11 Acknowledge all four Rpt* alarms ────────────────────────────────
-    await t('21.11', 'alert.setWait: acknowledge alarms on all ExampleDP_Rpt* DPs', async () => {
-      // Fetch real alert time+count for each DP and build the alerts input
-      const liveAlerts = await Promise.all(RPT_DPS.map(dp => getLiveAckAlert(dp)))
-      const found = liveAlerts.filter(Boolean)
-      if (found.length === 0) return 'No active alarms found for any ExampleDP_Rpt* — skipping ack'
-      const alerts = found.map(a => alertInputFromLive(a)).join(', ')
-      const values = found.map(() => 1)
+    // ── 21.11 Acknowledge all four Rpt* alarms via dp.setWait ────────────────
+    await t('21.11', 'dp.setWait: acknowledge alarms on all ExampleDP_Rpt* DPs via _ack_state', async () => {
+      const ackDpes  = RPT_DPS.map(dp => `${dp}:_alert_hdl.._ack_state`)
+      const values   = ackDpes.map(() => 1)
       const res = await gql(`
         mutation {
           api {
-            alert {
-              setWait(
-                alerts: [${alerts}],
-                values: ${JSON.stringify(values)}
-              )
+            dp {
+              setWait(dpeNames: ${JSON.stringify(ackDpes)}, values: ${JSON.stringify(values)})
             }
           }
         }
       `)
-      const skipReason = assertNoUnexpectedErrors(res, '21.11')
-      if (skipReason) return `alertSetWait not available — ${skipReason}`
-      assertEqual(dig(res, 'data.api.alert.setWait'), true, 'alert.setWait ack all')
-      writeResult('21-11-alert-ack-all', { liveAlerts: found, ackValue: 1 })
+      assertNoErrors(res, '21.11')
+      assertEqual(dig(res, 'data.api.dp.setWait'), true, 'dp.setWait ack all')
+      writeResult('21-11-alert-ack-all', { ackDpes, ackValue: 1 })
       await sleep(ALARM_SETTLE_MS)
     })
 
