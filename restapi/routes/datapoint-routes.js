@@ -464,13 +464,12 @@ module.exports.createQueryRouter = function(winccoa, logger, resolvers) {
   const router = express.Router()
 
   /**
-   * POST /restapi/query
+   * GET /restapi/query?query=<sql>
+   * POST /restapi/query  { "query": "<sql>" }
    * Execute SQL-like query on data points
    *
-   * Body:
-   * {
-   *   "query": "string" - SQL statement (e.g., "SELECT '_original.._value' FROM 'ExampleDP_Arg*'")
-   * }
+   * Query parameter (GET) or body field (POST):
+   *   query - SQL statement (e.g., "SELECT '_original.._value' FROM 'ExampleDP_Arg*'")
    *
    * Response:
    * {
@@ -478,10 +477,8 @@ module.exports.createQueryRouter = function(winccoa, logger, resolvers) {
    *                        [1..n][0] are line names (data point names), [1..n][1..n] are values
    * }
    */
-  router.post('/', async (req, res, next) => {
+  async function handleQuery(query, res, next) {
     try {
-      const { query } = req.body
-
       if (!query) {
         return res.status(400).json({
           error: 'Bad Request',
@@ -494,7 +491,11 @@ module.exports.createQueryRouter = function(winccoa, logger, resolvers) {
     } catch (error) {
       next(error)
     }
-  })
+  }
+
+  router.get('/', (req, res, next) => handleQuery(req.query.query, res, next))
+
+  router.post('/', (req, res, next) => handleQuery(req.body.query, res, next))
 
   return router
 }

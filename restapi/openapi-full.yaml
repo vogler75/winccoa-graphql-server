@@ -851,12 +851,63 @@ paths:
                     $ref: '#/components/schemas/CtrlType'
 
   /restapi/v1/query:
+    get:
+      tags: [Data Points]
+      summary: Execute SQL-like query on data points (GET)
+      description: |
+        Retrieves attribute values with the help of SQL statements passed as a
+        query parameter. Returns the same table-like structure as the POST variant:
+        - [0][0] is empty
+        - [0][1..n] are column headers (attribute names)
+        - [1..n][0] are line names (data point names)
+        - [1..n][1..n] are the values
+
+        Example: `GET /restapi/v1/query?query=SELECT%20'_original.._value'%20FROM%20'ExampleDP_Arg*'`
+
+        This is equivalent to the WinCC OA `dpQuery()` function.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: SQL statement for querying data points
+          example: "SELECT '_original.._value' FROM 'ExampleDP_Arg*'"
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    description: Table-like result structure
+                    items:
+                      type: array
+                      items:
+                        description: Cell value (any type)
+                    example:
+                      - ["", ":_original.._value"]
+                      - ["System1:ExampleDP_Arg1.", 2.43]
+                      - ["System1:ExampleDP_Arg2.", 5.76]
+        '400':
+          description: Bad request - query parameter missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [Data Points]
-      summary: Execute SQL-like query on data points
+      summary: Execute SQL-like query on data points (POST)
       description: |
-        Retrieves attribute values with the help of SQL statements.
-        Returns a table-like structure where:
+        Retrieves attribute values with the help of SQL statements passed in the
+        request body. Returns a table-like structure where:
         - [0][0] is empty
         - [0][1..n] are column headers (attribute names)
         - [1..n][0] are line names (data point names)

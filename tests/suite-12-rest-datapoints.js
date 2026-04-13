@@ -108,6 +108,16 @@ module.exports = {
       writeResult('12-10-rest-query', { query, status, rowCount: table.length, table })
     })
 
+    await t('12.10b', "GET /restapi/query?query=... → same 2D result array", async () => {
+      const query = `SELECT '_original.._value' FROM '${DP_FLOAT_DP}'`
+      const { status, body } = await rest('GET', `/restapi/query?query=${encodeURIComponent(query)}`)
+      assertEqual(status, 200, 'HTTP status')
+      const table = body.result || body
+      assertIsArray(table, 'query result')
+      assertIsArray(table[0], 'header row')
+      writeResult('12-10b-rest-query-get', { query, status, rowCount: table.length, table })
+    })
+
     // ── Tags ─────────────────────────────────────────────────────────────────
     await t('12.11', `GET /restapi/tags?dpeNames=${DP_FLOAT} → tags array`, async () => {
       const { status, body } = await rest('GET', `/restapi/tags?dpeNames=${encodeURIComponent(DP_FLOAT)}`)

@@ -66,6 +66,14 @@
 - Handle GraphQL errors appropriately
 - Implement proper type checking and validation
 
+## REST API Documentation
+
+**The OpenAPI/Swagger spec (`restapi/openapi-full.yaml`) must be kept in sync with the implementation.**
+
+- When adding a new REST endpoint, add the corresponding path and operation to the spec
+- When changing an existing endpoint (new parameters, changed response shape, new HTTP method), update the spec accordingly
+- When removing an endpoint, remove it from the spec
+
 ## Testing Requirements
 
 **Every new REST endpoint and every new GraphQL query/mutation must have at least one test case.**
