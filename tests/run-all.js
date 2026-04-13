@@ -47,6 +47,7 @@ const suiteFiles = [
   'suite-17-dp-timed-write.js',    // setTimed / setTimedWait round-trips
   'suite-18-alert-write.js',       // Alert mutations (set/setWait/setTimed/setTimedWait)
   'suite-20-subscriptions.js',     // WebSocket subscriptions (dpConnect / tagSubscribe / …)
+  'suite-21-history-alerts.js',    // History and alert queries
 ]
 
 // ─── Runner state ────────────────────────────────────────────────────────────
