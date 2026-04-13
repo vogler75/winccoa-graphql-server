@@ -304,10 +304,9 @@ module.exports = {
     })
 
     // ── REST GET /restapi/cns/views ───────────────────────────────────────────
-    await t('9.25', 'REST GET /restapi/cns/views/ → 200 with array', async () => {
-      const { status, body } = await rest('GET', '/restapi/cns/views/')
+    await t('9.25', `REST GET /restapi/cns/views/${SYSTEM} → 200 with array`, async () => {
+      const { status, body } = await rest('GET', `/restapi/cns/views/${encodeURIComponent(SYSTEM)}`)
       assertNotNull(body, 'response body')
-      if (status === 404) return 'Route needs system name — skipping'
       assertEqual(status, 200, 'HTTP status')
       const views = body.views || body
       assertIsArray(views, 'views')
