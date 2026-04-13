@@ -1,6 +1,7 @@
 // Alert GraphQL resolver functions for WinCC OA
 
-const { WinccoaAlertTime } = require('winccoa-manager');
+const { WinccoaAlertTime } = require('winccoa-manager')
+const { typedAlertSet, typedAlertSetTimed } = require('./ctrl-type-utils')
 
 
 /**
@@ -131,8 +132,19 @@ function createAlertOperationResolvers(winccoa) {
       async alertSet(_, { alerts, values }) {
         try {
           const winccoaAlertTimes = convertAlertTimeInputs(alerts);
-          const result = await winccoa.alertSet(winccoaAlertTimes, values);
-          return result;
+          // alertSet binding cannot convert any JS array to dyn_anytype (error 9301) —
+          // it has no DPE type lookup to infer element types. Route any array value
+          // through typedDpSet (WinccoaCtrlScript) which accepts explicit type hints.
+          if (values.some(Array.isArray)) {
+            const ops = winccoaAlertTimes.map((at, i) =>
+              Array.isArray(values[i])
+                ? typedAlertSet(winccoa, at, values[i])
+                : winccoa.alertSet(at, values[i])
+            )
+            await Promise.all(ops)
+            return true
+          }
+          return await winccoa.alertSet(winccoaAlertTimes, values);
         } catch (error) {
           throw new Error(`Failed to set alert attributes: ${error.message}`);
         }
@@ -149,8 +161,17 @@ function createAlertOperationResolvers(winccoa) {
       async alertSetWait(_, { alerts, values }) {
         try {
           const winccoaAlertTimes = convertAlertTimeInputs(alerts);
-          const result = await winccoa.alertSetWait(winccoaAlertTimes, values);
-          return result;
+          if (values.some(Array.isArray)) {
+            // alertSetWait: use typedAlertSet (CTRL alertSet is synchronous per thread)
+            const ops = winccoaAlertTimes.map((at, i) =>
+              Array.isArray(values[i])
+                ? typedAlertSet(winccoa, at, values[i])
+                : winccoa.alertSetWait(at, values[i])
+            )
+            const results = await Promise.all(ops)
+            return results.every(r => r !== false)
+          }
+          return await winccoa.alertSetWait(winccoaAlertTimes, values);
         } catch (error) {
           throw new Error(`Failed to set alert attributes with wait: ${error.message}`);
         }
@@ -169,8 +190,16 @@ function createAlertOperationResolvers(winccoa) {
         try {
           const winccoaTime = new Date(time);
           const winccoaAlertTimes = convertAlertTimeInputs(alerts);
-          const result = await winccoa.alertSetTimed(winccoaTime, winccoaAlertTimes, values);
-          return result;
+          if (values.some(Array.isArray)) {
+            const ops = winccoaAlertTimes.map((at, i) =>
+              Array.isArray(values[i])
+                ? typedAlertSetTimed(winccoa, winccoaTime, at, values[i])
+                : winccoa.alertSetTimed(winccoaTime, at, values[i])
+            )
+            await Promise.all(ops)
+            return true
+          }
+          return await winccoa.alertSetTimed(winccoaTime, winccoaAlertTimes, values);
         } catch (error) {
           throw new Error(`Failed to set timed alert attributes: ${error.message}`);
         }
@@ -189,8 +218,17 @@ function createAlertOperationResolvers(winccoa) {
         try {
           const winccoaTime = new Date(time);
           const winccoaAlertTimes = convertAlertTimeInputs(alerts);
-          const result = await winccoa.alertSetTimedWait(winccoaTime, winccoaAlertTimes, values);
-          return result;
+          if (values.some(Array.isArray)) {
+            // alertSetTimedWait: use typedAlertSetTimed (CTRL alertSetTimed is synchronous per thread)
+            const ops = winccoaAlertTimes.map((at, i) =>
+              Array.isArray(values[i])
+                ? typedAlertSetTimed(winccoa, winccoaTime, at, values[i])
+                : winccoa.alertSetTimedWait(winccoaTime, at, values[i])
+            )
+            const results = await Promise.all(ops)
+            return results.every(r => r !== false)
+          }
+          return await winccoa.alertSetTimedWait(winccoaTime, winccoaAlertTimes, values);
         } catch (error) {
           throw new Error(`Failed to set timed alert attributes with wait: ${error.message}`);
         }

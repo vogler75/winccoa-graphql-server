@@ -7,6 +7,13 @@ const {
   extractHistoryValues,
   applyPagination
 } = require('./helpers')
+const {
+  needsCtrlScript,
+  typedDpSet,
+  typedDpSetWait,
+  typedDpSetTimed,
+  typedDpSetTimedWait,
+} = require('./ctrl-type-utils')
 
 // WinCC OA error codes that are "not found" / expected client errors.
 // These are logged at debug level only — the GraphQL error response already
@@ -713,8 +720,19 @@ function createCommonResolvers(winccoa, logger) {
        */
       async dpSet(_, { dpeNames, values }) {
         try {
-          const result = await winccoa.dpSet(dpeNames, values);
-          return result;
+          const simpleDpes = [], simpleVals = [], complexOps = []
+          for (let i = 0; i < dpeNames.length; i++) {
+            if (needsCtrlScript(values[i])) {
+              complexOps.push(typedDpSet(winccoa, dpeNames[i], values[i]))
+            } else {
+              simpleDpes.push(dpeNames[i])
+              simpleVals.push(values[i])
+            }
+          }
+          const ops = complexOps
+          if (simpleDpes.length > 0) ops.push(winccoa.dpSet(simpleDpes, simpleVals))
+          await Promise.all(ops)
+          return true
         } catch (error) {
           logResolverError(logger, 'dpSet error:', error);
           throw new Error(`Failed to set data point values: ${error.message}`);
@@ -731,8 +749,19 @@ function createCommonResolvers(winccoa, logger) {
        */
       async dpSetWait(_, { dpeNames, values }) {
         try {
-          const result = await winccoa.dpSetWait(dpeNames, values);
-          return result;
+          const simpleDpes = [], simpleVals = [], complexOps = []
+          for (let i = 0; i < dpeNames.length; i++) {
+            if (needsCtrlScript(values[i])) {
+              complexOps.push(typedDpSetWait(winccoa, dpeNames[i], values[i]))
+            } else {
+              simpleDpes.push(dpeNames[i])
+              simpleVals.push(values[i])
+            }
+          }
+          const ops = complexOps
+          if (simpleDpes.length > 0) ops.push(winccoa.dpSetWait(simpleDpes, simpleVals))
+          const results = await Promise.all(ops)
+          return results.every(r => r !== false)
         } catch (error) {
           logResolverError(logger, 'dpSetWait error:', error);
           throw new Error(`Failed to set data point values with wait: ${error.message}`);
@@ -750,8 +779,20 @@ function createCommonResolvers(winccoa, logger) {
        */
       async dpSetTimed(_, { time, dpeNames, values }) {
         try {
-          const result = await winccoa.dpSetTimed(new Date(time), dpeNames, values);
-          return result;
+          const t = new Date(time)
+          const simpleDpes = [], simpleVals = [], complexOps = []
+          for (let i = 0; i < dpeNames.length; i++) {
+            if (needsCtrlScript(values[i])) {
+              complexOps.push(typedDpSetTimed(winccoa, t, dpeNames[i], values[i]))
+            } else {
+              simpleDpes.push(dpeNames[i])
+              simpleVals.push(values[i])
+            }
+          }
+          const ops = complexOps
+          if (simpleDpes.length > 0) ops.push(winccoa.dpSetTimed(t, simpleDpes, simpleVals))
+          await Promise.all(ops)
+          return true
         } catch (error) {
           logResolverError(logger, 'dpSetTimed error:', error);
           throw new Error(`Failed to set timed data point values: ${error.message}`);
@@ -769,8 +810,20 @@ function createCommonResolvers(winccoa, logger) {
        */
       async dpSetTimedWait(_, { time, dpeNames, values }) {
         try {
-          const result = await winccoa.dpSetTimedWait(new Date(time), dpeNames, values);
-          return result;
+          const t = new Date(time)
+          const simpleDpes = [], simpleVals = [], complexOps = []
+          for (let i = 0; i < dpeNames.length; i++) {
+            if (needsCtrlScript(values[i])) {
+              complexOps.push(typedDpSetTimedWait(winccoa, t, dpeNames[i], values[i]))
+            } else {
+              simpleDpes.push(dpeNames[i])
+              simpleVals.push(values[i])
+            }
+          }
+          const ops = complexOps
+          if (simpleDpes.length > 0) ops.push(winccoa.dpSetTimedWait(t, simpleDpes, simpleVals))
+          const results = await Promise.all(ops)
+          return results.every(r => r !== false)
         } catch (error) {
           logResolverError(logger, 'dpSetTimedWait error:', error);
           throw new Error(`Failed to set timed data point values with wait: ${error.message}`);
