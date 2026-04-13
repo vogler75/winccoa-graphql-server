@@ -73,10 +73,6 @@ const swaggerSpec = require('./restapi/openapi');
 // Import usage tracker
 const { UsageTracker } = require('./usage-tracker');
 
-// Import MCP Server (official SDK)
-const { createMCPServer, createHTTPTransport } = require('./mcp/mcp-http-server');
-const { initializeToolLoader } = require('./mcp/tool-loader');
-
 // Import extracted lib modules
 const { createLogger } = require('./lib/logger');
 const {
@@ -116,13 +112,6 @@ const HOST = process.env.GRAPHQL_HOST || '0.0.0.0';
 const DISABLE_AUTH = noAuthArg || process.env.DISABLE_AUTH === 'true';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
-// MCP Configuration
-const MCP_ENABLED = process.env.MCP_ENABLED === 'true';
-const MCP_PORT = process.env.MCP_PORT || 3001;
-const MCP_HOST = process.env.MCP_HOST || '0.0.0.0';
-const MCP_BEARER_TOKEN = process.env.MCP_BEARER_TOKEN || '';
-const MCP_TOOLS_PATH = require('path').join(scriptDir, '.env-mcp-tools');
-
 // Create logger (from lib/logger.js)
 const logger = createLogger();
 
@@ -147,14 +136,6 @@ if (DISABLE_AUTH) {
   console.log('⚠️  WARNING: No authentication credentials configured!');
 } else {
   console.log('✅ Authentication is properly configured.');
-}
-
-console.log('🔌 MCP Server Configuration:');
-console.log(`   Enabled: ${MCP_ENABLED ? '✅ Yes' : '❌ No'}`);
-if (MCP_ENABLED) {
-  console.log(`   Host: ${MCP_HOST}:${MCP_PORT}`);
-  console.log(`   Bearer Token: ${MCP_BEARER_TOKEN ? '✅ Required' : '❌ Disabled (no authentication)'}`);
-  console.log(`   Tools Config: ${MCP_TOOLS_PATH}`);
 }
 
 // Load GraphQL schema
@@ -608,30 +589,6 @@ async function startServer() {
       });
     });
 
-    // MCP Server Setup (with HTTP Streaming Transport)
-    let mcpHttpServer = null;
-    if (MCP_ENABLED) {
-      logger.info('🔧 Initializing MCP Server with HTTP Streaming Transport...');
-
-      try {
-        // Load tools configuration
-        const toolLoader = initializeToolLoader(MCP_TOOLS_PATH, logger);
-
-        // Create MCP Server with official SDK
-        const mcpServer = createMCPServer(winccoa, logger, toolLoader);
-
-        // Create HTTP Streaming Transport (SSE)
-        mcpHttpServer = createHTTPTransport(mcpServer, logger, MCP_PORT, MCP_HOST);
-
-        logger.info('✅ MCP Server initialized with HTTP Streaming Transport');
-      } catch (error) {
-        logger.error('❌ Failed to initialize MCP Server:', error);
-        if (error.message.includes('module')) {
-          logger.error('   Ensure @modelcontextprotocol/sdk is installed: npm install');
-        }
-      }
-    }
-
     // Handle WebSocket upgrades manually so Express doesn't intercept them
     httpServer.on('upgrade', (request, socket, head) => {
       const { pathname } = new URL(request.url, `http://${request.headers.host}`)
@@ -659,20 +616,9 @@ async function startServer() {
         logger.info(`📊 Usage Statistics:    http://${displayHost}:${PORT}/stats.html`);
         logger.info(`📄 OpenAPI Spec:        http://${displayHost}:${PORT}/openapi.json`);
         logger.info(`💚 Health Check:        http://${displayHost}:${PORT}/restapi/health`);
-        if (MCP_ENABLED && mcpHttpServer) {
-          const mcpDisplayHost = MCP_HOST === '0.0.0.0' ? require('os').hostname() : MCP_HOST;
-          logger.info(`─────────────────────────────────────────────────`);
-          logger.info(`🔌 MCP Server (HTTP Streaming):`);
-          logger.info(`   📨 Messages (SSE):     http://${mcpDisplayHost}:${MCP_PORT}/mcp/messages`);
-          logger.info(`   💚 Health Check:       http://${mcpDisplayHost}:${MCP_PORT}/mcp/health`);
-          logger.info(`   ℹ️  Server Info:        http://${mcpDisplayHost}:${MCP_PORT}/mcp/info`);
-        }
         logger.info(`─────────────────────────────────────────────────`);
         if (DISABLE_AUTH) {
           logger.warn('⚠️  Authentication is DISABLED. Set DISABLE_AUTH=false to enable authentication.');
-        }
-        if (MCP_ENABLED && MCP_BEARER_TOKEN) {
-          logger.warn('🔒 MCP Bearer Token authentication is enabled.');
         }
         resolve();
       });
