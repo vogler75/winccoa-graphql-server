@@ -147,7 +147,15 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
 
   // Error handler
   router.use((err, req, res, next) => {
-    logger.error('REST API Error:', err)
+    // WinCC OA "not found" errors are expected client errors — the response
+    // already carries the information, so a SEVERE server log is noise.
+    const msg = err.message || ''
+    const isExpected = /\b(71|57|76),/.test(msg) || /not found/i.test(msg)
+    if (isExpected) {
+      logger.debug('REST API not-found (expected):', msg)
+    } else {
+      logger.error('REST API Error:', err)
+    }
     res.status(500).json({
       error: 'Internal Server Error',
       message: err.message

@@ -21,6 +21,7 @@ const {
 const EXPECTED_NOT_FOUND_CODES = new Set([
   57,   // Datapoint type does not exist
   71,   // DP does not exist
+  76,   // Invalid argument (e.g. alias does not exist for a DP)
   248,  // DP type has invalid references (primitive type, no refs)
 ])
 
