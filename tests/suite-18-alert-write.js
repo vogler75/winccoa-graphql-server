@@ -5,10 +5,10 @@
 // ExampleDP_AlertHdl1 (BOOL DP) has a different alert handler type that does not
 // support alertSet on any attribute (error 23 "Invalid attribute").
 //
-// Pattern (confirmed working in suite-21):
-//   dpe   = ExampleDP_Rpt1.:_alert_hdl.._active
-//   time  = "1970-01-01T00:00:00Z", count = 0  (WinCC OA convention: current/latest alert)
-//   values = [1]
+// Pattern:
+//   dpe    = ExampleDP_Rpt1.:_alert_hdl.._add_values  (user-settable dyn_anytype)
+//   time   = "1970-01-01T00:00:00Z", count = 0  (WinCC OA convention: current/latest alert)
+//   values = [[42]]  (outer array: one per alert entry; inner array: the dyn_anytype value)
 //
 // Each test triggers the alarm (write 105 > threshold), calls the mutation,
 // then resets the DP (write 0). Tests skip gracefully without alert configuration.
@@ -20,10 +20,10 @@ const {
 } = require('./helpers')
 
 const ALERT_DP    = 'ExampleDP_Rpt1.'
-const ACTIVE_DPE  = `${ALERT_DP}:_alert_hdl.._active`
-const CAME_DPE    = `${ALERT_DP}:_alert_hdl.._came_time`
-const ALARM_VALUE = 105   // > 99 → triggers alarm on ExampleDP_Rpt1
-const ALERT_INPUT = `{ time: "1970-01-01T00:00:00Z", count: 0, dpe: "${ACTIVE_DPE}" }`
+const ADD_VALUES_DPE = `${ALERT_DP}:_alert_hdl.._add_values`
+const CAME_DPE       = `${ALERT_DP}:_alert_hdl.._came_time`
+const ALARM_VALUE    = 105   // > 99 → triggers alarm on ExampleDP_Rpt1
+const ALERT_INPUT    = `{ time: "1970-01-01T00:00:00Z", count: 0, dpe: "${ADD_VALUES_DPE}" }`
 
 function nowISO() { return new Date().toISOString() }
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -64,22 +64,19 @@ module.exports = {
       await sleep(300)
       try {
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
-                set(
-                  alerts: [${ALERT_INPUT}],
-                  values: [1]
-                )
+                set(alerts: [${ALERT_INPUT}], values: $values)
               }
             }
           }
-        `)
+        `, { values: [[42]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.2')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.set')
         assertEqual(result, true, 'alert.set result')
-        writeResult('18-02-alert-set', { alertDpe: ACTIVE_DPE, result })
+        writeResult('18-02-alert-set', { alertDpe: ADD_VALUES_DPE, result })
       } finally {
         await dpWrite(0).catch(() => {})
       }
@@ -91,22 +88,19 @@ module.exports = {
       await sleep(300)
       try {
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
-                setWait(
-                  alerts: [${ALERT_INPUT}],
-                  values: [1]
-                )
+                setWait(alerts: [${ALERT_INPUT}], values: $values)
               }
             }
           }
-        `)
+        `, { values: [[42]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.3')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setWait')
         assertEqual(result, true, 'alert.setWait result')
-        writeResult('18-03-alert-set-wait', { alertDpe: ACTIVE_DPE, result })
+        writeResult('18-03-alert-set-wait', { alertDpe: ADD_VALUES_DPE, result })
       } finally {
         await dpWrite(0).catch(() => {})
       }
@@ -119,23 +113,19 @@ module.exports = {
       try {
         const time = nowISO()
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
-                setTimed(
-                  time:   "${time}",
-                  alerts: [${ALERT_INPUT}],
-                  values: [1]
-                )
+                setTimed(time: "${time}", alerts: [${ALERT_INPUT}], values: $values)
               }
             }
           }
-        `)
+        `, { values: [[42]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.4')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setTimed')
         assertEqual(result, true, 'alert.setTimed result')
-        writeResult('18-04-alert-set-timed', { time, alertDpe: ACTIVE_DPE, result })
+        writeResult('18-04-alert-set-timed', { time, alertDpe: ADD_VALUES_DPE, result })
       } finally {
         await dpWrite(0).catch(() => {})
       }
@@ -148,23 +138,19 @@ module.exports = {
       try {
         const time = nowISO()
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
-                setTimedWait(
-                  time:   "${time}",
-                  alerts: [${ALERT_INPUT}],
-                  values: [1]
-                )
+                setTimedWait(time: "${time}", alerts: [${ALERT_INPUT}], values: $values)
               }
             }
           }
-        `)
+        `, { values: [[42]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.5')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setTimedWait')
         assertEqual(result, true, 'alert.setTimedWait result')
-        writeResult('18-05-alert-set-timed-wait', { time, alertDpe: ACTIVE_DPE, result })
+        writeResult('18-05-alert-set-timed-wait', { time, alertDpe: ADD_VALUES_DPE, result })
       } finally {
         await dpWrite(0).catch(() => {})
       }
@@ -181,7 +167,7 @@ module.exports = {
               alertGetPeriod(
                 startTime: "${start}",
                 endTime:   "${end}",
-                names:     [":_alert_hdl.._active"]
+                names:     [":_alert_hdl.._add_values"]
               ) { alertTimes { time count dpe } values }
             }
           }
