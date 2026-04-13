@@ -558,7 +558,7 @@ async function startServer() {
 
     // Apply REST API middleware (use oldResolvers for backward compatibility)
     const restApi = createRestApi(winccoa, logger, oldResolvers, DISABLE_AUTH);
-    app.use('/restapi', restApi);
+    app.use('/restapi/v1', restApi);
 
     // Serve OpenAPI specification
     app.get('/openapi.json', (req, res) => {

@@ -96,7 +96,8 @@ async function gql(query, variables) {
  * Returns { status, body }.
  */
 async function rest(method, path, body) {
-  return request(method, `${BASE_URL}${path}`, body)
+  const versionedPath = path.replace(/^\/restapi\//, '/restapi/v1/')
+  return request(method, `${BASE_URL}${versionedPath}`, body)
 }
 
 // ─── Assertion helpers ───────────────────────────────────────────────────────

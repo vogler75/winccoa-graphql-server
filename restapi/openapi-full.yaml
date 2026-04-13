@@ -51,7 +51,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT token obtained from /restapi/auth/login
+      description: JWT token obtained from /restapi/v1/auth/login
 
   schemas:
     LoginRequest:
@@ -262,7 +262,7 @@ components:
 
 paths:
   # Authentication
-  /restapi/auth/login:
+  /restapi/v1/auth/login:
     post:
       tags: [Authentication]
       summary: Login to get JWT token
@@ -284,7 +284,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   # Health Check
-  /restapi/health:
+  /restapi/v1/health:
     get:
       tags: [System]
       summary: Health check
@@ -308,7 +308,7 @@ paths:
                     example: 12345.67
 
   # Usage Statistics
-  /restapi/stats:
+  /restapi/v1/stats:
     get:
       tags: [System]
       summary: Get API usage statistics
@@ -365,7 +365,7 @@ paths:
                 sortBy: count
 
   # Data Points - List and Create
-  /restapi/datapoints:
+  /restapi/v1/datapoints:
     get:
       tags: [Data Points]
       summary: List data points
@@ -444,7 +444,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
   # Data Points - Value Operations
-  /restapi/datapoints/{dpeName}/value:
+  /restapi/v1/datapoints/{dpeName}/value:
     get:
       tags: [Data Points]
       summary: Get data point value
@@ -507,7 +507,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /restapi/datapoints/{dpeName}/value/wait:
+  /restapi/v1/datapoints/{dpeName}/value/wait:
     put:
       tags: [Data Points]
       summary: Set value with wait
@@ -538,7 +538,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/datapoints/{dpeName}/value/timed:
+  /restapi/v1/datapoints/{dpeName}/value/timed:
     put:
       tags: [Data Points]
       summary: Set value with timestamp
@@ -573,7 +573,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/datapoints/{dpeName}/value/timed-wait:
+  /restapi/v1/datapoints/{dpeName}/value/timed-wait:
     put:
       tags: [Data Points]
       summary: Set value with timestamp and wait
@@ -607,7 +607,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/datapoints/{dpName}:
+  /restapi/v1/datapoints/{dpName}:
     delete:
       tags: [Data Points]
       summary: Delete data point
@@ -628,7 +628,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/datapoints/{source}/copy:
+  /restapi/v1/datapoints/{source}/copy:
     post:
       tags: [Data Points]
       summary: Copy data point
@@ -663,7 +663,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/datapoints/{dpeName}/exists:
+  /restapi/v1/datapoints/{dpeName}/exists:
     get:
       tags: [Data Points]
       summary: Check if data point exists
@@ -686,7 +686,7 @@ paths:
                   exists:
                     type: boolean
 
-  /restapi/datapoints/{dpeName}/type:
+  /restapi/v1/datapoints/{dpeName}/type:
     get:
       tags: [Data Points]
       summary: Get element type
@@ -709,7 +709,7 @@ paths:
                   elementType:
                     $ref: '#/components/schemas/ElementType'
 
-  /restapi/datapoints/{dpeName}/dp-type:
+  /restapi/v1/datapoints/{dpeName}/dp-type:
     get:
       tags: [Data Points]
       summary: Get data point type name
@@ -733,7 +733,7 @@ paths:
                     type: string
                     example: "ExampleDP_Arg"
 
-  /restapi/datapoints/{dpeName}/type-ref:
+  /restapi/v1/datapoints/{dpeName}/type-ref:
     get:
       tags: [Data Points]
       summary: Get type reference name
@@ -756,7 +756,7 @@ paths:
                   typeRef:
                     type: string
 
-  /restapi/datapoints/{dpeName}/value/max-age:
+  /restapi/v1/datapoints/{dpeName}/value/max-age:
     get:
       tags: [Data Points]
       summary: Get value with max age
@@ -787,7 +787,7 @@ paths:
                   value:
                     example: 42.5
 
-  /restapi/datapoints/{dpeName}/history:
+  /restapi/v1/datapoints/{dpeName}/history:
     get:
       tags: [Data Points]
       summary: Get historic values
@@ -827,7 +827,7 @@ paths:
                     items:
                       type: object
 
-  /restapi/datapoints/{dpAttributeName}/attribute-type:
+  /restapi/v1/datapoints/{dpAttributeName}/attribute-type:
     get:
       tags: [Data Points]
       summary: Get attribute type
@@ -850,7 +850,7 @@ paths:
                   ctrlType:
                     $ref: '#/components/schemas/CtrlType'
 
-  /restapi/query:
+  /restapi/v1/query:
     post:
       tags: [Data Points]
       summary: Execute SQL-like query on data points
@@ -908,7 +908,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   # Data Point Types
-  /restapi/datapoint-types:
+  /restapi/v1/datapoint-types:
     get:
       tags: [Data Point Types]
       summary: List data point types
@@ -964,7 +964,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/datapoint-types/{dpt}/structure:
+  /restapi/v1/datapoint-types/{dpt}/structure:
     get:
       tags: [Data Point Types]
       summary: Get type structure
@@ -991,7 +991,7 @@ paths:
                   structure:
                     $ref: '#/components/schemas/DpTypeNode'
 
-  /restapi/datapoint-types/{dpt}:
+  /restapi/v1/datapoint-types/{dpt}:
     put:
       tags: [Data Point Types]
       summary: Change data point type
@@ -1042,7 +1042,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/datapoint-types/{dpt}/references:
+  /restapi/v1/datapoint-types/{dpt}/references:
     get:
       tags: [Data Point Types]
       summary: Get type references
@@ -1072,7 +1072,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/datapoint-types/{reference}/usages:
+  /restapi/v1/datapoint-types/{reference}/usages:
     get:
       tags: [Data Point Types]
       summary: Get type usages
@@ -1103,7 +1103,7 @@ paths:
                       type: string
 
   # Tags
-  /restapi/tags:
+  /restapi/v1/tags:
     get:
       tags: [Tags]
       summary: Get tags
@@ -1131,7 +1131,7 @@ paths:
                     items:
                       $ref: '#/components/schemas/Tag'
 
-  /restapi/tags/history:
+  /restapi/v1/tags/history:
     get:
       tags: [Tags]
       summary: Get tag history
@@ -1179,7 +1179,7 @@ paths:
                       $ref: '#/components/schemas/TagHistory'
 
   # Alerts
-  /restapi/alerts:
+  /restapi/v1/alerts:
     get:
       tags: [Alerts]
       summary: Get alerts
@@ -1242,7 +1242,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/alerts/period:
+  /restapi/v1/alerts/period:
     get:
       tags: [Alerts]
       summary: Get alerts for period
@@ -1282,7 +1282,7 @@ paths:
                   values:
                     type: array
 
-  /restapi/alerts/wait:
+  /restapi/v1/alerts/wait:
     put:
       tags: [Alerts]
       summary: Set alerts with wait
@@ -1311,7 +1311,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/alerts/timed:
+  /restapi/v1/alerts/timed:
     put:
       tags: [Alerts]
       summary: Set alerts with timestamp
@@ -1343,7 +1343,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/alerts/timed-wait:
+  /restapi/v1/alerts/timed-wait:
     put:
       tags: [Alerts]
       summary: Set alerts with timestamp and wait
@@ -1376,7 +1376,7 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
 
   # CNS - Views
-  /restapi/cns/views/{systemName}:
+  /restapi/v1/cns/views/{systemName}:
     get:
       tags: [CNS - Views]
       summary: Get views for system
@@ -1401,7 +1401,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/cns/views:
+  /restapi/v1/cns/views:
     post:
       tags: [CNS - Views]
       summary: Create view
@@ -1430,7 +1430,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/cns/views/{view}:
+  /restapi/v1/cns/views/{view}:
     delete:
       tags: [CNS - Views]
       summary: Delete view
@@ -1451,7 +1451,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/cns/views/{view}/exists:
+  /restapi/v1/cns/views/{view}/exists:
     get:
       tags: [CNS - Views]
       summary: Check if view exists
@@ -1475,7 +1475,7 @@ paths:
                     type: boolean
 
   # CNS - Trees
-  /restapi/cns/trees/{view}:
+  /restapi/v1/cns/trees/{view}:
     get:
       tags: [CNS - Trees]
       summary: Get trees in view
@@ -1500,7 +1500,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/cns/trees:
+  /restapi/v1/cns/trees:
     post:
       tags: [CNS - Trees]
       summary: Add tree
@@ -1527,7 +1527,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/cns/trees/{cnsPath}:
+  /restapi/v1/cns/trees/{cnsPath}:
     put:
       tags: [CNS - Trees]
       summary: Change tree
@@ -1578,7 +1578,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/cns/trees/{cnsPath}/exists:
+  /restapi/v1/cns/trees/{cnsPath}/exists:
     get:
       tags: [CNS - Trees]
       summary: Check if tree exists
@@ -1602,7 +1602,7 @@ paths:
                     type: boolean
 
   # CNS - Nodes
-  /restapi/cns/nodes:
+  /restapi/v1/cns/nodes:
     post:
       tags: [CNS - Nodes]
       summary: Add node
@@ -1633,7 +1633,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /restapi/cns/nodes/{cnsPath}/children:
+  /restapi/v1/cns/nodes/{cnsPath}/children:
     get:
       tags: [CNS - Nodes]
       summary: Get children nodes
@@ -1658,7 +1658,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/cns/nodes/{cnsPath}/parent:
+  /restapi/v1/cns/nodes/{cnsPath}/parent:
     get:
       tags: [CNS - Nodes]
       summary: Get parent node
@@ -1681,7 +1681,7 @@ paths:
                   parent:
                     type: string
 
-  /restapi/cns/nodes/{cnsPath}/root:
+  /restapi/v1/cns/nodes/{cnsPath}/root:
     get:
       tags: [CNS - Nodes]
       summary: Get root node
@@ -1704,7 +1704,7 @@ paths:
                   root:
                     type: string
 
-  /restapi/cns/nodes/{cnsPath}/display-name:
+  /restapi/v1/cns/nodes/{cnsPath}/display-name:
     get:
       tags: [CNS - Nodes]
       summary: Get display name
@@ -1727,7 +1727,7 @@ paths:
                   displayName:
                     type: object
 
-  /restapi/cns/nodes/{cnsPath}/display-path:
+  /restapi/v1/cns/nodes/{cnsPath}/display-path:
     get:
       tags: [CNS - Nodes]
       summary: Get display path
@@ -1750,7 +1750,7 @@ paths:
                   displayPath:
                     type: object
 
-  /restapi/cns/nodes/{cnsPath}/id:
+  /restapi/v1/cns/nodes/{cnsPath}/id:
     get:
       tags: [CNS - Nodes]
       summary: Get linked data point
@@ -1773,7 +1773,7 @@ paths:
                   id:
                     type: string
 
-  /restapi/cns/nodes/{cnsPath}/exists:
+  /restapi/v1/cns/nodes/{cnsPath}/exists:
     get:
       tags: [CNS - Nodes]
       summary: Check if node exists
@@ -1796,7 +1796,7 @@ paths:
                   exists:
                     type: boolean
 
-  /restapi/cns/nodes/search/by-name:
+  /restapi/v1/cns/nodes/search/by-name:
     get:
       tags: [CNS - Nodes]
       summary: Search nodes by name
@@ -1837,7 +1837,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/cns/nodes/search/by-data:
+  /restapi/v1/cns/nodes/search/by-data:
     get:
       tags: [CNS - Nodes]
       summary: Search nodes by data point
@@ -1870,7 +1870,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/cns/nodes/search/id-set:
+  /restapi/v1/cns/nodes/search/id-set:
     get:
       tags: [CNS - Nodes]
       summary: Search linked IDs by pattern
@@ -1911,7 +1911,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/cns/nodes/{cnsPath}/property/{key}:
+  /restapi/v1/cns/nodes/{cnsPath}/property/{key}:
     get:
       tags: [CNS - Nodes]
       summary: Get node property
@@ -1939,7 +1939,7 @@ paths:
                   value:
                     description: Property value (any type)
 
-  /restapi/cns/nodes/{cnsPath}/properties:
+  /restapi/v1/cns/nodes/{cnsPath}/properties:
     get:
       tags: [CNS - Nodes]
       summary: Get property keys
@@ -1964,7 +1964,7 @@ paths:
                     items:
                       type: string
 
-  /restapi/cns/nodes/{cnsPath}/property:
+  /restapi/v1/cns/nodes/{cnsPath}/property:
     put:
       tags: [CNS - Nodes]
       summary: Set node property
@@ -2000,7 +2000,7 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
 
   # CNS - Validation
-  /restapi/cns/validation/check-id:
+  /restapi/v1/cns/validation/check-id:
     get:
       tags: [CNS - Validation]
       summary: Validate CNS ID
@@ -2023,7 +2023,7 @@ paths:
                   valid:
                     type: boolean
 
-  /restapi/cns/validation/check-name:
+  /restapi/v1/cns/validation/check-name:
     post:
       tags: [CNS - Validation]
       summary: Validate CNS display name
@@ -2051,7 +2051,7 @@ paths:
                     type: integer
                     description: "0=valid, -1=incomplete, -2=invalid chars"
 
-  /restapi/cns/validation/check-separator:
+  /restapi/v1/cns/validation/check-separator:
     get:
       tags: [CNS - Validation]
       summary: Validate CNS separator
@@ -2075,7 +2075,7 @@ paths:
                     type: boolean
 
   # System
-  /restapi/system/version:
+  /restapi/v1/system/version:
     get:
       tags: [System]
       summary: Get version information
@@ -2116,7 +2116,7 @@ paths:
                       version:
                         type: string
 
-  /restapi/system/redundancy/active:
+  /restapi/v1/system/redundancy/active:
     get:
       tags: [System]
       summary: Check if redundancy is active
@@ -2133,7 +2133,7 @@ paths:
                   active:
                     type: boolean
 
-  /restapi/system/redundancy/configured:
+  /restapi/v1/system/redundancy/configured:
     get:
       tags: [System]
       summary: Check if redundancy is configured
@@ -2150,7 +2150,7 @@ paths:
                   configured:
                     type: boolean
 
-  /restapi/system/id:
+  /restapi/v1/system/id:
     get:
       tags: [System]
       summary: Get system ID
@@ -2172,7 +2172,7 @@ paths:
                   systemId:
                     type: integer
 
-  /restapi/system/name:
+  /restapi/v1/system/name:
     get:
       tags: [System]
       summary: Get system name
@@ -2195,7 +2195,7 @@ paths:
                     type: string
 
   # Extras
-  /restapi/extras/opcua/address:
+  /restapi/v1/extras/opcua/address:
     post:
       tags: [Extras]
       summary: Set OPC UA address
