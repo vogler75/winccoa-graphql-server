@@ -2246,57 +2246,60 @@ paths:
                     type: string
 
   # Extras
-  /restapi/v1/extras/opcua/address:
+  /restapi/v1/extras/test-dummy:
+    get:
+      tags: [Extras]
+      summary: Test dummy endpoint (GET)
+      description: Placeholder endpoint for custom REST extensions. Returns a success response with a timestamp.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dummy response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Test dummy GET executed successfully
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [Extras]
-      summary: Set OPC UA address
-      description: Configure OPC UA address for a data point (Admin only)
+      summary: Test dummy endpoint (POST)
+      description: Placeholder endpoint for custom REST extensions. Accepts any body and returns a success response with a timestamp.
       security:
         - bearerAuth: []
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              required:
-                - datapointName
-                - driverNumber
-                - addressDirection
-                - addressDataType
-                - serverName
-                - subscriptionName
-                - nodeId
-              properties:
-                datapointName:
-                  type: string
-                  example: "TestMe."
-                driverNumber:
-                  type: integer
-                  example: 2
-                addressDirection:
-                  type: integer
-                  example: 2
-                addressDataType:
-                  type: integer
-                  example: 750
-                serverName:
-                  type: string
-                  example: "OpcUaServer"
-                subscriptionName:
-                  type: string
-                  example: "Sub1"
-                nodeId:
-                  type: string
-                  example: "ns=2;s=MyNode"
       responses:
         '200':
-          description: OPC UA address configured
+          description: Dummy response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Test dummy POST executed successfully
+                  timestamp:
+                    type: string
+                    format: date-time
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'

@@ -157,11 +157,20 @@ module.exports = {
     })
 
     // ── Extras ────────────────────────────────────────────────────────────────
-    await t('13.16', 'POST /restapi/extras/opcua/address (missing params) → 400', async () => {
-      const { status, body } = await rest('POST', '/restapi/extras/opcua/address', {})
-      assertEqual(status, 400, 'HTTP status')
-      assertNotNull(body.error, 'body.error')
-      writeResult('13-16-rest-extras-opcua-missing-params', { status, body })
+    await t('13.16', 'GET /restapi/extras/test-dummy → { success: true, timestamp }', async () => {
+      const { status, body } = await rest('GET', '/restapi/extras/test-dummy')
+      assertEqual(status, 200, 'HTTP status')
+      assertEqual(body.success, true, 'body.success')
+      assertNotNull(body.timestamp, 'body.timestamp')
+      writeResult('13-16-rest-extras-test-dummy-get', { status, body })
+    })
+
+    await t('13.17', 'POST /restapi/extras/test-dummy → { success: true, timestamp }', async () => {
+      const { status, body } = await rest('POST', '/restapi/extras/test-dummy', { foo: 'bar' })
+      assertEqual(status, 200, 'HTTP status')
+      assertEqual(body.success, true, 'body.success')
+      assertNotNull(body.timestamp, 'body.timestamp')
+      writeResult('13-17-rest-extras-test-dummy-post', { status, body })
     })
   }
 }

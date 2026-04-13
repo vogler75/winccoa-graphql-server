@@ -1,60 +1,41 @@
-// Extras routes for REST API
+// Extras routes for REST API — customers can extend these endpoints
 const express = require('express')
 
 module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   const router = express.Router()
 
   /**
-   * POST /restapi/extras/opcua/address
-   * Set OPC UA address configuration for a data point
+   * GET /restapi/extras/test-dummy
+   * Test dummy endpoint — placeholder for custom REST extensions
    *
-   * Body:
-   * {
-   *   "datapointName": "string",
-   *   "driverNumber": number,
-   *   "addressDirection": number,
-   *   "addressDataType": number,
-   *   "serverName": "string",
-   *   "subscriptionName": "string",
-   *   "nodeId": "string"
-   * }
-   *
-   * Response: { success: boolean }
+   * Response: { success: boolean, message: string, timestamp: string }
    */
-  router.post('/opcua/address', requireAdmin, async (req, res, next) => {
+  router.get('/test-dummy', async (req, res, next) => {
     try {
-      const {
-        datapointName,
-        driverNumber,
-        addressDirection,
-        addressDataType,
-        serverName,
-        subscriptionName,
-        nodeId
-      } = req.body
+      res.json({
+        success: true,
+        message: 'Test dummy GET executed successfully',
+        timestamp: new Date().toISOString()
+      })
+    } catch (error) {
+      next(error)
+    }
+  })
 
-      if (!datapointName || driverNumber === undefined || addressDirection === undefined ||
-          addressDataType === undefined || !serverName || !subscriptionName || !nodeId) {
-        return res.status(400).json({
-          error: 'Bad Request',
-          message: 'All parameters are required: datapointName, driverNumber, addressDirection, addressDataType, serverName, subscriptionName, nodeId'
-        })
-      }
-
-      const result = await resolvers.Mutation.setOpcUaAddress(
-        null,
-        {
-          datapointName,
-          driverNumber,
-          addressDirection,
-          addressDataType,
-          serverName,
-          subscriptionName,
-          nodeId
-        }
-      )
-
-      res.json({ success: result })
+  /**
+   * POST /restapi/extras/test-dummy
+   * Test dummy endpoint — placeholder for custom REST extensions
+   *
+   * Response: { success: boolean, message: string, timestamp: string }
+   */
+  router.post('/test-dummy', async (req, res, next) => {
+    try {
+      logger.info('REST testDummy called with body:', req.body)
+      res.json({
+        success: true,
+        message: 'Test dummy POST executed successfully',
+        timestamp: new Date().toISOString()
+      })
     } catch (error) {
       next(error)
     }
