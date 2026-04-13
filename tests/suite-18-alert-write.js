@@ -8,7 +8,11 @@
 // Pattern:
 //   dpe    = ExampleDP_Rpt1.:_alert_hdl.._add_values  (user-settable dyn_anytype)
 //   time   = "1970-01-01T00:00:00Z", count = 0  (WinCC OA convention: current/latest alert)
-//   values = [[42]]  (outer array: one per alert entry; inner array: the dyn_anytype value)
+//   values = [[]]   (outer array: one per alert entry; inner array: the dyn_anytype value)
+//
+// NOTE: The WinCC OA Node.js binding cannot convert JS primitives to anytype elements.
+// Passing [[42]] or [["str"]] causes error 9301 (Cannot convert to: ANYTYPE_VAR).
+// An empty dyn_anytype value [[]] is the only format the binding accepts.
 //
 // Each test triggers the alarm (write 105 > threshold), calls the mutation,
 // then resets the DP (write 0). Tests skip gracefully without alert configuration.
@@ -71,7 +75,7 @@ module.exports = {
               }
             }
           }
-        `, { values: [[42]] })
+        `, { values: [[]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.2')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.set')
@@ -95,7 +99,7 @@ module.exports = {
               }
             }
           }
-        `, { values: [[42]] })
+        `, { values: [[]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.3')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setWait')
@@ -120,7 +124,7 @@ module.exports = {
               }
             }
           }
-        `, { values: [[42]] })
+        `, { values: [[]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.4')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setTimed')
@@ -145,7 +149,7 @@ module.exports = {
               }
             }
           }
-        `, { values: [[42]] })
+        `, { values: [[]] })
         const skipReason = assertNoUnexpectedErrors(res, '18.5')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setTimedWait')
