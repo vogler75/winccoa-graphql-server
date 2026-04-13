@@ -23,7 +23,7 @@ const {
 
 const ALERT_DP   = DP_BIT                        // 'ExampleDP_AlertHdl1.'
 const ALERT_DPE  = `${DP_BIT}:_alert_hdl.._came_time`
-const VALUE_NAME = ':_alert_hdl.._value'         // attribute queried in alertGetPeriod
+const TEXT_NAME  = ':_alert_hdl.._text'          // writable attribute used for alertSet
 
 function nowISO() { return new Date().toISOString() }
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -46,7 +46,7 @@ async function triggerAndGetAlertTime() {
       alertGetPeriod(
         startTime: "${start}",
         endTime:   "${end}",
-        names:     ["${VALUE_NAME}"]
+        names:     ["${TEXT_NAME}"]
       ) { alertTimes { time count dpe } values }
     } } }
   `)
@@ -92,7 +92,7 @@ module.exports = {
               alert {
                 set(
                   alerts: [${ALERT_INPUT}],
-                  values: [true]
+                  values: ["test"]
                 )
               }
             }
@@ -120,7 +120,7 @@ module.exports = {
               alert {
                 setWait(
                   alerts: [${ALERT_INPUT}],
-                  values: [true]
+                  values: ["test"]
                 )
               }
             }
@@ -150,7 +150,7 @@ module.exports = {
                 setTimed(
                   time:   "${time}",
                   alerts: [${ALERT_INPUT}],
-                  values: [true]
+                  values: ["test"]
                 )
               }
             }
@@ -180,7 +180,7 @@ module.exports = {
                 setTimedWait(
                   time:   "${time}",
                   alerts: [${ALERT_INPUT}],
-                  values: [true]
+                  values: ["test"]
                 )
               }
             }
@@ -207,7 +207,7 @@ module.exports = {
               alertGetPeriod(
                 startTime: "${start}",
                 endTime:   "${end}",
-                names:     ["${VALUE_NAME}"]
+                names:     ["${TEXT_NAME}"]
               ) { alertTimes { time count dpe } values }
             }
           }
