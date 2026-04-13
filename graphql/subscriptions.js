@@ -1,6 +1,7 @@
 // Subscription GraphQL resolver functions for WinCC OA
 
 const { v4: uuidv4 } = require('uuid');
+const { decodeStatusBits } = require('./datapoint-resolvers');
 
 /**
  * Creates subscription resolver functions for WinCC OA real-time data updates.
@@ -261,11 +262,12 @@ function createSubscriptionResolvers(winccoa, logger) {
 
       /**
        * Subscribes to real-time typed tag updates.
-       * Wraps WinCC OA function: dpConnect(callback, dpeNames, answer)
-       * and dpDisconnect(connectionId) for cleanup.
+       * Wraps WinCC OA function: dpQueryConnectSingle(callback, answer, query)
+       * and dpQueryDisconnect(connectionId) for cleanup.
        *
-       * Similar to dpConnect but returns complete tag information including timestamp and status.
-       * Creates an async iterator that yields updates whenever subscribed tags change.
+       * Uses SELECT ':_original.._value', ':_original.._stime', ':_original.._status'
+       * so that value, timestamp, and status are returned directly without extra dpGet calls.
+       * One dpQueryConnectSingle connection is created per DPE; all publish to the same channel.
        *
        * @param {Array<string>} dpeNames - Array of data point element names to monitor
        * @param {boolean} [answer=true] - Whether to get immediate value and then updates
@@ -277,97 +279,78 @@ function createSubscriptionResolvers(winccoa, logger) {
 
            // Create a channel for this subscription
            const channel = `tagSubscribe-${uuidv4()}`;
-           let connectionId = null;
-           let cleanup = null;
+           const connectionIds = [];
 
            try {
              // Create async iterator first
              const asyncIterator = context.pubsub.asyncIterator(channel);
 
-             // Set up the connection
-              const callback = async (dpeNames, values, type, error) => {
-                try {
-                  // For typed connections, we need to get the complete information for each tag
-                  const tags = [];
+             // Create one dpQueryConnectSingle connection per DPE so that each query
+             // targets exactly one DP and returns value, stime, and status together.
+             for (const dpeName of dpeNames) {
+               const query = `SELECT ':_original.._value', ':_original.._stime', ':_original.._status' FROM '${dpeName}'`;
 
-                  for (let i = 0; i < dpeNames.length; i++) {
-                    const dpeName = dpeNames[i];
-                    const value = values[i];
-
-                    // WinCC OA returns the fully-qualified config address in the callback
-                    // e.g. "System1:ExampleDP_Trend1.:_online.._value" even if we subscribed
-                    // with just "ExampleDP_Trend1.".  Strip any ":_..." config suffix to get
-                    // the bare DPE, then build the stime/status addresses from that.
-                    const bareIdx = dpeName.lastIndexOf(':_');
-                    const bareDpe = bareIdx !== -1 ? dpeName.slice(0, bareIdx + 1) : dpeName;
-                    // bareDpe ends with '.', add the config without repeating the colon
-                    const timeAttr   = `${bareDpe}:_online.._stime`;
-                    const statusAttr = `${bareDpe}:_online.._status`;
-
-                    try {
-                      const [timestamp, status] = await winccoa.dpGet([timeAttr, statusAttr]);
-
-                      tags.push({
-                        name: bareDpe,
-                        value: value,
-                        timestamp: timestamp,
-                        status: status
-                      });
-                    } catch (attrError) {
-                      logger.warn(`Failed to get attributes for ${bareDpe}:`, attrError);
-                      // Still include the tag with available data
-                      tags.push({
-                        name: bareDpe,
-                        value: value,
-                        timestamp: null,
-                        status: null
-                      });
-                    }
+               const callback = (resultTable) => {
+                 // resultTable[0] is the header row; rows 1+ are data rows:
+                 //   [dpeName, value, stime, status]
+                 const tags = [];
+                 for (let i = 1; i < resultTable.length; i++) {
+                   const [name, value, timestamp, statusRaw] = resultTable[i];
+                   tags.push({
+                     name,
+                     value,
+                     timestamp,
+                     status: decodeStatusBits(statusRaw)
+                   });
                  }
+                 if (tags.length === 0) return;
+                 logger.debug(`Received tagSubscribe update for ${dpeName}:`, tags);
+                 context.pubsub.publish(channel, {
+                   tagSubscribe: {
+                     tags,
+                     type: 'update',
+                     error: null
+                   }
+                 });
+               };
 
-                 // Emit the update through the pubsub
-                 logger.debug(`Received typed update for ${dpeNames.join(', ')}:`, tags);
-                 context.pubsub.publish(channel, {
-                   tagSubscribe: {
-                     tags: tags,
-                     type: type,
-                     error: error || null
-                   }
-                 });
-               } catch (callbackError) {
-                 logger.error('tagSubscribe callback error:', callbackError);
-                 context.pubsub.publish(channel, {
-                   tagSubscribe: {
-                     tags: [],
-                     type: 'error',
-                     error: callbackError.message
-                   }
-                 });
+               const connectionId = await winccoa.dpQueryConnectSingle(callback, answer, query);
+               if (connectionId < 0) {
+                 throw new Error(`dpQueryConnectSingle returned error code ${connectionId} for ${dpeName}`);
                }
-             };
+               logger.info(`Created tagSubscribe connection ${connectionId} for ${dpeName}`);
+               connectionIds.push(connectionId);
+             }
 
-             // Create WinCC OA connection
-             connectionId = await winccoa.dpConnect(callback, dpeNames, answer);
-             logger.info(`Created tagSubscribe subscription ${connectionId}`);
-
-             // Set up cleanup
-             cleanup = () => {
-               if (connectionId !== null) {
+             // Set up cleanup — disconnect all per-DPE query connections
+             const cleanup = () => {
+               for (const id of connectionIds) {
                  try {
-                   winccoa.dpDisconnect(connectionId);
-                   logger.info(`Disconnected tagSubscribe subscription ${connectionId}`);
-                 } catch (error) {
-                   logger.error(`Error disconnecting typed subscription ${connectionId}:`, error);
+                   winccoa.dpQueryDisconnect(id);
+                   logger.info(`Disconnected tagSubscribe connection ${id}`);
+                 } catch (err) {
+                   logger.error(`Error disconnecting tagSubscribe connection ${id}:`, err);
                  }
                }
              };
 
              // Add cleanup to iterator
-             asyncIterator.cleanup = cleanup;
+             const originalReturn = asyncIterator.return;
+             asyncIterator.return = async () => {
+               cleanup();
+               if (originalReturn) {
+                 return originalReturn.call(asyncIterator);
+               }
+               return { done: true, value: undefined };
+             };
 
              return asyncIterator;
            } catch (error) {
              logger.error('tagSubscribe subscription error:', error);
+             // Disconnect any connections that were established before the failure
+             for (const id of connectionIds) {
+               try { winccoa.dpQueryDisconnect(id); } catch (_) {}
+             }
              throw new Error(`Failed to create typed tag subscription: ${error.message}`);
            }
          }

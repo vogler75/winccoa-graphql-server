@@ -528,4 +528,4 @@ function createDataPointResolvers(winccoa, logger) {
   }
 }
 
-module.exports = { createDataPointResolvers }
+module.exports = { createDataPointResolvers, decodeStatusBits }

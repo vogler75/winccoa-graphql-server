@@ -162,7 +162,7 @@ module.exports = {
 
     // ── dpQueryConnectSingle ──────────────────────────────────────────────────
     await t('20.3', `dpQueryConnectSingle(SELECT FROM '${DP_FLOAT_DP}') → initial result`, async () => {
-      const query   = `SELECT '_original.._value' FROM '${DP_FLOAT_DP}'`
+      const query   = `SELECT '_original.._value', '_original.._stime', '_original.._status' FROM '${DP_FLOAT_DP}'`
       const updates = []
 
       await withSubscription(async (ws, msg, done) => {
@@ -202,7 +202,7 @@ module.exports = {
 
     // ── dpQueryConnectAll ─────────────────────────────────────────────────────
     await t('20.4', `dpQueryConnectAll(SELECT FROM 'Example*') → initial result`, async () => {
-      const query   = "SELECT '_original.._value' FROM 'Example*'"
+      const query   = "SELECT '_original.._value', '_original.._stime', '_original.._status' FROM 'Example*'"
       const updates = []
 
       await withSubscription(async (ws, msg, done) => {
