@@ -12,7 +12,7 @@
 //   viewExists / treeExists / nodeExists:           same single-colon format as above
 
 const {
-  gql, rest,
+  gql,
   assertNoErrors, assertIsArray, assertTypeOf, assertEqual, assertNotNull, dig,
   writeResult
 } = require('./helpers')
@@ -303,56 +303,46 @@ module.exports = {
       writeResult('09-24-cns-change-tree', { path: TREE_ARG, result: true })
     })
 
-    // ── REST GET /restapi/cns/views ───────────────────────────────────────────
-    await t('9.25', `REST GET /restapi/cns/views/${SYSTEM} → 200 with array`, async () => {
-      const { status, body } = await rest('GET', `/restapi/cns/views/${encodeURIComponent(SYSTEM)}`)
-      assertNotNull(body, 'response body')
-      assertEqual(status, 200, 'HTTP status')
-      const views = body.views || body
-      assertIsArray(views, 'views')
-      writeResult('09-25-rest-cns-views', { status, views })
-    })
-
     // ── Cleanup: deleteTree then deleteView ───────────────────────────────────
-    await t('9.26', `api.cns.deleteTree(${TREE_ARG}) → true`, async () => {
+    await t('9.25', `api.cns.deleteTree(${TREE_ARG}) → true`, async () => {
       const res = await gql(
         `mutation { api { cns { deleteTree(cnsPath: "${TREE_ARG}") } } }`
       )
-      assertNoErrors(res, '9.26')
+      assertNoErrors(res, '9.25')
       assertEqual(dig(res, 'data.api.cns.deleteTree'), true, 'cns.deleteTree')
     })
 
-    await t('9.27', `api.cns.treeExists(${TREE_ARG}) → false after delete`, async () => {
+    await t('9.26', `api.cns.treeExists(${TREE_ARG}) → false after delete`, async () => {
       const res = await gql(`{ api { cns { treeExists(path: "${TREE_ARG}") } } }`)
-      assertNoErrors(res, '9.27')
+      assertNoErrors(res, '9.26')
       const result = dig(res, 'data.api.cns.treeExists')
       assertEqual(result, false, 'cns.treeExists after delete')
-      writeResult('09-27-cns-tree-exists-after-delete', { path: TREE_ARG, result })
+      writeResult('09-26-cns-tree-exists-after-delete', { path: TREE_ARG, result })
     })
 
-    await t('9.28', `api.cns.deleteView(${VIEW_ARG}) → true`, async () => {
+    await t('9.27', `api.cns.deleteView(${VIEW_ARG}) → true`, async () => {
       const res = await gql(
         `mutation { api { cns { deleteView(view: "${VIEW_ARG}") } } }`
       )
-      assertNoErrors(res, '9.28')
+      assertNoErrors(res, '9.27')
       assertEqual(dig(res, 'data.api.cns.deleteView'), true, 'cns.deleteView')
     })
 
-    await t('9.29', `api.cns.viewExists(${VIEW_ARG}) → false after delete`, async () => {
+    await t('9.28', `api.cns.viewExists(${VIEW_ARG}) → false after delete`, async () => {
       const res = await gql(`{ api { cns { viewExists(path: "${VIEW_ARG}") } } }`)
-      assertNoErrors(res, '9.29')
+      assertNoErrors(res, '9.28')
       const result = dig(res, 'data.api.cns.viewExists')
       assertEqual(result, false, 'cns.viewExists after delete')
-      writeResult('09-29-cns-view-exists-after-delete', { path: VIEW_ARG, result })
+      writeResult('09-28-cns-view-exists-after-delete', { path: VIEW_ARG, result })
     })
 
     // ── Final view list ───────────────────────────────────────────────────────
-    await t('9.30', 'api.cns.getViews("") → write final view list', async () => {
+    await t('9.29', 'api.cns.getViews("") → write final view list', async () => {
       const res = await gql('{ api { cns { getViews(systemName: "") } } }')
-      assertNoErrors(res, '9.30')
+      assertNoErrors(res, '9.29')
       const views = dig(res, 'data.api.cns.getViews')
       assertIsArray(views, 'cns.getViews final')
-      writeResult('09-30-cns-views-after', { views })
+      writeResult('09-29-cns-views-after', { views })
     })
   }
 }

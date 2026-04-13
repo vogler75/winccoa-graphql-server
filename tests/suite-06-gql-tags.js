@@ -1,13 +1,13 @@
-// tests/suite-06-tags.js — Tag reads via dp.get + REST
+// tests/suite-06-tags.js — Tag reads via dp.get (GraphQL)
 
 const {
-  gql, rest,
+  gql,
   DP_FLOAT,
   assertNoErrors, assertIsArray, assertNotNull, assertTypeOf, assertEqual, dig, writeResult
 } = require('./helpers')
 
 module.exports = {
-  name: 'Suite 6 — Tag Queries',
+  name: 'Suite 6 — Tag Queries (GraphQL)',
 
   async run(t) {
 
@@ -31,16 +31,6 @@ module.exports = {
         stime:  vals[1],
         status: vals[2]
       })
-    })
-
-    await t('6.2', `REST GET /restapi/tags?dpeNames=${DP_FLOAT} → tags array`, async () => {
-      const { status, body } = await rest('GET', `/restapi/tags?dpeNames=${encodeURIComponent(DP_FLOAT)}`)
-      assertEqual(status, 200, 'HTTP status')
-      assertNotNull(body.tags, 'body.tags')
-      assertIsArray(body.tags, 'body.tags')
-      assertEqual(body.tags.length, 1, 'tags.length')
-      assertNotNull(body.tags[0].name, 'tag.name')
-      writeResult('06-02-rest-tags', { dpe: DP_FLOAT, tags: body.tags })
     })
   }
 }

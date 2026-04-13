@@ -2,7 +2,7 @@
 // Usage: node tests/run-all.js [--bail] [--suite <number|filename>]
 //   --suite 1          run only suite-01-*
 //   --suite 01         run only suite-01-*
-//   --suite suite-01-system.js  run only that file
+//   --suite suite-01-gql-system.js  run only that file
 
 const path = require('path')
 
@@ -27,27 +27,29 @@ const C = {
 }
 
 const suiteFiles = [
-  'suite-01-system.js',
-  'suite-02-dp-queries.js',
-  'suite-03-dptype-queries.js',
-  'suite-04-dp-write.js',
-  'suite-05-dptype-write.js',
-  'suite-06-tags.js',
-  'suite-07-history.js',
-  'suite-08-alerts.js',
-  'suite-09-cns.js',
-  'suite-10-extras.js',
-  'suite-11-auth.js',
+  // ── GraphQL suites ───────────────────────────────────────────────────────────
+  'suite-01-gql-system.js',
+  'suite-02-gql-dp-queries.js',
+  'suite-03-gql-dptype-queries.js',
+  'suite-04-gql-dp-write.js',
+  'suite-05-gql-dptype-write.js',
+  'suite-06-gql-tags.js',
+  'suite-07-gql-history.js',
+  'suite-08-gql-alerts.js',
+  'suite-09-gql-cns.js',
+  'suite-10-gql-extras.js',
+  'suite-11-gql-auth.js',
+  'suite-14-gql-dp-find.js',
+  'suite-15-gql-dp-object-queries.js',
+  'suite-16-gql-dp-alias.js',
+  'suite-17-gql-dp-timed-write.js',
+  'suite-18-gql-alert-write.js',
+  'suite-20-gql-subscriptions.js',
+  'suite-21-gql-history-alerts.js',
+  // ── REST suites ──────────────────────────────────────────────────────────────
   'suite-12-rest-datapoints.js',
   'suite-13-rest-system-types.js',
-  // ── New suites ──────────────────────────────────────────────────────────────
-  'suite-14-dp-find.js',           // Discover Example* / Pump* DPs, write to results/
-  'suite-15-dp-object-queries.js', // Rich DataPoint object-API queries
-  'suite-16-dp-alias.js',          // setAlias / getAlias round-trip
-  'suite-17-dp-timed-write.js',    // setTimed / setTimedWait round-trips
-  'suite-18-alert-write.js',       // Alert mutations (set/setWait/setTimed/setTimedWait)
-  'suite-20-subscriptions.js',     // WebSocket subscriptions (dpConnect / tagSubscribe / …)
-  'suite-21-history-alerts.js',    // History and alert queries
+  'suite-22-rest-alerts-cns.js',
 ]
 
 // ─── Runner state ────────────────────────────────────────────────────────────

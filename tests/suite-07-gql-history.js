@@ -1,12 +1,11 @@
-// tests/suite-07-history.js — dpGetPeriod / REST history using ExampleDP_Rpt*
+// tests/suite-07-history.js — dpGetPeriod via GraphQL using ExampleDP_Rpt*
 //
 // ExampleDP_Rpt1–4 have the _archive config in WinCC OA — must be active (set in Para).
 // dpGetPeriod reads from the WinCC OA built-in archive store (no external RDB needed).
 // Tests write 100 values then wait 1s before querying to allow the archive to flush.
 
 const {
-  gql, rest,
-  DP_FLOAT,
+  gql,
   assertNoUnexpectedErrors, assertNotNull, assertIsArray, dig,
   writeResult
 } = require('./helpers')
@@ -33,15 +32,13 @@ async function writeHistoryValues(dpe) {
   }
 }
 
-// Wait for the archive to flush written values before querying
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
 module.exports = {
-  name: 'Suite 7 — History (dpGetPeriod + REST history)',
+  name: 'Suite 7 — History / dpGetPeriod (GraphQL)',
 
   async run(t) {
 
-    // ── GraphQL: single DP history ────────────────────────────────────────────
     await t('7.1', `api.dp.getPeriod(${RPT_DP}) — write 100 values then query window (SKIP if no RDB)`, async () => {
       const { writtenValues, start, end } = await writeHistoryValues(RPT_DP)
 
@@ -62,9 +59,7 @@ module.exports = {
       writeResult('07-01-dp-get-period-rpt1', { dp: RPT_DP, start, end, writtenValues, result })
     })
 
-    // ── GraphQL: all four Rpt DPs in one call ─────────────────────────────────
     await t('7.2', 'api.dp.getPeriod(ExampleDP_Rpt1–4) — write values then query window (SKIP if no RDB)', async () => {
-      // Write values to all four Rpt DPs and use the widest bracketing window
       let start, end
       const allWritten = {}
       for (const dp of RPT_DPS) {
@@ -89,23 +84,6 @@ module.exports = {
       if (result.every(r => r.times.length === 0))
         throw new Error('getPeriod returned empty for all Rpt DPs — archive may not be active')
       writeResult('07-02-dp-get-period-rpt-all', { dpes: RPT_DPS, start, end, allWritten, result })
-    })
-
-    // ── REST: tag history ─────────────────────────────────────────────────────
-    await t('7.3', `REST GET /restapi/tags/history(${DP_FLOAT}) — write 100 values then query (SKIP if no RDB)`, async () => {
-      const { writtenValues, start, end } = await writeHistoryValues(DP_FLOAT)
-
-      await sleep(1000)
-      console.log(`       window: ${start} → ${end}`)
-      const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`
-      const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
-      assertNotNull(body, 'response body')
-      if (status === 500 || body.error) {
-        writeResult('07-03-rest-tags-history', { skipped: true, status, error: body.error || body.message, writtenValues, note: 'values were written but RDB is not available' })
-        return 'No RDB backend — history returns error (expected)'
-      }
-      assertNotNull(body.history, 'body.history')
-      writeResult('07-03-rest-tags-history', { dpe: DP_FLOAT, start, end, writtenValues, history: body.history })
     })
   }
 }

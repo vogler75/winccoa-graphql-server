@@ -1,10 +1,10 @@
-// tests/suite-12-rest-datapoints.js — REST /restapi/datapoints routes
+// tests/suite-12-rest-datapoints.js — REST /restapi/datapoints, tags, and history routes
 
 const {
-  rest,
+  gql, rest,
   DP_FLOAT, DP_FLOAT_DP,
   TEST_DP_REST,
-  assertNotNull, assertEqual, assertIsArray, assertTypeOf, dig,
+  assertNotNull, assertEqual, assertIsArray, assertTypeOf, assertNoUnexpectedErrors, dig,
   writeResult
 } = require('./helpers')
 
@@ -12,7 +12,7 @@ const {
 function enc(name) { return encodeURIComponent(name) }
 
 module.exports = {
-  name: 'Suite 12 — REST Datapoint Routes',
+  name: 'Suite 12 — REST Datapoint, Tag & History Routes',
 
   async run(t) {
 
@@ -106,6 +106,59 @@ module.exports = {
       assertIsArray(table, 'query result')
       assertIsArray(table[0], 'header row')
       writeResult('12-10-rest-query', { query, status, rowCount: table.length, table })
+    })
+
+    // ── Tags ─────────────────────────────────────────────────────────────────
+    await t('12.11', `GET /restapi/tags?dpeNames=${DP_FLOAT} → tags array`, async () => {
+      const { status, body } = await rest('GET', `/restapi/tags?dpeNames=${encodeURIComponent(DP_FLOAT)}`)
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body.tags, 'body.tags')
+      assertIsArray(body.tags, 'body.tags')
+      assertEqual(body.tags.length, 1, 'tags.length')
+      assertNotNull(body.tags[0].name, 'tag.name')
+      writeResult('12-11-rest-tags', { dpe: DP_FLOAT, tags: body.tags })
+    })
+
+    // ── Tag history ───────────────────────────────────────────────────────────
+    await t('12.12', `GET /restapi/tags/history(${DP_FLOAT}) — write 100 values then query (SKIP if no RDB)`, async () => {
+      // Write 100 timed values then query history
+      const startMs = Date.now()
+      const writtenValues = []
+      for (let i = 0; i < 100; i++) {
+        const ts  = new Date().toISOString()
+        const val = parseFloat((i * 0.1).toFixed(1))
+        await gql(`mutation { api { dp { setTimed(time: "${ts}", dpeNames: ["${DP_FLOAT}"], values: [${val}]) } } }`)
+        writtenValues.push({ ts, val })
+      }
+      const start = new Date(startMs - 2000).toISOString()
+      const end   = new Date(Date.now() + 2000).toISOString()
+      await new Promise(r => setTimeout(r, 1000))
+
+      const params = `dpeNames=${encodeURIComponent(DP_FLOAT)}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`
+      const { status, body } = await rest('GET', `/restapi/tags/history?${params}`)
+      assertNotNull(body, 'response body')
+      if (status === 500 || body.error) {
+        writeResult('12-12-rest-tags-history', { skipped: true, status, error: body.error || body.message, writtenValues, note: 'values were written but RDB is not available' })
+        return 'No RDB backend — history returns error (expected)'
+      }
+      assertNotNull(body.history, 'body.history')
+      writeResult('12-12-rest-tags-history', { dpe: DP_FLOAT, start, end, writtenValues, history: body.history })
+    })
+
+    // ── Pump* datapoints via REST ─────────────────────────────────────────────
+    await t('12.13', 'GET /restapi/datapoints?pattern=Pump* → write response', async () => {
+      const { status, body } = await rest('GET', '/restapi/datapoints?pattern=Pump*')
+      if (status === 200 && body.datapoints && body.datapoints.length === 0) {
+        return 'No Pump* datapoints found via REST'
+      }
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body.datapoints, 'body.datapoints')
+      assertIsArray(body.datapoints, 'datapoints')
+      writeResult('12-13-rest-pump-datapoints', {
+        pattern: 'Pump*',
+        count: body.datapoints.length,
+        datapoints: body.datapoints
+      })
     })
   }
 }

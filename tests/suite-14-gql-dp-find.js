@@ -5,7 +5,7 @@
 // manual inspection.
 
 const {
-  gql, rest,
+  gql,
   DP_FLOAT_DP, DP_PUMP_PAT,
   assertNoErrors, assertIsArray, assertNotNull, assertArrayContains,
   assertTypeOf, assertEqual, dig,
@@ -13,7 +13,7 @@ const {
 } = require('./helpers')
 
 module.exports = {
-  name: 'Suite 14 — Discover Example* and Pump* DataPoints',
+  name: 'Suite 14 — Discover Example* and Pump* DataPoints (GraphQL)',
 
   async run(t) {
 
@@ -153,20 +153,5 @@ module.exports = {
       writeResult('14-09-pump-dp-names-by-type', { dpType: firstType, count: names.length, names })
     })
 
-    // ── REST /restapi/datapoints?pattern=Pump* ────────────────────────────────
-    await t('14.10', 'REST GET /restapi/datapoints?pattern=Pump* → write response', async () => {
-      const { status, body } = await rest('GET', '/restapi/datapoints?pattern=Pump*')
-      if (status === 200 && body.datapoints && body.datapoints.length === 0) {
-        return 'No Pump* datapoints found via REST'
-      }
-      assertEqual(status, 200, 'HTTP status')
-      assertNotNull(body.datapoints, 'body.datapoints')
-      assertIsArray(body.datapoints, 'datapoints')
-      writeResult('14-10-rest-pump-datapoints', {
-        pattern: 'Pump*',
-        count: body.datapoints.length,
-        datapoints: body.datapoints
-      })
-    })
   }
 }
