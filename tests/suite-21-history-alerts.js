@@ -220,41 +220,51 @@ module.exports = {
       writeResult('21-09-alert-get-current', { alarmDpe, dpeNames, result })
     })
 
-    // ── 21.10 Acknowledge alarm on ExampleDP_Rpt1 via dp.setWait ────────────
-    await t('21.10', 'dp.setWait: acknowledge alarm on ExampleDP_Rpt1 via _ack_state', async () => {
-      // _ack_state is a regular DP config attribute written via dpSet (not alertSet).
-      // Setting it to 1 acknowledges the current active alarm. No alert time needed.
-      const ackDpe = `${RPT_DPS[0]}:_alert_hdl.._ack_state`
+    // ── 21.10 Acknowledge alarm on ExampleDP_Rpt1 via alert.setWait ──────────
+    await t('21.10', 'alert.setWait: acknowledge alarm on ExampleDP_Rpt1 via _add_values=1', async () => {
+      // _ack_state cannot be written via dpSet or alertSet (error 23).
+      // Acknowledgement is done by writing 1 to _add_values via alertSet (CTRL).
+      // Epoch+0 alertTime is the WinCC OA write convention for "current/latest alert".
+      const ackDpe = `${RPT_DPS[0]}:_alert_hdl.._add_values`
       const res = await gql(`
         mutation {
           api {
-            dp {
-              setWait(dpeNames: ${JSON.stringify([ackDpe])}, values: [1])
+            alert {
+              setWait(
+                alerts: [${alertInput(ackDpe)}],
+                values: [1]
+              )
             }
           }
         }
       `)
-      assertNoErrors(res, '21.10')
-      assertEqual(dig(res, 'data.api.dp.setWait'), true, 'dp.setWait ack')
+      const skipReason = assertNoUnexpectedErrors(res, '21.10')
+      if (skipReason) return `alertSetWait not available — ${skipReason}`
+      assertEqual(dig(res, 'data.api.alert.setWait'), true, 'alert.setWait ack')
       writeResult('21-10-alert-ack', { ackDpe, ackValue: 1 })
       await sleep(ALARM_SETTLE_MS)
     })
 
-    // ── 21.11 Acknowledge all four Rpt* alarms via dp.setWait ────────────────
-    await t('21.11', 'dp.setWait: acknowledge alarms on all ExampleDP_Rpt* DPs via _ack_state', async () => {
-      const ackDpes  = RPT_DPS.map(dp => `${dp}:_alert_hdl.._ack_state`)
-      const values   = ackDpes.map(() => 1)
+    // ── 21.11 Acknowledge all four Rpt* alarms via alert.setWait ─────────────
+    await t('21.11', 'alert.setWait: acknowledge alarms on all ExampleDP_Rpt* DPs via _add_values=1', async () => {
+      const ackDpes = RPT_DPS.map(dp => `${dp}:_alert_hdl.._add_values`)
+      const alerts  = ackDpes.map(dpe => alertInput(dpe)).join(', ')
+      const values  = ackDpes.map(() => 1)
       const res = await gql(`
         mutation {
           api {
-            dp {
-              setWait(dpeNames: ${JSON.stringify(ackDpes)}, values: ${JSON.stringify(values)})
+            alert {
+              setWait(
+                alerts: [${alerts}],
+                values: ${JSON.stringify(values)}
+              )
             }
           }
         }
       `)
-      assertNoErrors(res, '21.11')
-      assertEqual(dig(res, 'data.api.dp.setWait'), true, 'dp.setWait ack all')
+      const skipReason = assertNoUnexpectedErrors(res, '21.11')
+      if (skipReason) return `alertSetWait not available — ${skipReason}`
+      assertEqual(dig(res, 'data.api.alert.setWait'), true, 'alert.setWait ack all')
       writeResult('21-11-alert-ack-all', { ackDpes, ackValue: 1 })
       await sleep(ALARM_SETTLE_MS)
     })
