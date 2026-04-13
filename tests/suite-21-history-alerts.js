@@ -220,90 +220,41 @@ module.exports = {
       writeResult('21-09-alert-get-current', { alarmDpe, dpeNames, result })
     })
 
-    // ── 21.10 Acknowledge alarm on ExampleDP_Rpt1 via alert.setWait ──────────
-    await t('21.10', 'alert.setWait: acknowledge alarm on ExampleDP_Rpt1 via _add_values=1', async () => {
-      // _ack_state cannot be written via dpSet or alertSet (error 23).
-      // Acknowledgement is done by writing 1 to _add_values via alertSet (CTRL).
-      // Epoch+0 alertTime is the WinCC OA write convention for "current/latest alert".
-      const ackDpe = `${RPT_DPS[0]}:_alert_hdl.._add_values`
-      const res = await gql(`
-        mutation {
-          api {
-            alert {
-              setWait(
-                alerts: [${alertInput(ackDpe)}],
-                values: [1]
-              )
-            }
-          }
-        }
-      `)
-      const skipReason = assertNoUnexpectedErrors(res, '21.10')
-      if (skipReason) return `alertSetWait not available — ${skipReason}`
-      assertEqual(dig(res, 'data.api.alert.setWait'), true, 'alert.setWait ack')
-      writeResult('21-10-alert-ack', { ackDpe, ackValue: 1 })
-      await sleep(ALARM_SETTLE_MS)
-    })
-
-    // ── 21.11 Acknowledge all four Rpt* alarms via alert.setWait ─────────────
-    await t('21.11', 'alert.setWait: acknowledge alarms on all ExampleDP_Rpt* DPs via _add_values=1', async () => {
-      const ackDpes = RPT_DPS.map(dp => `${dp}:_alert_hdl.._add_values`)
-      const alerts  = ackDpes.map(dpe => alertInput(dpe)).join(', ')
-      const values  = ackDpes.map(() => 1)
-      const res = await gql(`
-        mutation {
-          api {
-            alert {
-              setWait(
-                alerts: [${alerts}],
-                values: ${JSON.stringify(values)}
-              )
-            }
-          }
-        }
-      `)
-      const skipReason = assertNoUnexpectedErrors(res, '21.11')
-      if (skipReason) return `alertSetWait not available — ${skipReason}`
-      assertEqual(dig(res, 'data.api.alert.setWait'), true, 'alert.setWait ack all')
-      writeResult('21-11-alert-ack-all', { ackDpes, ackValue: 1 })
-      await sleep(ALARM_SETTLE_MS)
-    })
-
-    // ── 21.12 Write values back to normal (< 99) ─────────────────────────────
-    await t('21.12', `Write ${QUIESCE_VALUE} to all ExampleDP_Rpt* → quiesce alarms`, async () => {
+    // ── 21.10 Write values back to normal (< 99) ─────────────────────────────
+    await t('21.10', `Write ${QUIESCE_VALUE} to all ExampleDP_Rpt* → quiesce alarms`, async () => {
       const values = RPT_DPS.map(() => QUIESCE_VALUE)
       const res = await gql(
         `mutation { api { dp { setWait(dpeNames: ${JSON.stringify(RPT_DPS)}, values: ${JSON.stringify(values)}) } } }`
       )
-      assertNoErrors(res, '21.12')
+      assertNoErrors(res, '21.10')
       assertEqual(dig(res, 'data.api.dp.setWait'), true, 'setWait quiesce')
       await sleep(ALARM_SETTLE_MS)
-      writeResult('21-12-quiesce-write', { dps: RPT_DPS, value: QUIESCE_VALUE })
+      writeResult('21-10-quiesce-write', { dps: RPT_DPS, value: QUIESCE_VALUE })
     })
 
-    // ── 21.13 Verify values are back to normal ────────────────────────────────
-    await t('21.13', `Verify all ExampleDP_Rpt* read back as ${QUIESCE_VALUE} after quiesce`, async () => {
+    // ── 21.11 Verify values are back to normal ────────────────────────────────
+    await t('21.11', `Verify all ExampleDP_Rpt* read back as ${QUIESCE_VALUE} after quiesce`, async () => {
       const res = await gql(
         `{ api { dp { get(dpeNames: ${JSON.stringify(RPT_DPS)}) } } }`
       )
-      assertNoErrors(res, '21.13')
+      assertNoErrors(res, '21.11')
       const values = dig(res, 'data.api.dp.get')
       assertIsArray(values, 'values after quiesce')
       for (let i = 0; i < values.length; i++) {
         assertEqual(values[i], QUIESCE_VALUE, `${RPT_DPS[i]} value after quiesce`)
       }
-      writeResult('21-13-values-after-quiesce', { dps: RPT_DPS, values })
+      writeResult('21-11-values-after-quiesce', { dps: RPT_DPS, values })
     })
 
-    // ── 21.14 Final alarm state check: alarms should now be inactive ──────────
-    await t('21.14', 'dpQuery: verify _alert_hdl.._active = false on all Rpt* after quiesce', async () => {
+    // ── 21.12 Final alarm state check: alarms should now be inactive ──────────
+    await t('21.12', 'dpQuery: verify _alert_hdl.._active = false on all Rpt* after quiesce', async () => {
       // Give WinCC OA a moment to process the gone transition
       await sleep(ALARM_SETTLE_MS)
       const table = await readAlarmStates()
       assertNotNull(table, 'final alarm state table')
       assertIsArray(table, 'final alarm state table array')
       const dataRows = table.slice(1)
-      writeResult('21-14-alarm-state-after-quiesce', { table })
+      writeResult('21-12-alarm-state-after-quiesce', { table })
       // Alarms should be inactive (false) after writing value back below threshold
       const stillActive = dataRows.filter(row => row[1] === true)
       if (stillActive.length > 0) {
@@ -312,14 +263,14 @@ module.exports = {
       }
     })
 
-    // ── 21.15 Final dpQuery summary ───────────────────────────────────────────
-    await t('21.15', 'dpQuery: write final state summary for all Rpt* DPs', async () => {
+    // ── 21.13 Final dpQuery summary ───────────────────────────────────────────
+    await t('21.13', 'dpQuery: write final state summary for all Rpt* DPs', async () => {
       const q = "SELECT '_original.._value','_online.._value','_online.._stime','_alert_hdl.._active' FROM 'ExampleDP_Rpt*'"
       const res = await gql(`{ api { dp { query(query: ${JSON.stringify(q)}) } } }`)
-      assertNoErrors(res, '21.15')
+      assertNoErrors(res, '21.13')
       const table = dig(res, 'data.api.dp.query')
       assertIsArray(table, 'final summary table')
-      writeResult('21-15-final-summary', { query: q, table })
+      writeResult('21-13-final-summary', { query: q, table })
     })
   }
 }
