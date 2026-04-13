@@ -36,16 +36,12 @@ const AnytypeScalar = new GraphQLScalarType({
         return null
       case 'ListValue':
         // Recursively parse list items
-        return ast.values.map(item => {
-          const scalar = new AnytypeScalar()
-          return scalar.parseLiteral(item)
-        })
+        return ast.values.map(item => AnytypeScalar.parseLiteral(item))
       case 'ObjectValue':
         // Recursively parse object fields
         const obj = {}
         for (const field of ast.fields) {
-          const scalar = new AnytypeScalar()
-          obj[field.name.value] = scalar.parseLiteral(field.value)
+          obj[field.name.value] = AnytypeScalar.parseLiteral(field.value)
         }
         return obj
       default:

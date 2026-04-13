@@ -87,17 +87,17 @@ module.exports = {
       try {
         const ALERT_INPUT = `{ time: "${liveAlert.time}", count: ${liveAlert.count}, dpe: "${liveAlert.dpe}" }`
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
                 set(
                   alerts: [${ALERT_INPUT}],
-                  values: ["test"]
+                  values: $values
                 )
               }
             }
           }
-        `)
+        `, { values: [['test']] })
         const skipReason = assertNoUnexpectedErrors(res, '18.2')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.set')
@@ -115,17 +115,17 @@ module.exports = {
       try {
         const ALERT_INPUT = `{ time: "${liveAlert.time}", count: ${liveAlert.count}, dpe: "${liveAlert.dpe}" }`
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
                 setWait(
                   alerts: [${ALERT_INPUT}],
-                  values: ["test"]
+                  values: $values
                 )
               }
             }
           }
-        `)
+        `, { values: [['test']] })
         const skipReason = assertNoUnexpectedErrors(res, '18.3')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setWait')
@@ -144,18 +144,18 @@ module.exports = {
         const time = nowISO()
         const ALERT_INPUT = `{ time: "${liveAlert.time}", count: ${liveAlert.count}, dpe: "${liveAlert.dpe}" }`
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
                 setTimed(
                   time:   "${time}",
                   alerts: [${ALERT_INPUT}],
-                  values: ["test"]
+                  values: $values
                 )
               }
             }
           }
-        `)
+        `, { values: [['test']] })
         const skipReason = assertNoUnexpectedErrors(res, '18.4')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setTimed')
@@ -174,18 +174,18 @@ module.exports = {
         const time = nowISO()
         const ALERT_INPUT = `{ time: "${liveAlert.time}", count: ${liveAlert.count}, dpe: "${liveAlert.dpe}" }`
         const res = await gql(`
-          mutation {
+          mutation($values: [Anytype!]!) {
             api {
               alert {
                 setTimedWait(
                   time:   "${time}",
                   alerts: [${ALERT_INPUT}],
-                  values: ["test"]
+                  values: $values
                 )
               }
             }
           }
-        `)
+        `, { values: [['test']] })
         const skipReason = assertNoUnexpectedErrors(res, '18.5')
         if (skipReason) return `No alert groups — ${skipReason}`
         const result = dig(res, 'data.api.alert.setTimedWait')
