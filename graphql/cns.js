@@ -66,10 +66,9 @@ function convertTreeNodeOutput(treeNode) {
  * Wraps WinCC OA CNS management functions through the winccoa-manager Node.js binding.
  *
  * @param {WinccoaManager} winccoa - WinCC OA manager instance for API access
- * @param {object} logger - Logger instance for error reporting
  * @returns {object} Resolver object with Query and Mutation resolvers
  */
-function createCnsOperationResolvers(winccoa, logger) {
+function createCnsOperationResolvers(winccoa) {
   return {
     Query: {
       /**
@@ -84,7 +83,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetViews(systemName);
           return result;
         } catch (error) {
-          logger.error('getViews error:', error);
           throw new Error(`Failed to get CNS views: ${error.message}`);
         }
       },
@@ -101,7 +99,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetTrees(view);
           return result;
         } catch (error) {
-          logger.error('getTrees error:', error);
           throw new Error(`Failed to get CNS trees: ${error.message}`);
         }
       },
@@ -118,7 +115,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetChildren(cnsPath);
           return result;
         } catch (error) {
-          logger.error('getChildren error:', error);
           throw new Error(`Failed to get CNS children: ${error.message}`);
         }
       },
@@ -135,7 +131,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetParent(cnsPath);
           return result;
         } catch (error) {
-          logger.error('getParent error:', error);
           throw new Error(`Failed to get CNS parent: ${error.message}`);
         }
       },
@@ -152,7 +147,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetRoot(cnsNodePath);
           return result;
         } catch (error) {
-          logger.error('getRoot error:', error);
           throw new Error(`Failed to get CNS root: ${error.message}`);
         }
       },
@@ -169,7 +163,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetDisplayNames(cnsPath);
           return result;
         } catch (error) {
-          logger.error('getDisplayNames error:', error);
           throw new Error(`Failed to get CNS display names: ${error.message}`);
         }
       },
@@ -186,7 +179,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetDisplayPath(cnsPath);
           return result;
         } catch (error) {
-          logger.error('getDisplayPath error:', error);
           throw new Error(`Failed to get CNS display path: ${error.message}`);
         }
       },
@@ -196,7 +188,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetId(cnsPath);
           return result || '';
         } catch (error) {
-          logger.error('getId error:', error);
           throw new Error(`Failed to get CNS ID: ${error.message}`);
         }
       },
@@ -207,7 +198,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetIdSet(pattern, viewPath, searchMode, langIdx, type);
           return result;
         } catch (error) {
-          logger.error('getIdSet error:', error);
           throw new Error(`Failed to get CNS ID set: ${error.message}`);
         }
       },
@@ -217,7 +207,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetNodesByName(pattern, viewPath, searchMode, langIdx, type);
           return result;
         } catch (error) {
-          logger.error('getNodesByName error:', error);
           throw new Error(`Failed to get CNS nodes by name: ${error.message}`);
         }
       },
@@ -227,7 +216,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetNodesByData(dpName, type, viewPath);
           return result;
         } catch (error) {
-          logger.error('getNodesByData error:', error);
           throw new Error(`Failed to get CNS nodes by data: ${error.message}`);
         }
       },
@@ -238,7 +226,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetProperty(cnsPath, key);
           return result;
         } catch (error) {
-          logger.error('getProperty error:', error);
           throw new Error(`Failed to get CNS property: ${error.message}`);
         }
       },
@@ -248,7 +235,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsGetPropertyKeys(cnsPath);
           return result;
         } catch (error) {
-          logger.error('getPropertyKeys error:', error);
           throw new Error(`Failed to get CNS property keys: ${error.message}`);
         }
       },
@@ -259,7 +245,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_nodeExists(path);
           return result;
         } catch (error) {
-          logger.error('nodeExists error:', error);
           throw new Error(`Failed to check if CNS node exists: ${error.message}`);
         }
       },
@@ -269,7 +254,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_treeExists(path);
           return result;
         } catch (error) {
-          logger.error('treeExists error:', error);
           throw new Error(`Failed to check if CNS tree exists: ${error.message}`);
         }
       },
@@ -279,7 +263,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_viewExists(path);
           return result;
         } catch (error) {
-          logger.error('viewExists error:', error);
           throw new Error(`Failed to check if CNS view exists: ${error.message}`);
         }
       },
@@ -289,7 +272,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_isNode(path);
           return result;
         } catch (error) {
-          logger.error('isNode error:', error);
           throw new Error(`Failed to check if path is CNS node: ${error.message}`);
         }
       },
@@ -299,7 +281,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_isTree(path);
           return result;
         } catch (error) {
-          logger.error('isTree error:', error);
           throw new Error(`Failed to check if path is CNS tree: ${error.message}`);
         }
       },
@@ -309,7 +290,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_isView(path);
           return result;
         } catch (error) {
-          logger.error('isView error:', error);
           throw new Error(`Failed to check if path is CNS view: ${error.message}`);
         }
       },
@@ -319,7 +299,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_checkId(id);
           return result;
         } catch (error) {
-          logger.error('checkId error:', error);
           throw new Error(`Failed to check CNS ID: ${error.message}`);
         }
       },
@@ -329,7 +308,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_checkName(name);
           return result;
         } catch (error) {
-          logger.error('checkName error:', error);
           throw new Error(`Failed to check CNS name: ${error.message}`);
         }
       },
@@ -339,7 +317,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cns_checkSeparator(separator);
           return result;
         } catch (error) {
-          logger.error('checkSeparator error:', error);
           throw new Error(`Failed to check CNS separator: ${error.message}`);
         }
       }
@@ -352,7 +329,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsCreateView(view, displayName, separator);
           return result;
         } catch (error) {
-          logger.error('createView error:', error);
           throw new Error(`Failed to create CNS view: ${error.message}`);
         }
       },
@@ -363,7 +339,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsAddTree(cnsParentPath, winccoaTree);
           return result;
         } catch (error) {
-          logger.error('addTree error:', error);
           throw new Error(`Failed to add CNS tree: ${error.message}`);
         }
       },
@@ -373,7 +348,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsAddNode(cnsParentPath, name, displayName, dp);
           return result;
         } catch (error) {
-          logger.error('addNode error:', error);
           throw new Error(`Failed to add CNS node: ${error.message}`);
         }
       },
@@ -385,7 +359,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsChangeTree(cnsPath, winccoaTree);
           return result;
         } catch (error) {
-          logger.error('changeTree error:', error);
           throw new Error(`Failed to change CNS tree: ${error.message}`);
         }
       },
@@ -395,7 +368,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsDeleteTree(cnsPath);
           return result;
         } catch (error) {
-          logger.error('deleteTree error:', error);
           throw new Error(`Failed to delete CNS tree: ${error.message}`);
         }
       },
@@ -405,7 +377,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsDeleteView(view);
           return result;
         } catch (error) {
-          logger.error('deleteView error:', error);
           throw new Error(`Failed to delete CNS view: ${error.message}`);
         }
       },
@@ -420,7 +391,6 @@ function createCnsOperationResolvers(winccoa, logger) {
           const result = await winccoa.cnsSetProperty(cnsPath, key, value, typeNum);
           return result;
         } catch (error) {
-          logger.error('setProperty error:', error);
           throw new Error(`Failed to set CNS property: ${error.message}`);
         }
       }
