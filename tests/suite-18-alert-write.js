@@ -1,30 +1,33 @@
 // tests/suite-18-alert-write.js — Alert mutations (set / setWait / setTimed / setTimedWait)
 //
-// Mirrors the acknowledgment pattern from suite-21:
-//   • dpe = <DP>:_alert_hdl.._active  — the attribute alertSet can write to
-//   • time "1970-01-01T00:00:00Z", count 0  — WinCC OA convention for the current/latest alert
-//   • values [1]  — 1 = acknowledge / confirm active state
+// Uses ExampleDP_Rpt1 — a float DP with a threshold alarm (values > 99 trigger _active).
+// alertSet works on this DP's _alert_hdl.._active attribute with values [1].
+// ExampleDP_AlertHdl1 (BOOL DP) has a different alert handler type that does not
+// support alertSet on any attribute (error 23 "Invalid attribute").
 //
-// Each test writes true to ExampleDP_AlertHdl1 first so there is an active alert,
-// then calls the mutation, then resets the DP. Tests skip gracefully on systems
-// without alert configuration.
+// Pattern (confirmed working in suite-21):
+//   dpe   = ExampleDP_Rpt1.:_alert_hdl.._active
+//   time  = "1970-01-01T00:00:00Z", count = 0  (WinCC OA convention: current/latest alert)
+//   values = [1]
+//
+// Each test triggers the alarm (write 105 > threshold), calls the mutation,
+// then resets the DP (write 0). Tests skip gracefully without alert configuration.
 
 const {
   gql,
-  DP_BIT,
-  assertNoErrors, assertNoUnexpectedErrors, assertEqual, assertNotNull, dig,
+  assertNoUnexpectedErrors, assertEqual, assertNotNull, dig,
   writeResult
 } = require('./helpers')
 
-const ALERT_DP    = DP_BIT                               // 'ExampleDP_AlertHdl1.'
-const CAME_DPE    = `${DP_BIT}:_alert_hdl.._came_time`  // read path for alertGet (18.1)
-const ACTIVE_DPE  = `${DP_BIT}:_alert_hdl.._active`     // writable via alertSet (18.2–18.5)
+const ALERT_DP    = 'ExampleDP_Rpt1.'
+const ACTIVE_DPE  = `${ALERT_DP}:_alert_hdl.._active`
+const CAME_DPE    = `${ALERT_DP}:_alert_hdl.._came_time`
+const ALARM_VALUE = 105   // > 99 → triggers alarm on ExampleDP_Rpt1
 const ALERT_INPUT = `{ time: "1970-01-01T00:00:00Z", count: 0, dpe: "${ACTIVE_DPE}" }`
 
 function nowISO() { return new Date().toISOString() }
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
-// Write a value to the alert DP (true to trigger, false to reset).
 async function dpWrite(value) {
   await gql(`mutation { api { dp { setWait(dpeNames: ["${ALERT_DP}"], values: [${value}]) } } }`)
 }
@@ -34,7 +37,7 @@ module.exports = {
 
   async run(t) {
 
-    // ── alertGet (read before write) ──────────────────────────────────────────
+    // ── alertGet (read) ───────────────────────────────────────────────────────
     await t('18.1', 'api.alert.alertGet → read current alert state (SKIP if no groups)', async () => {
       const CAME_INPUT = `{ time: "1970-01-01T00:00:00Z", count: 0, dpe: "${CAME_DPE}" }`
       const res = await gql(`
@@ -57,8 +60,8 @@ module.exports = {
 
     // ── alert.set ────────────────────────────────────────────────────────────
     await t('18.2', 'api.alert.set → Boolean (SKIP if no groups)', async () => {
-      await dpWrite(true)
-      await sleep(200)
+      await dpWrite(ALARM_VALUE)
+      await sleep(300)
       try {
         const res = await gql(`
           mutation {
@@ -78,14 +81,14 @@ module.exports = {
         assertEqual(result, true, 'alert.set result')
         writeResult('18-02-alert-set', { alertDpe: ACTIVE_DPE, result })
       } finally {
-        await dpWrite(false).catch(() => {})
+        await dpWrite(0).catch(() => {})
       }
     })
 
     // ── alert.setWait ─────────────────────────────────────────────────────────
     await t('18.3', 'api.alert.setWait → Boolean (SKIP if no groups)', async () => {
-      await dpWrite(true)
-      await sleep(200)
+      await dpWrite(ALARM_VALUE)
+      await sleep(300)
       try {
         const res = await gql(`
           mutation {
@@ -105,14 +108,14 @@ module.exports = {
         assertEqual(result, true, 'alert.setWait result')
         writeResult('18-03-alert-set-wait', { alertDpe: ACTIVE_DPE, result })
       } finally {
-        await dpWrite(false).catch(() => {})
+        await dpWrite(0).catch(() => {})
       }
     })
 
     // ── alert.setTimed ────────────────────────────────────────────────────────
     await t('18.4', 'api.alert.setTimed → Boolean (SKIP if no groups)', async () => {
-      await dpWrite(true)
-      await sleep(200)
+      await dpWrite(ALARM_VALUE)
+      await sleep(300)
       try {
         const time = nowISO()
         const res = await gql(`
@@ -134,14 +137,14 @@ module.exports = {
         assertEqual(result, true, 'alert.setTimed result')
         writeResult('18-04-alert-set-timed', { time, alertDpe: ACTIVE_DPE, result })
       } finally {
-        await dpWrite(false).catch(() => {})
+        await dpWrite(0).catch(() => {})
       }
     })
 
     // ── alert.setTimedWait ────────────────────────────────────────────────────
     await t('18.5', 'api.alert.setTimedWait → Boolean (SKIP if no groups)', async () => {
-      await dpWrite(true)
-      await sleep(200)
+      await dpWrite(ALARM_VALUE)
+      await sleep(300)
       try {
         const time = nowISO()
         const res = await gql(`
@@ -163,7 +166,7 @@ module.exports = {
         assertEqual(result, true, 'alert.setTimedWait result')
         writeResult('18-05-alert-set-timed-wait', { time, alertDpe: ACTIVE_DPE, result })
       } finally {
-        await dpWrite(false).catch(() => {})
+        await dpWrite(0).catch(() => {})
       }
     })
 
