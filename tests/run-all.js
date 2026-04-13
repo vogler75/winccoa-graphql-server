@@ -49,7 +49,8 @@ const suiteFiles = [
   // ── REST suites ──────────────────────────────────────────────────────────────
   'suite-12-rest-datapoints.js',
   'suite-13-rest-system-types.js',
-  'suite-22-rest-alerts-cns.js',
+  'suite-22-rest-alerts.js',
+  'suite-23-rest-cns.js',
 ]
 
 // ─── Runner state ────────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@
 
 const {
   gql,
+  DP_FLOAT,
   assertNoErrors, assertIsArray, assertTypeOf, assertEqual, assertNotNull, dig,
   writeResult
 } = require('./helpers')
@@ -281,8 +282,58 @@ module.exports = {
       writeResult('09-23-cns-parent', { node: NODE_ARG, parent })
     })
 
+    // ── getDisplayNames / getDisplayPath / getId ───────────────────────────────
+    await t('9.24', `api.cns.getDisplayNames(${NODE_ARG}) → JSON`, async () => {
+      const res = await gql(`{ api { cns { getDisplayNames(cnsPath: "${NODE_ARG}") } } }`)
+      assertNoErrors(res, '9.24')
+      const result = dig(res, 'data.api.cns.getDisplayNames')
+      assertNotNull(result, 'cns.getDisplayNames')
+      writeResult('09-24-cns-display-names', { node: NODE_ARG, result })
+    })
+
+    await t('9.25', `api.cns.getDisplayPath(${NODE_ARG}) → JSON`, async () => {
+      const res = await gql(`{ api { cns { getDisplayPath(cnsPath: "${NODE_ARG}") } } }`)
+      assertNoErrors(res, '9.25')
+      const result = dig(res, 'data.api.cns.getDisplayPath')
+      assertNotNull(result, 'cns.getDisplayPath')
+      writeResult('09-25-cns-display-path', { node: NODE_ARG, result })
+    })
+
+    await t('9.26', `api.cns.getId(${NODE_ARG}) → String or null`, async () => {
+      const res = await gql(`{ api { cns { getId(cnsPath: "${NODE_ARG}") } } }`)
+      assertNoErrors(res, '9.26')
+      // id may be null/empty when no DP is linked to the node
+      const result = dig(res, 'data.api.cns.getId')
+      writeResult('09-26-cns-id', { node: NODE_ARG, result })
+    })
+
+    // ── getNodesByName / getNodesByData / getIdSet ─────────────────────────────
+    await t('9.27', `api.cns.getNodesByName("*${NODE_NAME}*") → [String]`, async () => {
+      const res = await gql(`{ api { cns { getNodesByName(pattern: "*${NODE_NAME}*") } } }`)
+      assertNoErrors(res, '9.27')
+      const result = dig(res, 'data.api.cns.getNodesByName')
+      assertIsArray(result, 'cns.getNodesByName')
+      writeResult('09-27-cns-nodes-by-name', { pattern: `*${NODE_NAME}*`, result })
+    })
+
+    await t('9.28', `api.cns.getNodesByData(${DP_FLOAT}) → [String]`, async () => {
+      const res = await gql(`{ api { cns { getNodesByData(dpName: "${DP_FLOAT}") } } }`)
+      assertNoErrors(res, '9.28')
+      const result = dig(res, 'data.api.cns.getNodesByData')
+      assertIsArray(result, 'cns.getNodesByData')
+      writeResult('09-28-cns-nodes-by-data', { dpName: DP_FLOAT, result })
+    })
+
+    await t('9.29', `api.cns.getIdSet("*${NODE_NAME}*") → [String]`, async () => {
+      const res = await gql(`{ api { cns { getIdSet(pattern: "*${NODE_NAME}*") } } }`)
+      assertNoErrors(res, '9.29')
+      const result = dig(res, 'data.api.cns.getIdSet')
+      assertIsArray(result, 'cns.getIdSet')
+      writeResult('09-29-cns-id-set', { pattern: `*${NODE_NAME}*`, result })
+    })
+
     // ── changeTree ────────────────────────────────────────────────────────────
-    await t('9.24', `api.cns.changeTree(${TREE_ARG}) → rename display name → true`, async () => {
+    await t('9.30', `api.cns.changeTree(${TREE_ARG}) → rename display name → true`, async () => {
       const res = await gql(`
         mutation {
           api {
@@ -298,51 +349,51 @@ module.exports = {
           }
         }
       `)
-      assertNoErrors(res, '9.24')
+      assertNoErrors(res, '9.30')
       assertEqual(dig(res, 'data.api.cns.changeTree'), true, 'cns.changeTree')
-      writeResult('09-24-cns-change-tree', { path: TREE_ARG, result: true })
+      writeResult('09-30-cns-change-tree', { path: TREE_ARG, result: true })
     })
 
     // ── Cleanup: deleteTree then deleteView ───────────────────────────────────
-    await t('9.25', `api.cns.deleteTree(${TREE_ARG}) → true`, async () => {
+    await t('9.31', `api.cns.deleteTree(${TREE_ARG}) → true`, async () => {
       const res = await gql(
         `mutation { api { cns { deleteTree(cnsPath: "${TREE_ARG}") } } }`
       )
-      assertNoErrors(res, '9.25')
+      assertNoErrors(res, '9.31')
       assertEqual(dig(res, 'data.api.cns.deleteTree'), true, 'cns.deleteTree')
     })
 
-    await t('9.26', `api.cns.treeExists(${TREE_ARG}) → false after delete`, async () => {
+    await t('9.32', `api.cns.treeExists(${TREE_ARG}) → false after delete`, async () => {
       const res = await gql(`{ api { cns { treeExists(path: "${TREE_ARG}") } } }`)
-      assertNoErrors(res, '9.26')
+      assertNoErrors(res, '9.32')
       const result = dig(res, 'data.api.cns.treeExists')
       assertEqual(result, false, 'cns.treeExists after delete')
-      writeResult('09-26-cns-tree-exists-after-delete', { path: TREE_ARG, result })
+      writeResult('09-32-cns-tree-exists-after-delete', { path: TREE_ARG, result })
     })
 
-    await t('9.27', `api.cns.deleteView(${VIEW_ARG}) → true`, async () => {
+    await t('9.33', `api.cns.deleteView(${VIEW_ARG}) → true`, async () => {
       const res = await gql(
         `mutation { api { cns { deleteView(view: "${VIEW_ARG}") } } }`
       )
-      assertNoErrors(res, '9.27')
+      assertNoErrors(res, '9.33')
       assertEqual(dig(res, 'data.api.cns.deleteView'), true, 'cns.deleteView')
     })
 
-    await t('9.28', `api.cns.viewExists(${VIEW_ARG}) → false after delete`, async () => {
+    await t('9.34', `api.cns.viewExists(${VIEW_ARG}) → false after delete`, async () => {
       const res = await gql(`{ api { cns { viewExists(path: "${VIEW_ARG}") } } }`)
-      assertNoErrors(res, '9.28')
+      assertNoErrors(res, '9.34')
       const result = dig(res, 'data.api.cns.viewExists')
       assertEqual(result, false, 'cns.viewExists after delete')
-      writeResult('09-28-cns-view-exists-after-delete', { path: VIEW_ARG, result })
+      writeResult('09-34-cns-view-exists-after-delete', { path: VIEW_ARG, result })
     })
 
     // ── Final view list ───────────────────────────────────────────────────────
-    await t('9.29', 'api.cns.getViews("") → write final view list', async () => {
+    await t('9.35', 'api.cns.getViews("") → write final view list', async () => {
       const res = await gql('{ api { cns { getViews(systemName: "") } } }')
-      assertNoErrors(res, '9.29')
+      assertNoErrors(res, '9.35')
       const views = dig(res, 'data.api.cns.getViews')
       assertIsArray(views, 'cns.getViews final')
-      writeResult('09-29-cns-views-after', { views })
+      writeResult('09-35-cns-views-after', { views })
     })
   }
 }
