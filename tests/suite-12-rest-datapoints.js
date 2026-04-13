@@ -160,5 +160,102 @@ module.exports = {
         datapoints: body.datapoints
       })
     })
+
+    // ── value/wait round-trip ────────────────────────────────────────────────
+    await t('12.14', `PUT /restapi/datapoints/${DP_FLOAT}/value/wait { value: 88 } → success`, async () => {
+      const { status, body } = await rest('PUT', `/restapi/datapoints/${enc(DP_FLOAT)}/value/wait`, { value: 88 })
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      writeResult('12-14-rest-dp-value-wait', { dpe: DP_FLOAT, written: 88, status, body })
+    })
+
+    await t('12.15', `GET /restapi/datapoints/${DP_FLOAT}/value → 88 (wait round-trip)`, async () => {
+      const { status, body } = await rest('GET', `/restapi/datapoints/${enc(DP_FLOAT)}/value`)
+      assertEqual(status, 200, 'HTTP status')
+      assertEqual(body.value, 88, 'body.value after value/wait PUT')
+    })
+
+    // ── value/timed ──────────────────────────────────────────────────────────
+    await t('12.16', `PUT /restapi/datapoints/${DP_FLOAT}/value/timed { value: 55.5 } → success`, async () => {
+      const time = new Date().toISOString()
+      const { status, body } = await rest('PUT', `/restapi/datapoints/${enc(DP_FLOAT)}/value/timed`, { value: 55.5, time })
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      writeResult('12-16-rest-dp-value-timed', { dpe: DP_FLOAT, written: 55.5, time, status, body })
+    })
+
+    // ── value/timed-wait ─────────────────────────────────────────────────────
+    await t('12.17', `PUT /restapi/datapoints/${DP_FLOAT}/value/timed-wait { value: 66.6 } → success`, async () => {
+      const time = new Date().toISOString()
+      const { status, body } = await rest('PUT', `/restapi/datapoints/${enc(DP_FLOAT)}/value/timed-wait`, { value: 66.6, time })
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      writeResult('12-17-rest-dp-value-timed-wait', { dpe: DP_FLOAT, written: 66.6, time, status, body })
+    })
+
+    // ── copy lifecycle ───────────────────────────────────────────────────────
+    const TEST_DP_REST_COPY = 'TestDP_RestTestCopy'
+
+    await t('12.18', `POST /restapi/datapoints/${DP_FLOAT_DP}/copy → ${TEST_DP_REST_COPY}`, async () => {
+      await rest('DELETE', `/restapi/datapoints/${enc(TEST_DP_REST_COPY)}`).catch(() => {})
+      const { status, body } = await rest('POST', `/restapi/datapoints/${enc(DP_FLOAT_DP)}/copy`, { destination: TEST_DP_REST_COPY })
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      writeResult('12-18-rest-dp-copy', { source: DP_FLOAT_DP, destination: TEST_DP_REST_COPY, status, body })
+    })
+
+    await t('12.19', `GET /restapi/datapoints/${TEST_DP_REST_COPY}/exists → true (after copy)`, async () => {
+      const { status, body } = await rest('GET', `/restapi/datapoints/${enc(TEST_DP_REST_COPY)}/exists`)
+      assertEqual(status, 200, 'HTTP status')
+      assertEqual(body.exists, true, 'body.exists after copy')
+    })
+
+    await t('12.20', `DELETE /restapi/datapoints/${TEST_DP_REST_COPY} → 200 (cleanup copy)`, async () => {
+      const { status } = await rest('DELETE', `/restapi/datapoints/${enc(TEST_DP_REST_COPY)}`)
+      assertEqual(status, 200, 'HTTP status')
+    })
+
+    // ── type-ref ─────────────────────────────────────────────────────────────
+    await t('12.21', `GET /restapi/datapoints/${DP_FLOAT}/type-ref → { typeRef }`, async () => {
+      const { status, body } = await rest('GET', `/restapi/datapoints/${enc(DP_FLOAT)}/type-ref`)
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      // typeRef may be empty string for simple/primitive types
+      writeResult('12-21-rest-dp-type-ref', { dpe: DP_FLOAT, status, body })
+    })
+
+    // ── value/max-age ─────────────────────────────────────────────────────────
+    await t('12.22', `GET /restapi/datapoints/${DP_FLOAT}/value/max-age?age=5000 → { value }`, async () => {
+      const { status, body } = await rest('GET', `/restapi/datapoints/${enc(DP_FLOAT)}/value/max-age?age=5000`)
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      writeResult('12-22-rest-dp-value-max-age', { dpe: DP_FLOAT, age: 5000, status, body })
+    })
+
+    // ── DP history ────────────────────────────────────────────────────────────
+    await t('12.23', `GET /restapi/datapoints/${DP_FLOAT}/history → values (SKIP if no RDB)`, async () => {
+      const startTime = new Date(Date.now() - 60000).toISOString()
+      const endTime   = new Date().toISOString()
+      const params = `startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`
+      const { status, body } = await rest('GET', `/restapi/datapoints/${enc(DP_FLOAT)}/history?${params}`)
+      if (status === 500 || body.error) {
+        writeResult('12-23-rest-dp-history', { skipped: true, status, error: body.error || body.message })
+        return 'No RDB backend — history returns error (expected)'
+      }
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body.values, 'body.values')
+      writeResult('12-23-rest-dp-history', { dpe: DP_FLOAT, startTime, endTime, status, body })
+    })
+
+    // ── attribute-type ────────────────────────────────────────────────────────
+    // dpAttributeType expects a full attribute path, not just a DPE name
+    const DP_FLOAT_ATTR = `${DP_FLOAT}:_online.._value`
+    await t('12.24', `GET /restapi/datapoints/${DP_FLOAT_ATTR}/attribute-type → { ctrlType }`, async () => {
+      const { status, body } = await rest('GET', `/restapi/datapoints/${enc(DP_FLOAT_ATTR)}/attribute-type`)
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      assertNotNull(body.ctrlType, 'body.ctrlType')
+      writeResult('12-24-rest-dp-attribute-type', { dpAttribute: DP_FLOAT_ATTR, status, body })
+    })
   }
 }

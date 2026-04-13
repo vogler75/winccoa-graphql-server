@@ -100,10 +100,68 @@ module.exports = {
       writeResult('13-09-rest-dptype-create', { typeName: TEST_TYPE_REST, status, body })
     })
 
-    await t('13.10', `DELETE /restapi/datapoint-types/${TEST_TYPE_REST} → 200`, async () => {
+    await t('13.10', `PUT /restapi/datapoint-types/${TEST_TYPE_REST} → change (add count INT)`, async () => {
+      const { status, body } = await rest('PUT', `/restapi/datapoint-types/${enc(TEST_TYPE_REST)}`, {
+        startNode: {
+          name: TEST_TYPE_REST,
+          type: 'STRUCT',
+          children: [
+            { name: 'value', type: 'FLOAT' },
+            { name: 'count', type: 'INT' }
+          ]
+        }
+      })
+      assertEqual(status, 200, 'HTTP status')
+      writeResult('13-10-rest-dptype-change', { typeName: TEST_TYPE_REST, status, body })
+    })
+
+    await t('13.11', `DELETE /restapi/datapoint-types/${TEST_TYPE_REST} → 200`, async () => {
       const { status, body } = await rest('DELETE', `/restapi/datapoint-types/${enc(TEST_TYPE_REST)}`)
       assertEqual(status, 200, 'HTTP status')
-      writeResult('13-10-rest-dptype-delete', { typeName: TEST_TYPE_REST, status, body })
+      writeResult('13-11-rest-dptype-delete', { typeName: TEST_TYPE_REST, status, body })
+    })
+
+    // ── Stats ─────────────────────────────────────────────────────────────────
+    await t('13.12', 'GET /restapi/stats → 200 with stats', async () => {
+      const { status, body } = await rest('GET', '/restapi/stats')
+      assertEqual(status, 200, 'HTTP status')
+      assertNotNull(body, 'body')
+      writeResult('13-12-rest-stats', { status, body })
+    })
+
+    // ── System — redundancy configured ────────────────────────────────────────
+    await t('13.13', 'GET /restapi/system/redundancy/configured → Boolean', async () => {
+      const { status, body } = await rest('GET', '/restapi/system/redundancy/configured')
+      assertEqual(status, 200, 'HTTP status')
+      const configured = body.configured ?? body
+      if (typeof configured !== 'boolean')
+        throw new Error(`Expected boolean, got ${JSON.stringify(body)}`)
+      writeResult('13-13-rest-system-redundancy-configured', { status, body })
+    })
+
+    // ── DatapointType — references + usages ───────────────────────────────────
+    await t('13.14', 'GET /restapi/datapoint-types/ExampleDP_Float/references → { dptNames, dpePaths }', async () => {
+      const { status, body } = await rest('GET', '/restapi/datapoint-types/ExampleDP_Float/references')
+      assertEqual(status, 200, 'HTTP status')
+      assertIsArray(body.dptNames ?? [], 'dptNames')
+      assertIsArray(body.dpePaths ?? [], 'dpePaths')
+      writeResult('13-14-rest-dptype-references', { dpt: 'ExampleDP_Float', status, body })
+    })
+
+    await t('13.15', 'GET /restapi/datapoint-types/ExampleDP_Float/usages → { dptNames, dpePaths }', async () => {
+      const { status, body } = await rest('GET', '/restapi/datapoint-types/ExampleDP_Float/usages')
+      assertEqual(status, 200, 'HTTP status')
+      assertIsArray(body.dptNames ?? [], 'dptNames')
+      assertIsArray(body.dpePaths ?? [], 'dpePaths')
+      writeResult('13-15-rest-dptype-usages', { reference: 'ExampleDP_Float', status, body })
+    })
+
+    // ── Extras ────────────────────────────────────────────────────────────────
+    await t('13.16', 'POST /restapi/extras/opcua/address (missing params) → 400', async () => {
+      const { status, body } = await rest('POST', '/restapi/extras/opcua/address', {})
+      assertEqual(status, 400, 'HTTP status')
+      assertNotNull(body.error, 'body.error')
+      writeResult('13-16-rest-extras-opcua-missing-params', { status, body })
     })
   }
 }
