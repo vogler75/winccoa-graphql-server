@@ -23,7 +23,7 @@ const {
 
 const ALERT_DP   = DP_BIT                        // 'ExampleDP_AlertHdl1.'
 const ALERT_DPE  = `${DP_BIT}:_alert_hdl.._came_time`
-const TEXT_NAME  = ':_alert_hdl.._text'          // writable attribute used for alertSet
+const ADD_VALUES_NAME = ':_alert_hdl.._add_values'  // writable attribute used for alertSet
 
 function nowISO() { return new Date().toISOString() }
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -46,7 +46,7 @@ async function triggerAndGetAlertTime() {
       alertGetPeriod(
         startTime: "${start}",
         endTime:   "${end}",
-        names:     ["${TEXT_NAME}"]
+        names:     ["${ADD_VALUES_NAME}"]
       ) { alertTimes { time count dpe } values }
     } } }
   `)
@@ -207,7 +207,7 @@ module.exports = {
               alertGetPeriod(
                 startTime: "${start}",
                 endTime:   "${end}",
-                names:     ["${TEXT_NAME}"]
+                names:     ["${ADD_VALUES_NAME}"]
               ) { alertTimes { time count dpe } values }
             }
           }
