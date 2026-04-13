@@ -167,7 +167,7 @@ const _authenticateUser = (username, password) => authenticateUser(username, pas
 
 // Create resolver modules
 const commonResolvers = createCommonResolvers(winccoa, logger);
-const alertResolvers = createAlertOperationResolvers(winccoa, logger);
+const alertResolvers = createAlertOperationResolvers(winccoa);
 const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
 const cnsResolvers = createCnsOperationResolvers(winccoa);
 const extrasResolvers = createExtrasResolvers(winccoa, logger);
