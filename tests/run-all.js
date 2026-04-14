@@ -51,6 +51,8 @@ const suiteFiles = [
   'suite-13-rest-system-types.js',
   'suite-22-rest-alerts.js',
   'suite-23-rest-cns.js',
+  'suite-24-rest-subscriptions.js',
+  'suite-25-rest-stats.js',
 ]
 
 // ─── Runner state ────────────────────────────────────────────────────────────

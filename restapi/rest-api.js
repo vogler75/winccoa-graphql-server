@@ -11,6 +11,7 @@ const alertRoutes = require('./routes/alert-routes')
 const cnsRoutes = require('./routes/cns-routes')
 const systemRoutes = require('./routes/system-routes')
 const extrasRoutes = require('./routes/extras-routes')
+const subscriptionRoutes = require('./routes/subscription-routes')
 
 /**
  * Creates the main REST API router for WinCC OA operations.
@@ -136,6 +137,7 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
   router.use('/system', systemRoutes(winccoa, logger, resolvers))
   router.use('/extras', extrasRoutes(winccoa, logger, resolvers, requireAdmin))
   router.use('/query', createQueryRouter(winccoa, logger, resolvers))
+  router.use('/subscriptions', subscriptionRoutes(winccoa, logger))
 
   // 404 handler
   router.use((req, res) => {

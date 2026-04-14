@@ -373,7 +373,7 @@
 
         async function fetchStats(sortBy = 'name') {
             try {
-                const response = await fetch(`/restapi/stats?sortBy=${sortBy}`);
+                const response = await fetch(`/restapi/v1/stats?sortBy=${sortBy}`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

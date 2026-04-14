@@ -44,6 +44,8 @@ tags:
     description: System information, version, and redundancy
   - name: Extras
     description: Additional operations (OPC UA configuration, etc.)
+  - name: Subscriptions
+    description: Server-Sent Events (SSE) endpoints for real-time data point subscriptions
 
 components:
   securitySchemes:
@@ -2301,5 +2303,165 @@ paths:
                   timestamp:
                     type: string
                     format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /restapi/v1/subscriptions/dp-connect:
+    get:
+      tags: [Subscriptions]
+      summary: Subscribe to data point changes (SSE)
+      description: |
+        Opens a Server-Sent Events stream that emits a JSON event whenever the
+        subscribed data point elements change.
+
+        Wraps WinCC OA `dpConnect(callback, dpeNames, answer)`. The connection is
+        cleaned up automatically when the client closes the stream.
+
+        Each SSE event has the form:
+        ```
+        data: {"dpeNames":[...],"values":[...],"type":"...","error":null}
+        ```
+
+        To subscribe to multiple DPEs repeat the `dpeNames` parameter:
+        `?dpeNames=Dp1:_online.._value&dpeNames=Dp2:_online.._value`
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dpeNames
+          in: query
+          required: true
+          description: One or more data point element names to monitor. Repeat the parameter for multiple DPEs.
+          style: form
+          explode: true
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+          example: ExampleDP_Arg1:_online.._value
+        - name: answer
+          in: query
+          required: false
+          description: If true (default), send the current value immediately on connect in addition to future updates.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: SSE stream of data point update events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Newline-delimited SSE stream. Each event is a `data:` line containing JSON:
+                  { "dpeNames": ["dp:elem"], "values": [42], "type": "update", "error": null }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /restapi/v1/subscriptions/dp-query-connect-single:
+    get:
+      tags: [Subscriptions]
+      summary: Subscribe to query results — single (most recent) result set (SSE)
+      description: |
+        Opens a Server-Sent Events stream that emits a JSON event whenever the
+        dpQuery result changes, returning only the most recent result set.
+
+        Wraps WinCC OA `dpQueryConnectSingle(callback, answer, query, blockingTime)`.
+
+        Each SSE event has the form:
+        ```
+        data: {"values":[[header,...],[row,...]],"type":"update","error":null}
+        ```
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: dpQuery SQL-like query string.
+          schema:
+            type: string
+          example: "SELECT '_original.._value' FROM 'ExampleDP_Arg*'"
+        - name: answer
+          in: query
+          required: false
+          description: If true (default), send the current result immediately on connect.
+          schema:
+            type: boolean
+            default: true
+        - name: blockingTime
+          in: query
+          required: false
+          description: Blocking time in milliseconds for query updates.
+          schema:
+            type: number
+      responses:
+        '200':
+          description: SSE stream of query result events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Newline-delimited SSE stream. Each event is a `data:` line containing JSON:
+                  { "values": [["header"], ["row"]], "type": "update", "error": null }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /restapi/v1/subscriptions/dp-query-connect-all:
+    get:
+      tags: [Subscriptions]
+      summary: Subscribe to query results — complete result set on every update (SSE)
+      description: |
+        Opens a Server-Sent Events stream that emits a JSON event whenever the
+        dpQuery result changes, returning the complete result set each time.
+
+        Wraps WinCC OA `dpQueryConnectAll(callback, answer, query, blockingTime)`.
+
+        Each SSE event has the form:
+        ```
+        data: {"values":[[header,...],[row,...]],"type":"update","error":null}
+        ```
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: dpQuery SQL-like query string.
+          schema:
+            type: string
+          example: "SELECT '_original.._value' FROM 'ExampleDP_Arg*'"
+        - name: answer
+          in: query
+          required: false
+          description: If true (default), send the current result immediately on connect.
+          schema:
+            type: boolean
+            default: true
+        - name: blockingTime
+          in: query
+          required: false
+          description: Blocking time in milliseconds for query updates.
+          schema:
+            type: number
+      responses:
+        '200':
+          description: SSE stream of query result events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Newline-delimited SSE stream. Each event is a `data:` line containing JSON:
+                  { "values": [["header"], ["row"]], "type": "update", "error": null }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
