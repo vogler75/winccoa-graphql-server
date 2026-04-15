@@ -74,16 +74,31 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
 
   /**
    * Usage tracking middleware for all REST API calls.
-   * Records endpoint name and call count in UsageTracker instance.
+   * Records the matched route template (e.g. GET /datapoints/:dpeName/value) rather than
+   * the expanded path, so stats stay bounded regardless of how many unique DP names are used.
+   * Tracking is deferred to res.on('finish') so that req.route is available after routing.
    */
   router.use((req, res, next) => {
-    // Track the API call
-    const usageTracker = req.app.locals.usageTracker
-    if (usageTracker) {
-      // Create endpoint identifier: method + path
-      const endpoint = `${req.method} ${req.path}`
-      usageTracker.track('restapi', endpoint)
-    }
+    // Capture mount point before next() changes req.baseUrl
+    const middlewareBase = req.baseUrl
+    res.on('finish', () => {
+      const usageTracker = req.app.locals.usageTracker
+      if (!usageTracker) return
+      let endpoint
+      if (req.route) {
+        // req.baseUrl at finish time is the subrouter prefix (e.g. '/restapi/v1/datapoints')
+        // req.route.path is the local template   (e.g. '/:dpeName/value')
+        const fullPattern = req.baseUrl + req.route.path
+        // Strip the outer router prefix to get a path relative to this router
+        endpoint = fullPattern.startsWith(middlewareBase)
+          ? fullPattern.slice(middlewareBase.length)
+          : fullPattern
+      } else {
+        // Unmatched route (404) — req.path carries no dynamic DP names here
+        endpoint = req.path
+      }
+      usageTracker.track('restapi', `${req.method} ${endpoint}`)
+    })
     next()
   })
 
