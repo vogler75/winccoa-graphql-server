@@ -1,7 +1,7 @@
 // System routes for REST API
 const express = require('express')
 
-module.exports = function(winccoa, logger, resolvers) {
+module.exports = function(logger) {
   const router = express.Router()
 
   /**
@@ -12,7 +12,7 @@ module.exports = function(winccoa, logger, resolvers) {
    */
   router.get('/version', async (req, res, next) => {
     try {
-      const result = await resolvers.Query.getVersionInfo()
+      const result = await req.resolvers.Query.getVersionInfo()
       res.json(result)
     } catch (error) {
       next(error)
@@ -27,7 +27,7 @@ module.exports = function(winccoa, logger, resolvers) {
    */
   router.get('/redundancy/active', async (req, res, next) => {
     try {
-      const result = await resolvers.Query.isReduActive()
+      const result = await req.resolvers.Query.isReduActive()
       res.json({ active: result })
     } catch (error) {
       next(error)
@@ -42,7 +42,7 @@ module.exports = function(winccoa, logger, resolvers) {
    */
   router.get('/redundancy/configured', async (req, res, next) => {
     try {
-      const result = await resolvers.Query.isRedundant()
+      const result = await req.resolvers.Query.isRedundant()
       res.json({ configured: result })
     } catch (error) {
       next(error)
@@ -61,7 +61,7 @@ module.exports = function(winccoa, logger, resolvers) {
   router.get('/id', async (req, res, next) => {
     try {
       const { systemName } = req.query
-      const result = await resolvers.Query.getSystemId(null, { systemName })
+      const result = await req.resolvers.Query.getSystemId(null, { systemName })
       res.json({ systemId: result })
     } catch (error) {
       next(error)
@@ -80,7 +80,7 @@ module.exports = function(winccoa, logger, resolvers) {
   router.get('/name', async (req, res, next) => {
     try {
       const { systemId } = req.query
-      const result = await resolvers.Query.getSystemName(
+      const result = await req.resolvers.Query.getSystemName(
         null,
         { systemId: systemId ? parseInt(systemId) : undefined }
       )

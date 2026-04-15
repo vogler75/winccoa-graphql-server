@@ -1,5 +1,10 @@
 // SSE subscription routes for WinCC OA REST API
 // Mirrors the GraphQL WebSocket subscriptions as Server-Sent Events endpoints.
+//
+// Uses req.winccoa (per-session WinccoaManager set by restAuthMiddleware) for all
+// WinCC OA calls. Active SSE connection IDs are registered on the session's
+// sseConnections Set so that destroySession() can disconnect them if the session
+// is terminated by idle timeout or explicit logout while the SSE stream is open.
 const express = require('express')
 
 /**
@@ -9,11 +14,10 @@ const express = require('express')
  * Each event line is: data: <JSON>\n\n
  * On client disconnect the WinCC OA connection is cleaned up automatically.
  *
- * @param {WinccoaManager} winccoa - WinCC OA manager instance
  * @param {object} logger - Logger instance
  * @returns {express.Router}
  */
-module.exports = function createSubscriptionRoutes(winccoa, logger) {
+module.exports = function createSubscriptionRoutes(logger) {
   const router = express.Router()
 
   // Helper: set SSE response headers and flush them immediately so the client
@@ -35,6 +39,48 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
     res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`)
     res.end()
   }
+
+  /**
+   * Register a connection ID on the session's sseConnections set so that
+   * destroySession() can disconnect it on idle timeout / logout.
+   * req.user.sseConnections is the set stored in the SessionManager entry.
+   * This is retrieved via req.sseConnections set up below.
+   */
+  function trackConnection(req, id, type) {
+    if (req.sseConnections) {
+      req.sseConnections.add({ id, type })
+    }
+  }
+
+  function untrackConnection(req, id, type) {
+    if (req.sseConnections) {
+      for (const conn of req.sseConnections) {
+        if (conn.id === id && conn.type === type) {
+          req.sseConnections.delete(conn)
+          break
+        }
+      }
+    }
+  }
+
+  /**
+   * Middleware: attach the session's sseConnections Set to req so handlers can
+   * register/unregister active connections. Falls back to a throw-away Set when
+   * there is no session (DISABLE_AUTH or static token).
+   */
+  router.use((req, res, next) => {
+    const sessionManager = req.app.locals.sessionManager
+    const user = req.user
+
+    if (sessionManager && user && user.tokenId && user.tokenId !== 'no-auth'
+        && user.tokenId !== 'direct' && user.tokenId !== 'readonly') {
+      const session = sessionManager.getSession(user.tokenId)
+      req.sseConnections = session ? session.sseConnections : new Set()
+    } else {
+      req.sseConnections = new Set() // throw-away, not tracked for cleanup
+    }
+    next()
+  })
 
   /**
    * GET /restapi/v1/subscriptions/dp-connect
@@ -61,6 +107,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
     startSse(res)
 
     let connectionId = null
+    const winccoa = req.winccoa
 
     const callback = (names, values, type, error) => {
       writeEvent(res, { dpeNames: names, values, type, error: error || null })
@@ -68,6 +115,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
 
     try {
       connectionId = await winccoa.dpConnect(callback, dpeNames, answer)
+      trackConnection(req, connectionId, 'dpConnect')
       logger.info(`SSE dpConnect ${connectionId} opened for: ${dpeNames.join(', ')}`)
     } catch (err) {
       logger.error('SSE dpConnect failed:', err)
@@ -77,6 +125,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
 
     req.on('close', () => {
       if (connectionId !== null) {
+        untrackConnection(req, connectionId, 'dpConnect')
         try {
           winccoa.dpDisconnect(connectionId)
           logger.info(`SSE dpConnect ${connectionId} closed`)
@@ -112,6 +161,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
     startSse(res)
 
     let connectionId = null
+    const winccoa = req.winccoa
 
     const callback = (resultTable) => {
       writeEvent(res, { values: resultTable, type: 'update', error: null })
@@ -122,6 +172,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
       if (connectionId < 0) {
         throw new Error(`dpQueryConnectSingle returned error code ${connectionId}`)
       }
+      trackConnection(req, connectionId, 'dpQueryConnect')
       logger.info(`SSE dpQueryConnectSingle ${connectionId} opened for: ${query}`)
     } catch (err) {
       logger.error('SSE dpQueryConnectSingle failed:', err)
@@ -130,6 +181,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
     }
 
     req.on('close', () => {
+      untrackConnection(req, connectionId, 'dpQueryConnect')
       try {
         winccoa.dpQueryDisconnect(connectionId)
         logger.info(`SSE dpQueryConnectSingle ${connectionId} closed`)
@@ -164,6 +216,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
     startSse(res)
 
     let connectionId = null
+    const winccoa = req.winccoa
 
     const callback = (resultTable) => {
       writeEvent(res, { values: resultTable, type: 'update', error: null })
@@ -174,6 +227,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
       if (connectionId < 0) {
         throw new Error(`dpQueryConnectAll returned error code ${connectionId}`)
       }
+      trackConnection(req, connectionId, 'dpQueryConnect')
       logger.info(`SSE dpQueryConnectAll ${connectionId} opened for: ${query}`)
     } catch (err) {
       logger.error('SSE dpQueryConnectAll failed:', err)
@@ -182,6 +236,7 @@ module.exports = function createSubscriptionRoutes(winccoa, logger) {
     }
 
     req.on('close', () => {
+      untrackConnection(req, connectionId, 'dpQueryConnect')
       try {
         winccoa.dpQueryDisconnect(connectionId)
         logger.info(`SSE dpQueryConnectAll ${connectionId} closed`)

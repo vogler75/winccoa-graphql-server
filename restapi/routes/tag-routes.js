@@ -1,7 +1,7 @@
 // Tag routes for REST API
 const express = require('express')
 
-module.exports = function(winccoa, logger, resolvers) {
+module.exports = function(logger) {
   const router = express.Router()
 
   /**
@@ -25,7 +25,7 @@ module.exports = function(winccoa, logger, resolvers) {
       }
 
       const dpeNamesList = dpeNames.split(',').map(name => name.trim())
-      const result = await resolvers.Query.tagGet(null, { dpeNames: dpeNamesList })
+      const result = await req.resolvers.Query.tagGet(null, { dpeNames: dpeNamesList })
 
       res.json({ tags: result })
     } catch (error) {
@@ -58,7 +58,7 @@ module.exports = function(winccoa, logger, resolvers) {
       }
 
       const dpeNamesList = dpeNames.split(',').map(name => name.trim())
-      const result = await resolvers.Query.tagGetHistory(
+      const result = await req.resolvers.Query.tagGetHistory(
         null,
         {
           dpeNames: dpeNamesList,

@@ -19,23 +19,35 @@ const subscriptionRoutes = require('./routes/subscription-routes')
  * Provides RESTful endpoints that wrap WinCC OA functions and GraphQL resolvers.
  * Includes authentication, authorization, and usage tracking middleware.
  *
- * @param {WinccoaManager} winccoa - WinCC OA manager instance for API access
- * @param {object} logger - Logger instance for error reporting
- * @param {object} resolvers - GraphQL resolvers for backward compatibility
- * @param {boolean} DISABLE_AUTH - Whether to disable authentication
+ * Each authenticated request gets its own per-session WinccoaManager and resolver
+ * set (looked up via SessionManager using the token's tokenId).
+ * Static bypass tokens (DIRECT_ACCESS_TOKEN / READONLY_TOKEN) and DISABLE_AUTH
+ * mode fall back to the global winccoa instance passed in as the first argument.
+ *
+ * @param {WinccoaManager} globalWinccoa   - Global WinCC OA manager instance (fallback for no-auth / static tokens)
+ * @param {object}         logger          - Logger instance for error reporting
+ * @param {object}         globalResolvers - Global resolver set (fallback for no-auth / static tokens)
+ * @param {boolean}        DISABLE_AUTH    - Whether to disable authentication
+ * @param {object}         sessionManager  - SessionManager instance (may be null when DISABLE_AUTH=true)
  * @returns {express.Router} Express router with all REST API endpoints
  */
-function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
+function createRestApi(globalWinccoa, logger, globalResolvers, DISABLE_AUTH, sessionManager) {
   const router = express.Router()
 
   /**
    * Authentication middleware for REST API.
-   * Validates bearer token and attaches user information to request.
+   * Validates bearer token, attaches req.user, req.winccoa, and req.resolvers.
+   *
+   * - DISABLE_AUTH=true   → anonymous user, global winccoa + resolvers
+   * - Static bypass token → static user, global winccoa + resolvers
+   * - Normal JWT session  → per-session winccoa + resolvers from SessionManager
    */
   const restAuthMiddleware = (req, res, next) => {
     // Skip authentication if disabled
     if (DISABLE_AUTH) {
-      req.user = { userId: 'anonymous', tokenId: 'no-auth', role: 'admin' }
+      req.user     = { userId: 'anonymous', tokenId: 'no-auth', role: 'admin' }
+      req.winccoa  = globalWinccoa
+      req.resolvers = globalResolvers
       return next()
     }
 
@@ -51,13 +63,32 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
     }
 
     const token = authHeader.substring(7)
-    const user = req.app.locals.validateToken(token)
+    const user  = req.app.locals.validateToken(token)
 
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Invalid or expired token' })
     }
 
     req.user = user
+
+    // Attach per-session resources (winccoa + resolvers)
+    const isStaticToken = user.tokenId === 'direct' || user.tokenId === 'readonly'
+    if (isStaticToken || !sessionManager) {
+      req.winccoa   = globalWinccoa
+      req.resolvers = globalResolvers
+    } else {
+      const session = sessionManager.getSession(user.tokenId)
+      if (session) {
+        req.winccoa   = session.winccoa
+        req.resolvers = session.oldResolvers
+      } else {
+        // Session not found — fall back to global instance (e.g. token was just purged)
+        logger.warn(`REST: no session for tokenId=${user.tokenId.substring(0, 8)}... — using global instance`)
+        req.winccoa   = globalWinccoa
+        req.resolvers = globalResolvers
+      }
+    }
+
     next()
   }
 
@@ -107,10 +138,12 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
    * Returns service status and uptime.
    */
   router.get('/health', (req, res) => {
+    const sm = req.app.locals.sessionManager
     res.json({
       status: 'healthy',
       service: 'WinCC OA REST API',
-      uptime: process.uptime()
+      uptime: process.uptime(),
+      activeSessions: sm ? sm.sessionCount() : 0
     })
   })
 
@@ -137,22 +170,22 @@ function createRestApi(winccoa, logger, resolvers, DISABLE_AUTH) {
     })
   })
 
-  // Mount authentication routes (no auth required for login)
+  // Mount authentication routes (no auth required for login / logout)
   router.use('/auth', authRoutes)
 
   // Apply authentication middleware to all routes below
   router.use(restAuthMiddleware)
 
-  // Mount route modules
-  router.use('/datapoints', datapointRoutes(winccoa, logger, resolvers, requireAdmin))
-  router.use('/datapoint-types', datapointTypeRoutes(winccoa, logger, resolvers, requireAdmin))
-  router.use('/tags', tagRoutes(winccoa, logger, resolvers))
-  router.use('/alerts', alertRoutes(winccoa, logger, resolvers, requireAdmin))
-  router.use('/cns', cnsRoutes(winccoa, logger, resolvers, requireAdmin))
-  router.use('/system', systemRoutes(winccoa, logger, resolvers))
-  router.use('/extras', extrasRoutes(winccoa, logger, resolvers, requireAdmin))
-  router.use('/query', createQueryRouter(winccoa, logger, resolvers))
-  router.use('/subscriptions', subscriptionRoutes(winccoa, logger))
+  // Mount route modules — routes use req.winccoa and req.resolvers set by restAuthMiddleware
+  router.use('/datapoints',      datapointRoutes(logger, requireAdmin))
+  router.use('/datapoint-types', datapointTypeRoutes(logger, requireAdmin))
+  router.use('/tags',            tagRoutes(logger))
+  router.use('/alerts',          alertRoutes(logger, requireAdmin))
+  router.use('/cns',             cnsRoutes(logger, requireAdmin))
+  router.use('/system',          systemRoutes(logger))
+  router.use('/extras',          extrasRoutes(logger, requireAdmin))
+  router.use('/query',           createQueryRouter(logger))
+  router.use('/subscriptions',   subscriptionRoutes(logger))
 
   // 404 handler
   router.use((req, res) => {

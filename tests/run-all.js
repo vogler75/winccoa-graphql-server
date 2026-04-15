@@ -53,6 +53,7 @@ const suiteFiles = [
   'suite-23-rest-cns.js',
   'suite-24-rest-subscriptions.js',
   'suite-25-rest-stats.js',
+  'suite-26-session-lifecycle.js',
 ]
 
 // ─── Runner state ────────────────────────────────────────────────────────────

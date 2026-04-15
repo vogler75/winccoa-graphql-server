@@ -285,6 +285,31 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /restapi/v1/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout and destroy session
+      description: |
+        Invalidates the current JWT token and destroys the associated WinccoaManager
+        session. The token cannot be used after a successful logout.
+        This operation is idempotent — calling it with an already-expired or
+        already-invalidated token returns `{ "success": true }`.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   # Health Check
   /restapi/v1/health:
     get:

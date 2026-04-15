@@ -21,7 +21,7 @@ if (DEBUG_WINCCOA) {
   console.log('🐛 Debug mode enabled: All WinCC OA Node.js function calls will be logged');
 }
 
-// Require WinCC OA interface
+// Require WinCC OA interface — ONE global instance used only for DISABLE_AUTH / static token paths
 const { WinccoaManager } = require('winccoa-manager');
 const winccoaBase = new WinccoaManager();
 
@@ -79,16 +79,18 @@ const {
   generateToken,
   validateToken,
   authenticateUser,
-  purgeExpiredTokens,
   ADMIN_USERNAME,
   ADMIN_PASSWORD,
   READONLY_USERNAME,
   DIRECT_ACCESS_TOKEN,
   READONLY_TOKEN,
   JWT_SECRET,
-  TOKEN_EXPIRY_MS
+  TOKEN_EXPIRY_MS,
+  AUTH_MODE,
+  tokenStore
 } = require('./lib/auth');
 const { SimplePubSub } = require('./lib/pubsub');
+const { createSessionManager } = require('./lib/session-manager');
 
 // Import required modules
 const { ApolloServer } = require('@apollo/server');
@@ -128,7 +130,8 @@ console.log(`   Direct Access Token: ${DIRECT_ACCESS_TOKEN ? '✅ Set' : '❌ No
 console.log(`   Readonly Username: ${READONLY_USERNAME ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Readonly Token: ${READONLY_TOKEN ? '✅ Set' : '❌ Not set'}`);
 console.log(`   JWT Secret: ${JWT_SECRET !== 'your-secret-key-change-in-production' ? '✅ Custom' : '⚠️  Default (change in production)'}`);
-console.log(`   Token Expiry: ${TOKEN_EXPIRY_MS}ms (${Math.round(TOKEN_EXPIRY_MS / 60000)} minutes)`);
+console.log(`   Token Expiry / Idle Timeout: ${TOKEN_EXPIRY_MS}ms (${Math.round(TOKEN_EXPIRY_MS / 60000)} minutes)`);
+console.log(`   Auth Mode: ${AUTH_MODE} (config=env-var only, winccoa=WinCC OA users, both=env-var then WinCC OA)`);
 
 if (DISABLE_AUTH) {
   console.log('⚠️  WARNING: Authentication is DISABLED! This is unsafe for production.');
@@ -142,16 +145,10 @@ if (DISABLE_AUTH) {
 const schemaV2 = require('./graphql');
 const typeDefs = schemaV2.typeDefs;
 
-// Wrap validateToken / authenticateUser to bind the logger (lib/auth exports take logger as param)
+// Wrap validateToken / authenticateUser to bind the logger (lib/auth exports take logger as param).
+// authenticateUser uses AUTH_MODE internally — no winccoa instance needed here.
 const _validateToken    = (token) => validateToken(token, logger);
 const _authenticateUser = (username, password) => authenticateUser(username, password, logger);
-
-// Create resolver modules
-const commonResolvers = createCommonResolvers(winccoa, logger);
-const alertResolvers = createAlertOperationResolvers(winccoa);
-const subscriptionResolvers = createSubscriptionResolvers(winccoa, logger);
-const cnsResolvers = createCnsOperationResolvers(winccoa);
-const extrasResolvers = createExtrasResolvers(winccoa, logger);
 
 /**
  * Merges multiple GraphQL resolver objects into a single resolver.
@@ -178,21 +175,134 @@ function mergeResolvers(...resolverObjects) {
   return merged;
 }
 
-// Create old resolvers for backward compatibility via Methods type
-const oldResolvers = mergeResolvers(
-  commonResolvers,
-  alertResolvers,
-  subscriptionResolvers,
-  cnsResolvers,
-  extrasResolvers
+// Build the global resolver set used only when auth is disabled or for static tokens.
+// For normal authenticated sessions, each session has its own resolver set (see SessionManager).
+const globalCommonResolvers  = createCommonResolvers(winccoa, logger);
+const globalAlertResolvers   = createAlertOperationResolvers(winccoa);
+const globalSubResolvers     = createSubscriptionResolvers(winccoa, logger);
+const globalCnsResolvers     = createCnsOperationResolvers(winccoa);
+const globalExtrasResolvers  = createExtrasResolvers(winccoa, logger);
+
+const globalOldResolvers = mergeResolvers(
+  globalCommonResolvers,
+  globalAlertResolvers,
+  globalSubResolvers,
+  globalCnsResolvers,
+  globalExtrasResolvers
 );
 
-// Create v2 resolvers with hierarchical structure
-const v2Resolvers = createV2Resolvers(winccoa, logger, oldResolvers);
+const globalV2Resolvers = createV2Resolvers(winccoa, logger, globalOldResolvers);
 
-// GraphQL Resolvers - merge v2 with login mutation and custom scalars
+// Session manager — one WinccoaManager per authenticated session
+const sessionManager = createSessionManager({
+  logger,
+  debugWinccoa: DEBUG_WINCCOA,
+  tokenStore,
+  idleTimeoutMs: TOKEN_EXPIRY_MS,
+  mergeResolvers
+});
+
+/**
+ * Returns the winccoa instance and resolver sets for the given auth context.
+ *
+ * - DISABLE_AUTH / no-auth → global instance
+ * - Static bypass token    → global instance (no session entry exists)
+ * - Normal JWT session     → per-session instance from SessionManager
+ *
+ * @param {object|null} user  - result of _validateToken (has tokenId)
+ * @returns {{ winccoa, oldResolvers, v2Resolvers }}
+ */
+function getSessionResources(user) {
+  if (!user) {
+    return { winccoa, oldResolvers: globalOldResolvers, v2Resolvers: globalV2Resolvers };
+  }
+
+  // Static tokens use the global instance
+  const isStaticToken = user.tokenId === 'direct' || user.tokenId === 'readonly' || user.tokenId === 'no-auth';
+  if (isStaticToken || DISABLE_AUTH) {
+    return { winccoa, oldResolvers: globalOldResolvers, v2Resolvers: globalV2Resolvers };
+  }
+
+  const session = sessionManager.getSession(user.tokenId);
+  if (session) {
+    return { winccoa: session.winccoa, oldResolvers: session.oldResolvers, v2Resolvers: session.v2Resolvers };
+  }
+
+  // Session not found — fall back to global (can happen if token was purged between validate and here)
+  logger.warn(`getSessionResources: no session found for tokenId=${user.tokenId.substring(0, 8)}... — using global instance`);
+  return { winccoa, oldResolvers: globalOldResolvers, v2Resolvers: globalV2Resolvers };
+}
+
+/**
+ * Builds a resolver map where every resolver function delegates to the
+ * per-request resolver stored in contextValue.
+ *
+ * For each type (Query, Mutation, etc.) and each field, the returned function:
+ * 1. Looks up the matching resolver in contextValue.v2Resolvers (per-session)
+ * 2. Falls back to the provided globalResolvers if none found
+ * 3. Calls the found resolver with the same arguments
+ *
+ * This allows the Apollo schema to remain static while the actual WinCC OA
+ * calls go through the per-session WinccoaManager.
+ */
+function buildContextAwareResolvers(globalResolvers) {
+  const result = {};
+
+  for (const [typeName, typeResolvers] of Object.entries(globalResolvers)) {
+    // Skip scalar types and non-object entries
+    if (typeof typeResolvers !== 'object' || typeResolvers === null) {
+      result[typeName] = typeResolvers;
+      continue;
+    }
+
+    result[typeName] = {};
+
+    for (const [fieldName, fieldResolver] of Object.entries(typeResolvers)) {
+      if (typeof fieldResolver !== 'function') {
+        result[typeName][fieldName] = fieldResolver;
+        continue;
+      }
+
+      // Wrap: look up the per-session resolver from context, fall back to global
+      result[typeName][fieldName] = function(parent, args, contextValue, info) {
+        let resolver = fieldResolver; // default: global
+
+        if (contextValue && contextValue.v2Resolvers) {
+          const sessionType = contextValue.v2Resolvers[typeName];
+          if (sessionType && typeof sessionType[fieldName] === 'function') {
+            resolver = sessionType[fieldName];
+          }
+        }
+
+        return resolver(parent, args, contextValue, info);
+      };
+    }
+  }
+
+  return result;
+}
+
+// GraphQL Resolvers — build the top-level resolver map using a dynamic dispatch
+// approach: the actual winccoa/resolvers are looked up per-request from context.
+//
+// For v2 resolvers we need a static schema-level resolver object, but the actual
+// data work happens inside resolver functions that read from contextValue.
+//
+// Strategy: the v2Resolvers object is built from globalV2Resolvers for schema
+// registration, but every leaf resolver that actually calls winccoa reads the
+// per-session instance from context. This is done by replacing Query/Mutation
+// resolver functions with context-aware wrappers.
+//
+// In practice, because all V2 resolvers ultimately call winccoa through their
+// closure, and the per-session winccoa is attached to contextValue.winccoa,
+// we need a different approach: build a thin schema resolver set that delegates
+// to context.resolvers.
+//
+// We use a Proxy-based approach on the schema resolvers to forward calls to
+// the per-request resolver set stored in context.
 const resolvers = mergeResolvers(
-  v2Resolvers,
+  // Top-level resolvers that delegate to context.v2Resolvers at request time
+  buildContextAwareResolvers(globalV2Resolvers),
   {
     Anytype: AnytypeScalar,
     Mutation: {
@@ -203,7 +313,12 @@ const resolvers = mergeResolvers(
           throw new Error('Invalid username or password');
         }
 
-        const { token, expiresAt } = generateToken(user.id, user.role);
+        const { token, expiresAt, tokenId } = generateToken(user.id, user.role);
+
+        // Create a per-session WinccoaManager (unless auth is disabled)
+        if (!DISABLE_AUTH) {
+          sessionManager.createSession(tokenId, user.role);
+        }
 
         logger.info(`User ${username} logged in successfully with role: ${user.role}`);
 
@@ -211,6 +326,18 @@ const resolvers = mergeResolvers(
           token,
           expiresAt: new Date(expiresAt).toISOString()
         };
+      },
+
+      async logout(_, __, contextValue) {
+        const user = contextValue.user;
+        if (!user || !user.tokenId) return false;
+
+        const isStaticToken = user.tokenId === 'direct' || user.tokenId === 'readonly' || user.tokenId === 'no-auth';
+        if (!isStaticToken) {
+          sessionManager.destroySession(user.tokenId);
+          logger.info(`User ${user.userId} logged out — session destroyed`);
+        }
+        return true;
       }
     }
   }
@@ -310,8 +437,13 @@ async function startServer() {
       schema,
       context: async (ctx) => {
         const authContext = wsAuthMiddleware(ctx);
+        const user = authContext.user;
+        const { winccoa: sessionWinccoa, oldResolvers, v2Resolvers } = getSessionResources(user);
         return {
           ...authContext,
+          winccoa: sessionWinccoa,
+          oldResolvers,
+          v2Resolvers,
           pubsub
         };
       },
@@ -517,11 +649,12 @@ async function startServer() {
     app.use(cors(corsOptions));
     app.use(express.json());
 
-    // Make auth functions and usage tracker available to REST API
-    app.locals.validateToken = _validateToken;
-    app.locals.authenticateUser = _authenticateUser;
-    app.locals.generateToken = generateToken;
-    app.locals.usageTracker = usageTracker;
+    // Make auth functions, session manager, and usage tracker available to REST API
+    app.locals.validateToken     = _validateToken;
+    app.locals.authenticateUser  = _authenticateUser;
+    app.locals.generateToken     = generateToken;
+    app.locals.sessionManager    = sessionManager;
+    app.locals.usageTracker      = usageTracker;
 
     // Apply GraphQL middleware
     app.use(
@@ -531,14 +664,19 @@ async function startServer() {
           // Always try to authenticate if a token is provided
           const user = authMiddleware(req);
 
-          // Return context with user if authenticated, or empty if not
-          return user ? { user } : {};
+          // Look up per-session resources (winccoa + resolvers)
+          const { winccoa: sessionWinccoa, oldResolvers, v2Resolvers } = getSessionResources(user);
+
+          // Return context with user and per-session resources
+          return user
+            ? { user, winccoa: sessionWinccoa, oldResolvers, v2Resolvers }
+            : {};
         }
       })
     );
 
-    // Apply REST API middleware (use oldResolvers for backward compatibility)
-    const restApi = createRestApi(winccoa, logger, oldResolvers, DISABLE_AUTH);
+    // Apply REST API middleware — pass sessionManager and global winccoa (fallback)
+    const restApi = createRestApi(winccoa, logger, globalOldResolvers, DISABLE_AUTH, sessionManager);
     app.use('/restapi/v1', restApi);
 
     // Serve OpenAPI specification
@@ -568,7 +706,7 @@ async function startServer() {
 
     // Health check endpoint
     app.get('/health', (req, res) => {
-      res.json({ status: 'healthy', uptime: process.uptime() });
+      res.json({ status: 'healthy', uptime: process.uptime(), activeSessions: sessionManager.sessionCount() });
     });
 
     // Debug endpoint to check headers (can be removed later)
@@ -620,12 +758,27 @@ async function startServer() {
         if (DISABLE_AUTH) {
           logger.warn('⚠️  Authentication is DISABLED. Set DISABLE_AUTH=false to enable authentication.');
         }
+        logger.info(`⏱️  Session idle timeout: ${TOKEN_EXPIRY_MS / 60000} minutes`);
         resolve();
       });
     });
     
-    // Cleanup expired tokens periodically
-    setInterval(purgeExpiredTokens, 60000);
+    // Cleanup expired tokens and orphaned sessions periodically
+    setInterval(() => {
+      // purgeExpiredTokens removes tokens from the store but does not destroy sessions.
+      // We do it ourselves here so we can also clean up the WinccoaManager instances.
+      const now = Date.now();
+      const expiredTokenIds = [];
+      for (const [tokenId, data] of tokenStore.entries()) {
+        if (now > data.expiresAt) expiredTokenIds.push(tokenId);
+      }
+      if (expiredTokenIds.length > 0) {
+        logger.debug(`Periodic cleanup: removing ${expiredTokenIds.length} expired token(s)`);
+        for (const tokenId of expiredTokenIds) {
+          sessionManager.destroySession(tokenId);
+        }
+      }
+    }, 60000);
     
   } catch (error) {
     logger.error('Failed to start server:', error);
@@ -636,6 +789,7 @@ async function startServer() {
 // Handle graceful shutdown
 const shutdown = () => {
   logger.info('Shutting down gracefully...');
+  sessionManager.destroyAll();
   usageTracker.shutdown();
   process.exit(0);
 };

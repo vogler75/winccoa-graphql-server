@@ -1,7 +1,7 @@
 // Data point routes for REST API
 const express = require('express')
 
-module.exports = function(winccoa, logger, resolvers, requireAdmin) {
+module.exports = function(logger, requireAdmin) {
   const router = express.Router()
 
   /**
@@ -18,7 +18,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/', async (req, res, next) => {
     try {
       const { pattern, dpType, ignoreCase } = req.query
-      const result = await resolvers.Query.dpNames(
+      const result = await req.resolvers.Query.dpNames(
         null,
         {
           dpPattern: pattern,
@@ -57,7 +57,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.dpCreate(
+      const result = await req.resolvers.Mutation.dpCreate(
         null,
         { dpeName, dpType, systemId, dpId }
       )
@@ -80,7 +80,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/:dpeName/value', async (req, res, next) => {
     try {
       const dpeName = decodeURIComponent(req.params.dpeName)
-      const result = await resolvers.Query.dpGet(null, { dpeNames: [dpeName] })
+      const result = await req.resolvers.Query.dpGet(null, { dpeNames: [dpeName] })
       res.json({ value: result[0] })
     } catch (error) {
       next(error)
@@ -111,7 +111,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.dpSet(
+      const result = await req.resolvers.Mutation.dpSet(
         null,
         { dpeNames: [dpeName], values: [value] }
       )
@@ -146,7 +146,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.dpSetWait(
+      const result = await req.resolvers.Mutation.dpSetWait(
         null,
         { dpeNames: [dpeName], values: [value] }
       )
@@ -184,7 +184,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.dpSetTimed(
+      const result = await req.resolvers.Mutation.dpSetTimed(
         null,
         { time, dpeNames: [dpeName], values: [value] }
       )
@@ -222,7 +222,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.dpSetTimedWait(
+      const result = await req.resolvers.Mutation.dpSetTimedWait(
         null,
         { time, dpeNames: [dpeName], values: [value] }
       )
@@ -245,7 +245,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.delete('/:dpName', requireAdmin, async (req, res, next) => {
     try {
       const dpName = decodeURIComponent(req.params.dpName)
-      const result = await resolvers.Mutation.dpDelete(null, { dpName })
+      const result = await req.resolvers.Mutation.dpDelete(null, { dpName })
       res.json({ success: result })
     } catch (error) {
       next(error)
@@ -279,7 +279,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.dpCopy(
+      const result = await req.resolvers.Mutation.dpCopy(
         null,
         { source, destination, driver }
       )
@@ -302,7 +302,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/:dpeName/exists', async (req, res, next) => {
     try {
       const dpeName = decodeURIComponent(req.params.dpeName)
-      const result = await resolvers.Query.dpExists(null, { dpeName })
+      const result = await req.resolvers.Query.dpExists(null, { dpeName })
       res.json({ exists: result })
     } catch (error) {
       next(error)
@@ -321,7 +321,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/:dpeName/type', async (req, res, next) => {
     try {
       const dpeName = decodeURIComponent(req.params.dpeName)
-      const result = await resolvers.Query.dpElementType(null, { dpeName })
+      const result = await req.resolvers.Query.dpElementType(null, { dpeName })
       res.json({ elementType: result })
     } catch (error) {
       next(error)
@@ -340,7 +340,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/:dpeName/dp-type', async (req, res, next) => {
     try {
       const dp = decodeURIComponent(req.params.dpeName)
-      const result = await resolvers.Query.dpTypeName(null, { dp })
+      const result = await req.resolvers.Query.dpTypeName(null, { dp })
       res.json({ dpType: result })
     } catch (error) {
       next(error)
@@ -359,7 +359,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/:dpeName/type-ref', async (req, res, next) => {
     try {
       const dpe = decodeURIComponent(req.params.dpeName)
-      const result = await resolvers.Query.dpTypeRefName(null, { dpe })
+      const result = await req.resolvers.Query.dpTypeRefName(null, { dpe })
       res.json({ typeRef: result })
     } catch (error) {
       next(error)
@@ -390,7 +390,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.dpGetMaxAge(
+      const result = await req.resolvers.Query.dpGetMaxAge(
         null,
         { age, dpeNames: [dpeName] }
       )
@@ -426,7 +426,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Query.dpGetPeriod(
+      const result = await req.resolvers.Query.dpGetPeriod(
         null,
         { startTime, endTime, dpeNames: [dpeName] }
       )
@@ -449,7 +449,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
   router.get('/:dpAttributeName/attribute-type', async (req, res, next) => {
     try {
       const dpAttributeName = decodeURIComponent(req.params.dpAttributeName)
-      const result = await resolvers.Query.dpAttributeType(null, { dpAttributeName })
+      const result = await req.resolvers.Query.dpAttributeType(null, { dpAttributeName })
       res.json({ ctrlType: result })
     } catch (error) {
       next(error)
@@ -460,7 +460,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
 }
 
 // Create a separate router for dpQuery to avoid conflicts with parameterized routes
-module.exports.createQueryRouter = function(winccoa, logger, resolvers) {
+module.exports.createQueryRouter = function(logger) {
   const router = express.Router()
 
   /**
@@ -477,7 +477,7 @@ module.exports.createQueryRouter = function(winccoa, logger, resolvers) {
    *                        [1..n][0] are line names (data point names), [1..n][1..n] are values
    * }
    */
-  async function handleQuery(query, res, next) {
+  async function handleQuery(query, req, res, next) {
     try {
       if (!query) {
         return res.status(400).json({
@@ -486,16 +486,16 @@ module.exports.createQueryRouter = function(winccoa, logger, resolvers) {
         })
       }
 
-      const result = await resolvers.Query.dpQuery(null, { query })
+      const result = await req.resolvers.Query.dpQuery(null, { query })
       res.json({ result })
     } catch (error) {
       next(error)
     }
   }
 
-  router.get('/', (req, res, next) => handleQuery(req.query.query, res, next))
+  router.get('/', (req, res, next) => handleQuery(req.query.query, req, res, next))
 
-  router.post('/', (req, res, next) => handleQuery(req.body.query, res, next))
+  router.post('/', (req, res, next) => handleQuery(req.body.query, req, res, next))
 
   return router
 }

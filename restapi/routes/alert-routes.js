@@ -1,7 +1,7 @@
 // Alert routes for REST API
 const express = require('express')
 
-module.exports = function(winccoa, logger, resolvers, requireAdmin) {
+module.exports = function(logger, requireAdmin) {
   const router = express.Router()
 
   /**
@@ -32,7 +32,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
       const parsedAlertsTime = JSON.parse(alertsTime)
       const parsedDpeNames = JSON.parse(dpeNames)
 
-      const result = await resolvers.Query.alertGet(
+      const result = await req.resolvers.Query.alertGet(
         null,
         {
           alertsTime: parsedAlertsTime,
@@ -70,7 +70,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
       }
 
       const namesList = names.split(',').map(name => name.trim())
-      const result = await resolvers.Query.alertGetPeriod(
+      const result = await req.resolvers.Query.alertGetPeriod(
         null,
         { startTime, endTime, names: namesList }
       )
@@ -104,7 +104,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.alertSet(
+      const result = await req.resolvers.Mutation.alertSet(
         null,
         { alerts, values }
       )
@@ -138,7 +138,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.alertSetWait(
+      const result = await req.resolvers.Mutation.alertSetWait(
         null,
         { alerts, values }
       )
@@ -173,7 +173,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.alertSetTimed(
+      const result = await req.resolvers.Mutation.alertSetTimed(
         null,
         { time, alerts, values }
       )
@@ -208,7 +208,7 @@ module.exports = function(winccoa, logger, resolvers, requireAdmin) {
         })
       }
 
-      const result = await resolvers.Mutation.alertSetTimedWait(
+      const result = await req.resolvers.Mutation.alertSetTimedWait(
         null,
         { time, alerts, values }
       )

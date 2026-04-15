@@ -4,6 +4,13 @@ type Mutation {
   """Authentication"""
   login(username: String!, password: String!): AuthPayload!
 
+  """
+  Logout and destroy the current session.
+  Invalidates the token and releases the associated WinccoaManager instance.
+  Returns true on success. Safe to call even if the token has already expired.
+  """
+  logout: Boolean!
+
   """WinCC OA API mutations (backward compatibility)"""
   api: APIMutations!
 

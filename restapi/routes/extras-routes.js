@@ -1,7 +1,7 @@
 // Extras routes for REST API — customers can extend these endpoints
 const express = require('express')
 
-module.exports = function(winccoa, logger, resolvers, requireAdmin) {
+module.exports = function(logger, requireAdmin) {
   const router = express.Router()
 
   /**
