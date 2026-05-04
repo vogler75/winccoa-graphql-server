@@ -82,10 +82,8 @@ function createRestApi(globalWinccoa, logger, globalResolvers, DISABLE_AUTH, ses
         req.winccoa   = session.winccoa
         req.resolvers = session.oldResolvers
       } else {
-        // Session not found — fall back to global instance (e.g. token was just purged)
-        logger.warn(`REST: no session for tokenId=${user.tokenId.substring(0, 8)}... — using global instance`)
-        req.winccoa   = globalWinccoa
-        req.resolvers = globalResolvers
+        logger.warn(`REST: no session for tokenId=${user.tokenId.substring(0, 8)}... — rejecting request`)
+        return res.status(401).json({ error: 'Unauthorized', message: 'Session expired or invalid' })
       }
     }
 

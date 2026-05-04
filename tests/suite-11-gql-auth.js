@@ -29,6 +29,23 @@ module.exports = {
       writeResult('11-01-login-wrong-creds', { errors: res.errors.map(e => e.message) })
     })
 
+    await t('11.1b', 'login mixed with another mutation without auth → Unauthorized', async () => {
+      if (DISABLE_AUTH) return 'DISABLE_AUTH=true — auth not enforced, skipping'
+
+      const res = await gql(`
+        mutation {
+          login(username: "wrong", password: "wrong") { token expiresAt }
+          extras { testDummy { success message timestamp } }
+        }
+      `)
+      assertNotNull(res.errors, 'errors array')
+      assert(
+        res.errors.some(e => e.message === 'Unauthorized'),
+        `Expected Unauthorized, got: ${JSON.stringify(res.errors)}`
+      )
+      writeResult('11-01b-login-mixed-mutation-blocked', { errors: res.errors.map(e => e.message) })
+    })
+
     await t('11.2', 'login with correct creds → { token, expiresAt } (skipped if not configured)', async () => {
       const username = process.env.ADMIN_USERNAME
       const password = process.env.ADMIN_PASSWORD

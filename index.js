@@ -82,11 +82,14 @@ const {
   ADMIN_USERNAME,
   ADMIN_PASSWORD,
   READONLY_USERNAME,
+  READONLY_PASSWORD,
   DIRECT_ACCESS_TOKEN,
   READONLY_TOKEN,
   JWT_SECRET,
+  DEFAULT_JWT_SECRET,
   TOKEN_EXPIRY_MS,
   AUTH_MODE,
+  ALLOW_DEV_LOGIN,
   tokenStore
 } = require('./lib/auth');
 const { SimplePubSub } = require('./lib/pubsub');
@@ -129,9 +132,10 @@ console.log(`   Admin Password: ${ADMIN_PASSWORD ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Direct Access Token: ${DIRECT_ACCESS_TOKEN ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Readonly Username: ${READONLY_USERNAME ? '✅ Set' : '❌ Not set'}`);
 console.log(`   Readonly Token: ${READONLY_TOKEN ? '✅ Set' : '❌ Not set'}`);
-console.log(`   JWT Secret: ${JWT_SECRET !== 'your-secret-key-change-in-production' ? '✅ Custom' : '⚠️  Default (change in production)'}`);
+console.log(`   JWT Secret: ${JWT_SECRET !== DEFAULT_JWT_SECRET ? '✅ Custom' : '⚠️  Default (change in production)'}`);
 console.log(`   Token Expiry / Idle Timeout: ${TOKEN_EXPIRY_MS}ms (${Math.round(TOKEN_EXPIRY_MS / 60000)} minutes)`);
 console.log(`   Auth Mode: ${AUTH_MODE} (config=env-var only, winccoa=WinCC OA users, both=env-var then WinCC OA)`);
+console.log(`   Dev Login: ${ALLOW_DEV_LOGIN ? '✅ Explicitly enabled' : '❌ Disabled'}`);
 
 if (DISABLE_AUTH) {
   console.log('⚠️  WARNING: Authentication is DISABLED! This is unsafe for production.');
@@ -139,6 +143,22 @@ if (DISABLE_AUTH) {
   console.log('⚠️  WARNING: No authentication credentials configured!');
 } else {
   console.log('✅ Authentication is properly configured.');
+}
+
+if (!DISABLE_AUTH && process.env.NODE_ENV === 'production') {
+  if (JWT_SECRET === DEFAULT_JWT_SECRET) {
+    throw new Error('Refusing to start in production with the default JWT_SECRET')
+  }
+
+  const hasConfiguredCredential =
+    (ADMIN_USERNAME && ADMIN_PASSWORD) ||
+    (READONLY_USERNAME && READONLY_PASSWORD) ||
+    DIRECT_ACCESS_TOKEN ||
+    READONLY_TOKEN
+  const requiresConfiguredCredential = AUTH_MODE === 'config'
+  if (requiresConfiguredCredential && !hasConfiguredCredential) {
+    throw new Error('Refusing to start in production with AUTH_MODE=config and no configured credentials')
+  }
 }
 
 // Load GraphQL schema
@@ -228,9 +248,8 @@ function getSessionResources(user) {
     return { winccoa: session.winccoa, oldResolvers: session.oldResolvers, v2Resolvers: session.v2Resolvers };
   }
 
-  // Session not found — fall back to global (can happen if token was purged between validate and here)
-  logger.warn(`getSessionResources: no session found for tokenId=${user.tokenId.substring(0, 8)}... — using global instance`);
-  return { winccoa, oldResolvers: globalOldResolvers, v2Resolvers: globalV2Resolvers };
+  logger.warn(`getSessionResources: no session found for tokenId=${user.tokenId.substring(0, 8)}... — rejecting request`);
+  throw new Error('Unauthorized');
 }
 
 /**
@@ -248,6 +267,16 @@ function getSessionResources(user) {
 function buildContextAwareResolvers(globalResolvers) {
   const result = {};
 
+  function getSessionFieldResolver(typeName, fieldName, fallback, contextValue) {
+    if (contextValue && contextValue.v2Resolvers) {
+      const sessionType = contextValue.v2Resolvers[typeName];
+      if (sessionType && sessionType[fieldName]) {
+        return sessionType[fieldName];
+      }
+    }
+    return fallback;
+  }
+
   for (const [typeName, typeResolvers] of Object.entries(globalResolvers)) {
     // Skip scalar types and non-object entries
     if (typeof typeResolvers !== 'object' || typeResolvers === null) {
@@ -258,6 +287,26 @@ function buildContextAwareResolvers(globalResolvers) {
     result[typeName] = {};
 
     for (const [fieldName, fieldResolver] of Object.entries(typeResolvers)) {
+      if (fieldResolver && typeof fieldResolver === 'object') {
+        const wrappedResolver = { ...fieldResolver };
+
+        for (const resolverMethod of ['subscribe', 'resolve']) {
+          if (typeof fieldResolver[resolverMethod] !== 'function') continue;
+
+          wrappedResolver[resolverMethod] = function(parent, args, contextValue, info) {
+            const sessionField = getSessionFieldResolver(typeName, fieldName, fieldResolver, contextValue);
+            const resolver = sessionField && typeof sessionField[resolverMethod] === 'function'
+              ? sessionField[resolverMethod]
+              : fieldResolver[resolverMethod];
+
+            return resolver(parent, args, contextValue, info);
+          };
+        }
+
+        result[typeName][fieldName] = wrappedResolver;
+        continue;
+      }
+
       if (typeof fieldResolver !== 'function') {
         result[typeName][fieldName] = fieldResolver;
         continue;
@@ -265,14 +314,8 @@ function buildContextAwareResolvers(globalResolvers) {
 
       // Wrap: look up the per-session resolver from context, fall back to global
       result[typeName][fieldName] = function(parent, args, contextValue, info) {
-        let resolver = fieldResolver; // default: global
-
-        if (contextValue && contextValue.v2Resolvers) {
-          const sessionType = contextValue.v2Resolvers[typeName];
-          if (sessionType && typeof sessionType[fieldName] === 'function') {
-            resolver = sessionType[fieldName];
-          }
-        }
+        const sessionField = getSessionFieldResolver(typeName, fieldName, fieldResolver, contextValue);
+        const resolver = typeof sessionField === 'function' ? sessionField : fieldResolver;
 
         return resolver(parent, args, contextValue, info);
       };
@@ -376,6 +419,23 @@ const authMiddleware = (req) => {
   logger.debug(`Token validation result: ${result ? 'valid' : 'invalid'}`);
   return result;
 };
+
+function collectRootFieldNames(selectionSet, fragments, names = []) {
+  const selections = selectionSet?.selections || [];
+
+  for (const selection of selections) {
+    if (selection.kind === 'Field') {
+      names.push(selection.name.value);
+    } else if (selection.kind === 'InlineFragment') {
+      collectRootFieldNames(selection.selectionSet, fragments, names);
+    } else if (selection.kind === 'FragmentSpread') {
+      const fragment = fragments.get(selection.name.value);
+      if (fragment) collectRootFieldNames(fragment.selectionSet, fragments, names);
+    }
+  }
+
+  return names;
+}
 
 // WebSocket authentication
 const wsAuthMiddleware = (ctx) => {
@@ -545,13 +605,14 @@ async function startServer() {
             // Skip auth check if disabled
             if (DISABLE_AUTH) return;
             
-            const { request, contextValue, operation, operationName } = requestContext;
+            const { request, contextValue, operation, document } = requestContext;
             
             // Check if this is an introspection query
             if (request.operationName === 'IntrospectionQuery') return;
             
-            // Parse the operation to check if it contains the login mutation
-            let isLoginMutation = false;
+            // Parse the root fields so login is exempt only when it is the sole operation.
+            let rootFieldNames = [];
+            let isLoginOnlyMutation = false;
             let hasMutation = false;
             
             if (operation) {
@@ -559,19 +620,21 @@ async function startServer() {
               if (operation.operation === 'mutation') {
                 hasMutation = true;
               }
-              
-              // Walk through the operation selections
-              const selections = operation.selectionSet?.selections || [];
-              for (const selection of selections) {
-                if (selection.kind === 'Field' && selection.name.value === 'login') {
-                  isLoginMutation = true;
-                  break;
+
+              if (hasMutation) {
+                const fragments = new Map();
+                for (const definition of document?.definitions || []) {
+                  if (definition.kind === 'FragmentDefinition') {
+                    fragments.set(definition.name.value, definition);
+                  }
                 }
+                rootFieldNames = collectRootFieldNames(operation.selectionSet, fragments);
+                isLoginOnlyMutation = rootFieldNames.length === 1 && rootFieldNames[0] === 'login';
               }
             }
             
-            // Skip auth for login mutation
-            if (isLoginMutation) return;
+            // Skip auth only for a standalone login mutation
+            if (isLoginOnlyMutation) return;
             
             // For all other operations, require authentication
             if (!contextValue.user) {
@@ -579,7 +642,8 @@ async function startServer() {
             }
             
             // Check read-only restrictions
-            if (contextValue.user.role === 'readonly' && hasMutation) {
+            const isLogoutOnlyMutation = rootFieldNames.length === 1 && rootFieldNames[0] === 'logout';
+            if (contextValue.user.role === 'readonly' && hasMutation && !isLogoutOnlyMutation) {
               throw new Error('Forbidden: Read-only users cannot perform mutations');
             }
           }
@@ -707,24 +771,6 @@ async function startServer() {
     // Health check endpoint
     app.get('/health', (req, res) => {
       res.json({ status: 'healthy', uptime: process.uptime(), activeSessions: sessionManager.sessionCount() });
-    });
-
-    // Debug endpoint to check headers (can be removed later)
-    app.get('/debug-headers', (req, res) => {
-      res.json({
-        protocol: req.protocol,
-        secure: req.secure,
-        hostname: req.hostname,
-        host: req.get('host'),
-        headers: {
-          'x-forwarded-proto': req.get('x-forwarded-proto'),
-          'x-forwarded-ssl': req.get('x-forwarded-ssl'),
-          'x-forwarded-host': req.get('x-forwarded-host'),
-          'x-forwarded-for': req.get('x-forwarded-for'),
-          'forwarded': req.get('forwarded'),
-        },
-        allHeaders: req.headers
-      });
     });
 
     // Handle WebSocket upgrades manually so Express doesn't intercept them

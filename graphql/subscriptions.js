@@ -3,6 +3,16 @@
 const { v4: uuidv4 } = require('uuid');
 const { decodeStatusBits } = require('./datapoint-resolvers');
 
+function validateDpQueryIdentifier(name) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('DPE name must be a non-empty string');
+  }
+  if (/['\\\r\n]/.test(name)) {
+    throw new Error(`Invalid DPE name for subscription query: ${name}`);
+  }
+  return name;
+}
+
 /**
  * Creates subscription resolver functions for WinCC OA real-time data updates.
  * Wraps WinCC OA connection functions (dpConnect, dpQueryConnectSingle, dpQueryConnectAll)
@@ -288,7 +298,8 @@ function createSubscriptionResolvers(winccoa, logger) {
              // Create one dpQueryConnectSingle connection per DPE so that each query
              // targets exactly one DP and returns value, stime, and status together.
              for (const dpeName of dpeNames) {
-               const query = `SELECT ':_original.._value', ':_original.._stime', ':_original.._status' FROM '${dpeName}'`;
+               const safeDpeName = validateDpQueryIdentifier(dpeName);
+               const query = `SELECT ':_original.._value', ':_original.._stime', ':_original.._status' FROM '${safeDpeName}'`;
 
                const callback = (resultTable) => {
                  // resultTable[0] is the header row; rows 1+ are data rows:
